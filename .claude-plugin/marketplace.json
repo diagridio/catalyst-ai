@@ -1,0 +1,15 @@
+{
+  "name": "diagrid",
+  "description": "Diagrid's plugin marketplace: Catalyst-first skills and MCP tools for building and operating Dapr Workflows and Durable Agents.",
+  "owner": {
+    "name": "Diagrid",
+    "url": "https://diagrid.io"
+  },
+  "plugins": [
+    {
+      "name": "catalyst-ai",
+      "source": "./",
+      "description": "Build and operate Diagrid Catalyst by prompting."
+    }
+  ]
+}

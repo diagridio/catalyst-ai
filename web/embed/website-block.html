@@ -1,0 +1,238 @@
+<!--
+  Catalyst AI — marketing-site block.
+
+  Self-contained: no build step, no dependencies, no external requests. Paste
+  this whole block into a page (or a CMS custom-HTML slot) and it works.
+
+  Differs from the docs split-button on purpose. A docs reader is already
+  reading; a marketing visitor needs the three clients laid out side by side so
+  they can find their own tool without opening a menu. Same commands, same
+  copy-first behaviour, more surface area.
+
+  Everything is scoped under .cai-hero-* so it cannot collide with site styles.
+
+  Before publishing: the marketplace below must be a PUBLIC repo, or every
+  command here fails for visitors. Swap MARKETPLACE if the slug changes.
+-->
+<section class="cai-hero" aria-labelledby="cai-hero-title">
+  <div class="cai-hero__inner">
+    <p class="cai-hero__eyebrow">AI-native</p>
+    <h2 class="cai-hero__h" id="cai-hero-title">Build on Catalyst by prompting</h2>
+    <p class="cai-hero__sub">
+      Install once, then describe what you want. Scaffold durable workflows and AI agents,
+      deploy them, and debug what's running — in Python, .NET, TypeScript, Go or Java.
+      Works in the tool you already use.
+    </p>
+
+    <div class="cai-hero__grid" role="list">
+      <!-- Claude Code -->
+      <article class="cai-hero__card" role="listitem">
+        <header class="cai-hero__ch">
+          <span class="cai-hero__ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2.6l2.34 6.02L20.4 11l-6.06 2.38L12 19.4l-2.34-6.02L3.6 11l6.06-2.38L12 2.6z"/></svg>
+          </span>
+          <h3 class="cai-hero__cn">Claude Code</h3>
+        </header>
+        <p class="cai-hero__cd">Skills, MCP server, commands and subagents in one install.</p>
+        <div class="cai-hero__cmdrow">
+          <code class="cai-hero__cmd" id="cai-cmd-claude">claude plugin marketplace add diagridio/catalyst-ai &amp;&amp; claude plugin install catalyst-ai@diagrid</code>
+          <button class="cai-hero__copy" type="button" data-cai-copy="cai-cmd-claude" aria-label="Copy Claude Code install command">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="cai-hero__ci"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5H6A1.5 1.5 0 004.5 7v9"/></svg>
+            <span class="cai-hero__cl">Copy</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- Codex -->
+      <article class="cai-hero__card" role="listitem">
+        <header class="cai-hero__ch">
+          <span class="cai-hero__ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3.1"/></svg>
+          </span>
+          <h3 class="cai-hero__cn">OpenAI Codex</h3>
+        </header>
+        <p class="cai-hero__cd">Skills via the open Agent Skills spec, plus MCP setup.</p>
+        <div class="cai-hero__cmdrow">
+          <code class="cai-hero__cmd" id="cai-cmd-codex">npx skills add diagridio/catalyst-ai --agent codex --skill '*' --yes</code>
+          <button class="cai-hero__copy" type="button" data-cai-copy="cai-cmd-codex" aria-label="Copy Codex install command">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="cai-hero__ci"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5H6A1.5 1.5 0 004.5 7v9"/></svg>
+            <span class="cai-hero__cl">Copy</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- Copilot -->
+      <article class="cai-hero__card" role="listitem">
+        <header class="cai-hero__ch">
+          <span class="cai-hero__ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3.4c-4.7 0-8.5 3.6-8.5 8v3.3c0 3 3.8 5.9 8.5 5.9s8.5-2.9 8.5-5.9V11.4c0-4.4-3.8-8-8.5-8z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="9.2" cy="13.4" r="1.35"/><circle cx="14.8" cy="13.4" r="1.35"/></svg>
+          </span>
+          <h3 class="cai-hero__cn">GitHub Copilot</h3>
+        </header>
+        <p class="cai-hero__cd">CLI, coding agent and VS Code agent mode.</p>
+        <div class="cai-hero__cmdrow">
+          <code class="cai-hero__cmd" id="cai-cmd-copilot">npx skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes</code>
+          <button class="cai-hero__copy" type="button" data-cai-copy="cai-cmd-copilot" aria-label="Copy Copilot install command">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="cai-hero__ci"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5H6A1.5 1.5 0 004.5 7v9"/></svg>
+            <span class="cai-hero__cl">Copy</span>
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <!-- The payoff line. One prompt, identical in all three clients. -->
+    <div class="cai-hero__then">
+      <span class="cai-hero__thenlbl">Then just say</span>
+      <code class="cai-hero__prompt" id="cai-cmd-prompt">Set up Diagrid Catalyst, then build me a durable agent that summarises GitHub issues.</code>
+      <button class="cai-hero__copy cai-hero__copy--ghost" type="button" data-cai-copy="cai-cmd-prompt" aria-label="Copy the example prompt">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="cai-hero__ci"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5H6A1.5 1.5 0 004.5 7v9"/></svg>
+        <span class="cai-hero__cl">Copy</span>
+      </button>
+    </div>
+
+    <p class="cai-hero__foot">
+      Free to start — a Catalyst project is created for you on signup.
+      <a class="cai-hero__link" href="https://docs.diagrid.io/getting-started/quickstarts/ai-agents/">Read the setup guide</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .cai-hero {
+    --h-fg: #14141a; --h-dim: #62626d; --h-bg: #fbfbfd; --h-card: #fff;
+    --h-border: #e4e4ea; --h-code-bg: #f4f4f7; --h-accent: #3d5afe;
+    --h-shadow: 0 1px 2px rgba(18,18,22,.05), 0 10px 30px rgba(18,18,22,.05);
+    background: var(--h-bg); color: var(--h-fg); padding: 60px 20px;
+    font: 400 16px/1.6 var(--h-font, ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-color-scheme: dark) {
+    .cai-hero:not([data-theme="light"]) {
+      --h-fg: #f3f3f6; --h-dim: #9d9da8; --h-bg: #121216; --h-card: #1b1b21;
+      --h-border: #2f2f38; --h-code-bg: #24242c; --h-accent: #8c9eff;
+      --h-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  .cai-hero[data-theme="dark"] {
+    --h-fg: #f3f3f6; --h-dim: #9d9da8; --h-bg: #121216; --h-card: #1b1b21;
+    --h-border: #2f2f38; --h-code-bg: #24242c; --h-accent: #8c9eff;
+    --h-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  .cai-hero__inner { max-width: 1060px; margin: 0 auto; }
+  .cai-hero__eyebrow {
+    margin: 0 0 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--h-accent);
+  }
+  .cai-hero__h {
+    margin: 0 0 12px; font-size: clamp(26px, 4vw, 38px); line-height: 1.15;
+    font-weight: 650; letter-spacing: -.02em;
+  }
+  .cai-hero__sub { margin: 0 0 32px; max-width: 62ch; color: var(--h-dim); }
+
+  .cai-hero__grid {
+    display: grid; gap: 16px; margin: 0 0 28px;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  }
+  .cai-hero__card {
+    background: var(--h-card); border: 1px solid var(--h-border); border-radius: 14px;
+    padding: 18px; box-shadow: var(--h-shadow); display: flex; flex-direction: column;
+  }
+  .cai-hero__ch { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .cai-hero__ico { width: 22px; height: 22px; flex: 0 0 auto; color: var(--h-fg); }
+  .cai-hero__ico svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+  .cai-hero__cn { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -.01em; }
+  .cai-hero__cd { margin: 0 0 14px; font-size: 14px; color: var(--h-dim); flex: 1; }
+
+  .cai-hero__cmdrow {
+    display: flex; align-items: stretch; gap: 6px; background: var(--h-code-bg);
+    border: 1px solid var(--h-border); border-radius: 9px; padding: 4px 4px 4px 10px;
+  }
+  .cai-hero__cmd {
+    flex: 1; min-width: 0; align-self: center;
+    font: 400 12.5px/1.5 var(--h-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    color: var(--h-fg); white-space: nowrap; overflow-x: auto; scrollbar-width: none;
+  }
+  .cai-hero__cmd::-webkit-scrollbar { display: none; }
+
+  .cai-hero__copy {
+    display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+    background: var(--h-card); border: 1px solid var(--h-border); border-radius: 7px;
+    color: var(--h-fg); cursor: pointer; padding: 6px 9px;
+    font: 500 12.5px/1 inherit; transition: background .12s ease, border-color .12s ease;
+  }
+  .cai-hero__copy:hover { border-color: var(--h-accent); }
+  .cai-hero__copy:focus-visible { outline: 2px solid var(--h-accent); outline-offset: 2px; }
+  .cai-hero__copy--ghost { background: transparent; }
+  .cai-hero__ci { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  .cai-hero__cl { white-space: nowrap; }
+
+  .cai-hero__then {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--h-card); border: 1px dashed var(--h-border);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .cai-hero__thenlbl {
+    font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--h-dim); flex: 0 0 auto;
+  }
+  .cai-hero__prompt {
+    flex: 1; min-width: 220px;
+    font: 400 13.5px/1.5 var(--h-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    color: var(--h-fg);
+  }
+
+  .cai-hero__foot { margin: 20px 0 0; font-size: 14px; color: var(--h-dim); }
+  .cai-hero__link { color: var(--h-accent); text-decoration: none; font-weight: 500; }
+  .cai-hero__link:hover { text-decoration: underline; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cai-hero__copy { transition: none; }
+  }
+</style>
+
+<script>
+  /* Copy-to-clipboard with an execCommand fallback, so it also works on
+     non-secure origins and older browsers. Idempotent: safe if the block
+     appears more than once on a page. */
+  (function () {
+    if (window.__caiHeroBound) return;
+    window.__caiHeroBound = true;
+
+    function copy(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).then(function () { return true; },
+                                                        function () { return legacy(text); });
+      }
+      return Promise.resolve(legacy(text));
+    }
+    function legacy(text) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+
+    document.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('[data-cai-copy]') : null;
+      if (!btn) return;
+      var src = document.getElementById(btn.getAttribute('data-cai-copy'));
+      if (!src) return;
+      var label = btn.querySelector('.cai-hero__cl');
+      copy(src.textContent.trim()).then(function (ok) {
+        if (!label || btn.__busy) return;
+        btn.__busy = true;
+        var prev = label.textContent;
+        label.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+        setTimeout(function () { label.textContent = prev; btn.__busy = false; }, 1600);
+      });
+    });
+  })();
+</script>
