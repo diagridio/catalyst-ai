@@ -134,6 +134,13 @@ def main() -> int:
         lambda s: write(s, "bad-pkg", "---\nname: bad-pkg\ndescription: Fine.\n---\n\nAdd `Diagrid.Agents.Workflow`.\n"),
     ))
 
+    # The flag that shipped. It reads like a plural of `appid`, which is exactly
+    # why review missed it twice.
+    cases.append(case(
+        "a flag that does not exist on any command",
+        lambda s: write(s, "bad-flag", "---\nname: bad-flag\ndescription: Fine.\n---\n\nRun `diagrid project logs --appids x --type dapr`.\n"),
+    ))
+
     cases.append(case(
         "no description at all",
         lambda s: write(s, "no-desc", "---\nname: no-desc\n---\n\nBody.\n"),

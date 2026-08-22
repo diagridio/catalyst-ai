@@ -161,7 +161,7 @@ list. Stop at the first thing that explains it.
    or empty before their first reconcile.
 2. **The components it depends on.** An App ID that cannot initialise a component does
    not come up. `catalyst_list_components`, then section 6.
-3. **The sidecar's own output.** `diagrid project logs --appids <id> --type dapr` carries
+3. **The sidecar's own output.** `diagrid project logs --ids <id> --type dapr` carries
    component initialisation and connection errors; `--type app` carries your
    application's output. They fail differently and the distinction is usually the answer.
 4. **Recent activity.** `diagrid appid get <id> --include-activity` and
@@ -221,7 +221,7 @@ By resource:
    messages under `status.appIdStatus[]` — for a component that is where the reason nearly
    always is, per section 2. Inline setting values are withheld over MCP; secret references
    are shown, which is enough to tell whether it points at the secret you think it does.
-2. `diagrid project logs --appids <id> --type dapr`. Component initialisation failures
+2. `diagrid project logs --ids <id> --type dapr`. Component initialisation failures
    land here, named, with the underlying broker or store error attached.
 3. Check the credential without printing it. `--show-sensitive-values` exists on
    `diagrid component get`; leave it off unless the user asks, and never paste the result

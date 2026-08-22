@@ -67,6 +67,12 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "not the PyPI distribution name. It is `diagrid` (0.4.3), with framework "
         "extras rather than per-framework distributions."
     ),
+    "--appids": (
+        "not a flag on any command at CLI v1.63.0 — `diagrid project logs` takes "
+        "`--ids` and its project is positional. Shipped in catalyst-debug in two "
+        "places, where it emitted a command that does not parse. Nothing catches "
+        "this at review time because it reads exactly like a plural of `appid`."
+    ),
     "go-sdk/workflow": (
         "does not exist in any released tag. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
