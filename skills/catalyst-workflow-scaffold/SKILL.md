@@ -111,6 +111,12 @@ Scaffold the dev config, then run. Both commands default to the current project,
 `--project`. On current CLI versions the resource command is `diagrid app`; older ones
 call it `appid`, which still works as an alias.
 
+**Confirm every command against `--help` before relying on it**, including the ones
+written here. This CLI renames nouns and moves flags between minor versions — `appid`
+became `app`, and in the agent commands a single name changed which resource it creates.
+Run `diagrid version` and the relevant `--help`, then match what you actually see rather
+than what you remember.
+
 Budget the App IDs. A region allows **10 resources, where every app, agent and MCP
 server counts as one**, and 3 projects. Scaffold one App ID for the workflow and add
 more only when the user asks. Workflows themselves are not quotaed — instances are free,
@@ -189,6 +195,8 @@ console — **a link that 404s or lands on the wrong project is worse than no li
 - **Do not scaffold per-language variants of this skill.** One skill detects the
   language; five near-identical skills would compete for the same request and lose.
 - **Do not put a side effect in the workflow body.** Activities exist for that.
+- **Check every CLI command against `--help` before running it.** Nouns and flags move
+  between minor versions, so quote what you verified, not what you recall.
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.

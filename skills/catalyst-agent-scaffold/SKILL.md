@@ -9,31 +9,50 @@ Goal: end this skill with one agent that answers a real prompt and survives bein
 killed mid-run. Durability is the whole point — an agent that only works when nothing
 crashes is a chat loop, not a Durable Agent.
 
-## 1. Decide which kind of agent, and say which
+## 1. Know which resource you are looking at
 
-Catalyst has two different resources and they are not interchangeable. Getting this
-wrong wastes the entire scaffold, so settle it before writing any code.
+Catalyst has two agent resources with confusingly similar names. You will rarely get to
+choose between them, but you must never conflate them.
 
-| | `diagrid managed-agent` | `diagrid agent` |
+| | `diagrid agent` | `diagrid managed-agent` |
 | --- | --- | --- |
-| What it is | A Durable Agent that Catalyst hosts and runs | A connectivity and archiving resource in front of **your** app |
-| Who runs the loop | Catalyst | Your process |
-| You write code | No | Yes |
-| Shape | `--llm-provider`, `--llm-model`, `--sandbox`, `--web-tools`, `--github-*` | `--endpoint`, `--archive-*` |
+| What it is | A connectivity and archiving resource in front of **your** app | A Durable Agent that Catalyst hosts and runs |
+| Who runs the loop | Your process | Catalyst |
+| You write code | Yes | No |
+| Shape | `--endpoint`, `--archive-*` | `--llm-provider`, `--llm-model`, `--sandbox`, `--web-tools`, `--github-*` |
+| Can the user create it | Yes | **No — hidden and restricted to Diagrid accounts** |
 
-Pick `managed-agent` when the user wants an agent without a codebase, or wants the
-sandbox, built-in web tools or the GitHub integration. Pick `agent` when they are
-writing the agent themselves — an SDK app run under `diagrid dev run` uses `agent`.
+**`managed-agent` is not an option an external user can pick today.** The command is
+hidden from `--help` unconditionally, and every one of its subcommands refuses to execute
+unless the logged-in account is a Diagrid one. It is an early-development surface, named
+`managed-agent` specifically to keep the `agent` noun free for the generic Agent resource.
+Treat it as something to recognise, not something to offer — presenting it as a choice
+sends the user down a path that ends in a permission error.
+
+So in practice there is one path: **an app you write, fronted by `diagrid agent`.** That
+starts at step 3.
 
 **Never write "create an agent" unqualified**, in prose or in a command. `diagrid agent
-create` and `diagrid managed-agent create` both succeed and produce different things.
+create` and `diagrid managed-agent create` both parse and mean different things.
 
-`managed-agent` is real but hidden from `diagrid --help`; `diagrid managed-agent --help`
-lists it.
+### Confirm the command before relying on it
 
-## 2. Hosted path: no code at all
+The meaning of `diagrid agent` **changed between CLI versions.** On 1.51.0 it *is* the
+Durable Agent — `diagrid agent create --llm-provider ... --sandbox` creates a hosted
+agent, and `diagrid agent chat` talks to it. On 1.63.0 and later that moved to
+`managed-agent`, and `diagrid agent` became the connectivity resource carrying
+`--endpoint` and `--archive-*`. One command name, two different resources, depending on a
+version you did not choose.
 
-One command, no repository, no adapter:
+So do not emit an agent command from memory, and do not trust the ones written here on
+sight. Run `diagrid version`, then the relevant `--help`, and match what you actually see.
+A command that was right one minor version ago can now create the wrong kind of resource
+without erroring.
+
+## 2. The hosted path, for recognition rather than use
+
+Restricted as above, so reach for this only on a Diagrid account. It needs no repository
+and no adapter:
 
 ```
 diagrid managed-agent create <name> --project default --role assistant \
@@ -235,6 +254,11 @@ lands on the wrong project is worse than no link.**
 
 - **Say `managed-agent` or `agent`, never just "agent".** They are different resources,
   with different flags and different console routes.
+- **Do not offer `managed-agent` as a choice.** It is hidden and restricted to Diagrid
+  accounts; for everyone else the only path is their own app fronted by `agent`.
+- **Check every CLI command against `diagrid version` and `--help` before running it.**
+  `diagrid agent` changed which resource it creates between 1.51 and 1.63, so a remembered
+  command can quietly do the wrong thing.
 - **Do not create a project.** Use `default`.
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
   language has no installable adapter instead of guessing one.
