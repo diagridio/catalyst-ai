@@ -1,0 +1,53 @@
+name: lint
+
+# The gate for this repo. Skills are prose that a model acts on, so the failure
+# mode is not a crash — it is a model confidently telling someone to run a flag
+# that was removed, or install a package that 404s, or reporting an elided value
+# as an absent one. None of that is caught by a compiler, and none of it is
+# caught by `claude plugin validate --strict` either: probed against broken
+# fixtures it accepts a name/directory mismatch, a 1500-character description,
+# unknown frontmatter keys, `../` links, and frontmatter that is not valid YAML.
+#
+# So scripts/lint_skills.py is the real gate, and scripts/test_lint_skills.py
+# proves it still catches each thing it claims to. Both run here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        # A real YAML parser, deliberately. A regex over `description:` cannot
+        # tell valid frontmatter from a block that will fail to load in a client.
+        run: pip install --quiet pyyaml
+
+      - name: Test the linter
+        # Runs first: a linter whose own tests fail cannot be trusted to gate
+        # anything, and a green lint would then be worse than no lint.
+        run: python3 scripts/test_lint_skills.py
+
+      - name: Lint the skills
+        run: python3 scripts/lint_skills.py
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate the plugin and marketplace manifests
+        # Kept as a weak extra signal, not as the gate — see the note above. It
+        # does catch a malformed manifest, which the Python linter does not read.
+        run: npx --yes @anthropic-ai/claude-code plugin validate . --strict
