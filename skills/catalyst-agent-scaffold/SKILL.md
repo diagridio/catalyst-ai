@@ -268,3 +268,9 @@ lands on the wrong project is worse than no link.**
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
+
+<!-- Named in order to warn against it, not to instruct. The lint gate rejects
+     this string by default because a skill that tells someone to pass the flag
+     is a real defect.
+     lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
+-->

@@ -200,3 +200,11 @@ console — **a link that 404s or lands on the wrong project is worse than no li
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
+
+<!-- These three coordinates are taught as traps, not as instructions. The lint
+     gate rejects them by default because a skill that tells someone to use one
+     is a real defect; naming them in order to warn against them is the opposite.
+     lint-allow-banned: go-sdk/workflow — taught as an import path that does not exist
+     lint-allow-banned: Diagrid.Agents.Workflow — taught as a package id that 404s
+     lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
+-->
