@@ -187,6 +187,16 @@ than reconstructing it in the body, so it is visible to a reviewer.
   returned nothing", which the user has no way to detect as wrong. What is available:
   event types and names, timestamps, `task_scheduled_id`, `task_execution_id`, the retry
   origin key, and failure messages with stack traces.
+- **Link the user to the run** when deciding whether a duplicate happened depends on a
+  payload you cannot see. The route is `/workflows/<appId>/<runId>` on the console host.
+  The project is a query parameter with two spellings and **no cross-fallback** —
+  `?project=` matches the name-like project id (`default`), `?projectId=` matches the
+  numeric uid (`prj-` prefix optional). A numeric uid passed as `?project=` matches no
+  name, so the console never switches project and the run does not resolve where it
+  lands. Name goes in `?project=`, number in `?projectId=`; if you cannot tell which you
+  hold, omit the parameter. Never hardcode the host — derive it from the API URL in play,
+  as production, staging, dev and local differ. A link that 404s or opens the wrong
+  project is worse than no link: fall back to the run id and app id in plain text.
 
 ## Rules
 

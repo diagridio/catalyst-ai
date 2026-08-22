@@ -199,6 +199,19 @@ data-sharing level.* Then reason from what is available:
 - `failure_details_error_message`, `failure_details_stack_trace`,
   `failure_details_is_non_retriable`
 
+When the diagnosis turns on a payload you cannot see, say it was withheld **and hand the
+user a link to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
+the console host. The project is a query parameter with two spellings and **no
+cross-fallback between them** — `?project=` is matched against the name-like project id
+(`default`), `?projectId=` against the numeric uid (the `prj-` prefix is optional). A
+numeric uid passed as `?project=` matches no project name, so the console does not switch
+project at all: it stays on whatever project is already selected, where the run id does
+not resolve. Name goes in `?project=`, number in `?projectId=`, and if you cannot tell
+which you are holding, omit the parameter. Never hardcode the host — derive it from the
+API URL already in play, since production, staging, dev and local all differ. A link that
+404s or lands on the wrong project is worse than no link: if you cannot build one
+confidently, give the run id and app id as plain text.
+
 That is enough to locate a divergence: compare the recorded sequence of scheduled names
 against the sequence the current code would emit. The workflow archive export is refused
 outright at this level, so do not offer it as a fallback.
