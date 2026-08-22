@@ -51,14 +51,19 @@ def run_linter(root: Path) -> subprocess.CompletedProcess:
     )
 
 
-def case(name: str, build) -> tuple[str, bool, str]:
-    """Build a fixture repo, lint it, return (name, rejected, output)."""
+def case(name: str, build, expect: str = "reject") -> tuple[str, str, bool, str]:
+    """Build a fixture repo, lint it, return (name, expect, rejected, output).
+
+    `expect` is explicit rather than inferred from the case name: the suite has
+    more than one pass-expected case now, and deducing intent from wording is
+    how a test suite silently starts asserting the opposite of what it reads.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         (root / "skills").mkdir()
         build(root / "skills")
         proc = run_linter(root)
-        return name, proc.returncode != 0, (proc.stderr + proc.stdout).strip()
+        return name, expect, proc.returncode != 0, (proc.stderr + proc.stdout).strip()
 
 
 def write(skills: Path, dirname: str, content: str) -> None:
@@ -72,7 +77,11 @@ def main() -> int:
 
     # The control: a valid skill must PASS, or every other case below proves
     # nothing except that the linter rejects everything.
-    cases.append(case("a valid skill passes", lambda s: write(s, "ok-skill", GOOD.format(name="ok-skill"))))
+    cases.append(case(
+        "a valid skill passes",
+        lambda s: write(s, "ok-skill", GOOD.format(name="ok-skill")),
+        expect="pass",
+    ))
 
     cases.append(case(
         "name disagreeing with its directory",
@@ -117,6 +126,7 @@ def main() -> int:
     cases.append(case(
         "an acknowledged counter-example is allowed",
         lambda s: write(s, "counter-ex", "---\nname: counter-ex\ndescription: Fine.\n---\n\nThere is no `Diagrid.Agents.Workflow` package; never write it.\n\n<!-- lint-allow-banned: Diagrid.Agents.Workflow — taught as a coordinate that 404s -->\n"),
+        expect="pass",
     ))
 
     cases.append(case(
@@ -134,6 +144,40 @@ def main() -> int:
         lambda s: write(s, "no-fm", "# Just a heading\n\nBody.\n"),
     ))
 
+    # Descriptions alike enough to compete for the same trigger. This is the
+    # defect the gate missed on the real set: two scaffold skills sharing
+    # "add, create or generate ..." and "Detects the language rather than
+    # asking", which scored 0.296 against a 0.20 cap.
+    def colliding(s: Path) -> None:
+        tmpl = ("---\nname: {n}\ndescription: Scaffold a {thing} on the platform. "
+                "Use when someone wants to add, create or generate a {thing}, or asks how "
+                "to run {thing} code. Detects the language rather than asking.\n---\n\nBody.\n")
+        write(s, "scaffold-alpha", tmpl.format(n="scaffold-alpha", thing="workflow"))
+        write(s, "scaffold-beta", tmpl.format(n="scaffold-beta", thing="agent"))
+
+    cases.append(case("descriptions that compete for the same trigger", colliding))
+
+    # The control for that rule, and the one that keeps it honest. These two are
+    # genuinely adjacent — both are about reviewing the body of a workflow — and
+    # they are the real pair that measured 0.116. A rule that flags them is
+    # useless, because it would force apart skills that SHOULD sit next to each
+    # other and differ only in their subject nouns.
+    def adjacent(s: Path) -> None:
+        write(s, "determinism", "---\nname: determinism\ndescription: Replay-safety rails for "
+              "the body of an orchestrator. Use when writing or reviewing code inside a workflow "
+              "function, or when a run diverges on replay — clocks, randomness, ids, iteration "
+              "order, direct I/O, threads and mutable global state.\n---\n\nBody.\n")
+        write(s, "idempotency", "---\nname: idempotency\ndescription: Make activities safe to "
+              "run twice. Use when writing or reviewing an activity body with a side effect — "
+              "payment, email, write, third-party call — or when a retry produced a duplicate. "
+              "Activities execute at least once.\n---\n\nBody.\n")
+
+    cases.append(case(
+        "genuinely adjacent skills are not forced apart",
+        adjacent,
+        expect="pass",
+    ))
+
     def too_many(s: Path) -> None:
         for i in range(13):
             write(s, f"skill-{i:02d}", GOOD.format(name=f"skill-{i:02d}"))
@@ -142,8 +186,8 @@ def main() -> int:
 
     # Report. The control expects PASS; everything else expects REJECT.
     failures = 0
-    for i, (name, rejected, output) in enumerate(cases):
-        expect_reject = i != 0 and 'is allowed' not in name
+    for name, expect, rejected, output in cases:
+        expect_reject = expect == "reject"
         ok = rejected == expect_reject
         if not ok:
             failures += 1

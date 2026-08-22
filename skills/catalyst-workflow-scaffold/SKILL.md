@@ -1,6 +1,6 @@
 ---
 name: catalyst-workflow-scaffold
-description: Scaffold a Dapr Workflow that runs on Diagrid Catalyst. Use when someone wants to add, create or generate a workflow, orchestration or saga, or asks how to run workflow code against Catalyst. Detects the project's language rather than asking.
+description: Add, create or generate a Dapr Workflow that runs on Diagrid Catalyst — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process. Infers the repo's language.
 ---
 
 # Scaffold a Dapr Workflow on Catalyst

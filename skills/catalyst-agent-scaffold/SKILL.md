@@ -1,6 +1,6 @@
 ---
 name: catalyst-agent-scaffold
-description: Scaffold a Durable Agent on Diagrid Catalyst, hosted or as your own app. Use when someone wants to add, create or generate an AI agent or a multi-agent topology, or make an existing agent survive restarts. Detects the language rather than asking.
+description: Build, host or stand up a Durable Agent on Diagrid Catalyst, Catalyst-hosted or your own app behind an App ID. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
 ---
 
 # Scaffold a Durable Agent on Catalyst
