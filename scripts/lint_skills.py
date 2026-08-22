@@ -15,6 +15,7 @@ So this file is the actual contract. Run it in CI and locally; a green
 
 from __future__ import annotations
 
+import itertools
 import re
 import shutil
 import subprocess
@@ -71,6 +72,60 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "`github.com/dapr/durabletask-go/workflow`."
     ),
 }
+
+
+# Two skills whose descriptions read alike compete for the same trigger, and the
+# model picks by wording rather than by subject. Measured across the real set the
+# signal is unambiguous: the boilerplate-sharing pair scored 0.296 while the
+# worst *legitimate* adjacency (determinism vs idempotency, which really are both
+# "reviewing a workflow body") scored 0.116. 0.20 sits in that gap with margin on
+# both sides.
+MAX_DESCRIPTION_SIMILARITY = 0.20
+
+# Similarity is measured on distinctive words only. Stopwords and the product
+# name are shared by construction — every description here says "Catalyst" — so
+# counting them would flag every pair equally and rank nothing.
+_STOPWORDS = frozenset("""
+a an and are as at be but by can for from has have how if in into is it its make making no not of on or
+that the their them then there these this to use used uses using want wants when where which who why with
+without you your they what while does do so one two both each any all more most other another new same than
+rather
+""".split())
+
+_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "dapr"})
+
+
+def distinctive_words(description: str) -> frozenset[str]:
+    """The words that carry trigger signal — no stopwords, no product names."""
+    words = set(re.findall(r"[a-z]{3,}", description.lower()))
+    return frozenset(words - _STOPWORDS - _PRODUCT_WORDS)
+
+
+def check_description_collisions(descriptions: dict[str, str], f: Findings) -> None:
+    """Fail any pair of descriptions too alike to trigger distinctly.
+
+    Reports the shared words, because the fix is almost always visible in that
+    list: shared *phrasing* ("add, create or generate ...") is a template
+    artefact and should be reworded, whereas shared *subject* words are real and
+    mean the two skills may need merging or re-scoping.
+    """
+    for a, b in itertools.combinations(sorted(descriptions), 2):
+        wa, wb = distinctive_words(descriptions[a]), distinctive_words(descriptions[b])
+        if not (wa | wb):
+            continue
+        overlap = wa & wb
+        similarity = len(overlap) / len(wa | wb)
+        if similarity > MAX_DESCRIPTION_SIMILARITY:
+            f.error(
+                "skills/",
+                f"`{a}` and `{b}` have descriptions {similarity:.0%} alike, over "
+                f"the {MAX_DESCRIPTION_SIMILARITY:.0%} cap, so they compete for the "
+                f"same triggers.\n     Shared wording: "
+                f"{', '.join(sorted(overlap))}\n     Reword whichever is shared "
+                f"phrasing rather than shared subject — differing verbs for the "
+                f"same intent ('create a workflow' vs 'build an agent') keep both "
+                f"natural while separating them.",
+            )
 
 
 @dataclass
@@ -280,6 +335,7 @@ def main() -> int:
             descriptions[skill_dir.name] = desc
 
     check_isolation(skill_dirs, f)
+    check_description_collisions(descriptions, f)
     check_plugin_validate(f)
 
     total = sum(len(d) for d in descriptions.values())
