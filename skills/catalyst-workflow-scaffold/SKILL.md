@@ -108,8 +108,10 @@ Scaffold the dev config, then run. Both commands default to the current project,
 - `diagrid dev run --project default --id <app> --app-port <port> -- <your run command>`
 
 `--id` names the App ID, and on `dev run` the short `-p` means `--app-port`, not
-`--project`. On current CLI versions the resource command is `diagrid app`; older ones
-call it `appid`, which still works as an alias.
+`--project`. Use `diagrid app`. The older `appid` command still exists but is hidden,
+and it is **not** flag-compatible — `app create` takes `--endpoint` and
+`--endpoint-token` where `appid create` takes `--app-endpoint` and `--app-token`. So
+treat them as two commands, never as a noun you can swap while keeping the flags.
 
 **Confirm every command against `--help` before relying on it**, including the ones
 written here. This CLI renames nouns and moves flags between minor versions — `appid`
