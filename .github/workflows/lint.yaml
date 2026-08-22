@@ -42,6 +42,35 @@ jobs:
       - name: Lint the skills
         run: python3 scripts/lint_skills.py
 
+  version:
+    # A change to plugin content that does not move `version` ships to nobody.
+    # Claude Code caches an installed plugin under its declared version at
+    # ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/ and does NOT
+    # repopulate a version directory it already has. Measured on this repo, same
+    # remote and same commit both times: with a stale 0.1.0 cache present, 1 of 9
+    # skills registered; with it deleted, all 9. There is no error and nothing in
+    # the UI — the only symptom is a skill that never fires.
+    #
+    # Pull requests only. On a push to main the merge base is HEAD, so there is
+    # nothing to compare and the check would be a no-op anyway.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The gate needs a merge base, which a shallow clone does not have.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Test the version gate
+        run: python3 scripts/test_check_version_bump.py
+
+      - name: Require a version bump for plugin changes
+        run: python3 scripts/check_version_bump.py "origin/${{ github.base_ref }}"
+
   manifests:
     runs-on: ubuntu-latest
     steps:
