@@ -179,6 +179,29 @@ moves nouns and flags between minor versions, `appid` is now hidden in favour of
 and `--app-id` has already become a deprecated alias for `--id`. Run `diagrid version`
 first and match what you see, including against the commands written here.
 
+### Trigger a run, so there is output to read
+
+Nothing above produces anything until a workflow actually runs. Starting one is a write,
+so it is the one part of this loop that is absent from a read-only tool surface — if
+`catalyst_start_workflow` is not in the tool list, that is why, and the CLI still works.
+
+| | |
+| --- | --- |
+| MCP | `catalyst_start_workflow` — needs `projectId`, `appId` and `name` |
+| CLI | `diagrid workflow start <workflow-name> --id <app-id> -p <project> --data '<json>'` |
+
+**Capture the instance id.** The MCP tool returns it, and it is how every later call
+refers to that run — reading its status, its history, or stopping it. Losing it means
+listing runs and guessing which one was yours, which is ambiguous the moment two runs
+start in the same second.
+
+The two interfaces differ here in a way worth knowing: the CLI lets you *choose* the
+instance id with `--instance-id`, which is useful when you want a predictable handle
+across a rebuild. The MCP tool assigns one and hands it back.
+
+Stopping a run is a separate matter and is deliberately not in this skill — it is
+irreversible and belongs with diagnosis rather than iteration.
+
 ## 6. Iterating without touching the platform
 
 A code change needs nothing but your process restarted. Stop `dev run`, start it again,
