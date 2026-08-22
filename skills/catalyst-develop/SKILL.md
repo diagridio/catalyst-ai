@@ -168,6 +168,8 @@ For the platform logs, the type is the whole point:
 - `diagrid project logs --ids <a>,<b> --type app` — your application's output as
   Catalyst captured it.
 
+<!-- lint-allow-banned: --appids — named here only to steer away from it, which is the guidance the ban exists to produce -->
+
 Note the flag is `--ids`, not `--appids`, and the project name is a positional argument
 rather than a flag. `project logs` does not follow — it paginates with `--limit` and
 `--page`, and defaults to JSON output. `appid logs` is the one that takes `--follow`.
