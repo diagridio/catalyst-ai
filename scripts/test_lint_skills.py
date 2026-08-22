@@ -111,6 +111,14 @@ def main() -> int:
         lambda s: write(s, "dead-flag", "---\nname: dead-flag\ndescription: Fine.\n---\n\nRun `diagrid project create x --enable-agent-infrastructure`.\n"),
     ))
 
+    # The gate's first real run rejected three legitimate counter-examples. Both
+    # directions are now pinned: an unacknowledged banned string still fails, and
+    # an acknowledged one passes.
+    cases.append(case(
+        "an acknowledged counter-example is allowed",
+        lambda s: write(s, "counter-ex", "---\nname: counter-ex\ndescription: Fine.\n---\n\nThere is no `Diagrid.Agents.Workflow` package; never write it.\n\n<!-- lint-allow-banned: Diagrid.Agents.Workflow — taught as a coordinate that 404s -->\n"),
+    ))
+
     cases.append(case(
         "a NuGet id that returns 404",
         lambda s: write(s, "bad-pkg", "---\nname: bad-pkg\ndescription: Fine.\n---\n\nAdd `Diagrid.Agents.Workflow`.\n"),
@@ -135,7 +143,7 @@ def main() -> int:
     # Report. The control expects PASS; everything else expects REJECT.
     failures = 0
     for i, (name, rejected, output) in enumerate(cases):
-        expect_reject = i != 0
+        expect_reject = i != 0 and 'is allowed' not in name
         ok = rejected == expect_reject
         if not ok:
             failures += 1

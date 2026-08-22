@@ -119,6 +119,23 @@ def split_frontmatter(text: str, path: Path, f: Findings) -> dict | None:
     return data
 
 
+
+def allows_banned(text: str, banned: str) -> bool:
+    """Whether the file explicitly acknowledges a banned string.
+
+    Teaching "`X` does not exist, never write it" is exactly the content we
+    want, and a substring check cannot tell it from an instruction to use `X` —
+    the good skill and the bad skill contain the same characters. This gate
+    caught three such counter-examples on its first real run and was wrong all
+    three times.
+
+    An explicit marker rather than looking for a nearby negation: a heuristic is
+    satisfied by accident. "This is not optional: use `X`" reads as negated and
+    is precisely the defect. A marker cannot be tripped by prose.
+    """
+    return f"lint-allow-banned: {banned}" in text
+
+
 def check_skill(skill_dir: Path, f: Findings) -> str | None:
     """Check one skill. Returns its description for the whole-set budget."""
     rel = str(skill_dir.relative_to(REPO))
@@ -181,8 +198,13 @@ def check_skill(skill_dir: Path, f: Findings) -> str | None:
                 f.error(where, f"link `{target}` does not resolve to a file in this skill")
 
     for banned, why in BANNED_SUBSTRINGS.items():
-        if banned in text:
-            f.error(where, f"contains `{banned}` — {why}")
+        if banned in text and not allows_banned(text, banned):
+            f.error(
+                where,
+                f"contains `{banned}` — {why}\n     If this is a deliberate "
+                f"counter-example, acknowledge it with a line reading:\n     "
+                f"<!-- lint-allow-banned: {banned} — why this is safe here -->",
+            )
 
     return description
 
