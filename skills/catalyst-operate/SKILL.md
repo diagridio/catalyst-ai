@@ -58,7 +58,7 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` | `diagrid mcpserver list`, `diagrid mcpserver get <name> --tools` |
 | Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list`, `diagrid subscription list`, `diagrid pubsub list`, `diagrid kv list` |
 | Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` | — |
-| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <id> --app-id <id>` |
+| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <app-id>` |
 | Request rates, error rates, quota consumption | `catalyst_get_metrics` | `diagrid org usage` (org-wide only) |
 | Logs | none, by design | `diagrid project logs`, `diagrid appid logs <id>` |
 
@@ -73,7 +73,13 @@ Two gaps in that table are deliberate, not oversights:
   the user wants changed goes through the CLI or the console, with their consent.
 
 `-o json` on any CLI read gives you the full object; the default table view drops
-fields. Read the JSON before concluding that a field does not exist.
+fields. Read the JSON before concluding that a field does not exist. `diagrid workflow
+get` is the exception — it has no `--output` flag and always prints YAML, so `-o json`
+there is an unknown flag rather than a formatting choice.
+
+The App ID goes in `--id` throughout. `--app-id` lingers as a hidden deprecated alias on
+`workflow`, `listen`, `dev` and the `call` verbs: it works, warns, and does not appear in
+`--help`, so write `--id` and nobody has to take your word for it.
 
 ### Readiness
 
@@ -120,7 +126,7 @@ failed at. The CLI has no equivalent, so prefer it whenever the question is "whe
 before you ask the user to narrow anything down:
 
 - `--status` — `running`, `completed`, `failed`, `terminated`, `suspended`, `canceled`
-- `--app-id`, `--name`, both repeatable
+- `--id`, `--name`, both repeatable
 - `--start-after`, `--start-before`, `--end-after`, `--end-before`, RFC3339
 - `--custom-status key=value`
 - `--sort-by name|createdAt|startAt|endAt|status|appId` with `--order asc|desc`

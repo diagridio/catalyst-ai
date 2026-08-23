@@ -22,12 +22,14 @@ choose between them, but you must never conflate them.
 | Shape | `--endpoint`, `--archive-*` | `--llm-provider`, `--llm-model`, `--sandbox`, `--web-tools`, `--github-*` |
 | Can the user create it | Yes | **No — hidden and restricted to Diagrid accounts** |
 
-**`managed-agent` is not an option an external user can pick today.** The command is
-hidden from `--help` unconditionally, and every one of its subcommands refuses to execute
-unless the logged-in account is a Diagrid one. It is an early-development surface, named
-`managed-agent` specifically to keep the `agent` noun free for the generic Agent resource.
-Treat it as something to recognise, not something to offer — presenting it as a choice
-sends the user down a path that ends in a permission error.
+**`managed-agent` is not an option an external user can pick today.** Verified in the CLI
+source at v1.66.0: the parent command sets `Hidden = true` unconditionally, and every
+subcommand — `list`, `get`, `create`, `update`, `delete`, `chat`, `runs` — carries a
+pre-run gate that refuses unless the logged-in account's email ends in `@diagrid.io`. It
+is an early-development surface, named `managed-agent` specifically to keep the `agent`
+noun free for the generic Agent resource. Treat it as something to recognise, not
+something to offer — presenting it as a choice sends the user down a path that ends in a
+permission error.
 
 So in practice there is one path: **an app you write, fronted by `diagrid agent`.** That
 starts at step 3.
@@ -39,10 +41,10 @@ create` and `diagrid managed-agent create` both parse and mean different things.
 
 The meaning of `diagrid agent` **changed between CLI versions.** On 1.51.0 it *is* the
 Durable Agent — `diagrid agent create --llm-provider ... --sandbox` creates a hosted
-agent, and `diagrid agent chat` talks to it. On 1.63.0 and later that moved to
+agent, and `diagrid agent chat` talks to it. From 1.63.0 onward that moved to
 `managed-agent`, and `diagrid agent` became the connectivity resource carrying
-`--endpoint` and `--archive-*`. One command name, two different resources, depending on a
-version you did not choose.
+`--endpoint` and `--archive-*`; still true at 1.66.0. One command name, two different
+resources, depending on a version you did not choose.
 
 So do not emit an agent command from memory, and do not trust the ones written here on
 sight. Run `diagrid version`, then the relevant `--help`, and match what you actually see.
@@ -51,8 +53,10 @@ without erroring.
 
 ## 2. The hosted path, for recognition rather than use
 
-Restricted as above, so reach for this only on a Diagrid account. It needs no repository
-and no adapter:
+This section exists so you can identify a hosted agent someone else made and read its
+flags, not so you can propose it. On any account that is not a Diagrid one the commands
+below refuse before they do anything, so do not put them in front of the user as a step —
+skip to section 3. What follows needs no repository and no adapter:
 
 ```
 diagrid managed-agent create <name> --project default --role assistant \
@@ -105,10 +109,11 @@ different stage in each language, and that difference decides what you can scaff
 | Go | `github.com/diagridio/go-ai` v0.1.1 | Root module resolves. The `adapters/*` submodules have no release tag, so they pin only as an untagged pseudo-version, and the repo has no CI |
 | TypeScript | none | **Not installable.** Nothing is published to npm, the `@diagrid` scope does not exist, and the default branch is empty — the work sits on unmerged branches |
 
-For **TypeScript**, say that plainly and offer the three things that do work: the hosted
-`managed-agent` above, writing the agent in a language with a published adapter, or
-driving Dapr Workflows directly with `@dapr/dapr`, which is published and does support
-workflows — you lose the framework bridge, not durability.
+For **TypeScript**, say that plainly and offer the two things that do work: write the
+agent in a language with a published adapter, or drive Dapr Workflows directly with
+`@dapr/dapr`, which is published and does support workflows — you lose the framework
+bridge, not durability. Do **not** offer the hosted `managed-agent` as the TypeScript
+escape hatch; it is restricted per section 1, so it trades one dead end for another.
 
 For **Go**, do not pretend the adapter is a normal dependency. `go get` the root module
 by version, then pin each adapter to the pseudo-version `go get <path>@latest` resolves,

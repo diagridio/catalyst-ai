@@ -52,7 +52,14 @@ project with different settings turns one unexplained failure into two.
   `diagrid project logs` or `diagrid appid logs`.
 - **`-o json` on every CLI read.** The default table view drops fields, including the
   ones carrying the failure reason. A conclusion drawn from the table view is a
-  conclusion drawn from a truncated object.
+  conclusion drawn from a truncated object. One exception: `diagrid workflow get` has
+  no `--output` flag at all and always prints YAML, so `-o json` there fails to parse
+  rather than reformatting.
+- **The App ID flag is `--id`, not `--app-id`.** On `workflow`, `listen`, `dev` and
+  `call invoke/publish/state/bindings/conversation`, `--app-id` survives only as a
+  hidden deprecated alias — it still works, prints a deprecation notice, and is absent
+  from `--help`, so nobody can confirm it from the CLI. Write `--id`. (`diagrid call
+  workflow ...`, a different subtree, does take `--app-id` as its real flag.)
 - **Confirm a command before you quote it: `diagrid <noun> --help`.** The CLI moves.
   `agent` referred to the Catalyst-hosted Durable Agent in older versions and refers to a
   front for your own application in newer ones; `managed-agent` and `tokenbudget` are
@@ -64,11 +71,12 @@ project with different settings turns one unexplained failure into two.
 ## 3. A workflow run that failed
 
 1. Find it: `catalyst_list_workflow_runs`, or
-   `diagrid workflow list --status failed --app-id <id> --start-after <RFC3339>`.
+   `diagrid workflow list --status failed --id <app-id> --start-after <RFC3339>`.
    Statuses are `running`, `completed`, `failed`, `terminated`, `suspended`, `canceled`.
 2. Read it: `catalyst_get_workflow_run`. It returns the execution graph showing which
    step the run is on or failed at, which is the answer to "where is it stuck" and has no
-   CLI equivalent. `diagrid workflow get <id> --app-id <id> -o json` is the fallback.
+   CLI equivalent. `diagrid workflow get <run-id> --id <app-id>` is the fallback; it
+   takes no `--output` flag and always prints YAML.
 3. Diagnose at the failing step, not at the top. The run-level failure is almost always
    an activity's error re-surfaced. Quoting the top-level message alone tells the user
    their workflow failed, which they knew.
@@ -166,7 +174,7 @@ list. Stop at the first thing that explains it.
    application's output. They fail differently and the distinction is usually the answer.
 4. **Recent activity.** `diagrid appid get <id> --include-activity` and
    `diagrid appid logs <id> -t 50`.
-5. **Whether requests reach it at all.** `diagrid listen --app-id <id> --invoke <method>`
+5. **Whether requests reach it at all.** `diagrid listen --id <app-id> --invoke <method>`
    streams inbound requests to your terminal without deploying application code. If
    nothing arrives the problem is upstream of the app; if requests arrive and it still
    fails, it is not.
@@ -202,13 +210,16 @@ By resource:
 
 - **`agent`** — the failure is nearly always the endpoint or the application behind it.
   Confirm the endpoint on the resource, confirm the app is up and reachable, then
-  `diagrid listen --app-id <id>` to see whether the request even arrives.
+  `diagrid listen --id <app-id>` to see whether the request even arrives.
 - **`managed-agent`** — check, in order: the conversation component named by
   `--llm-component` or created by `--llm-provider`, because a rejected or expired provider
   key presents as an agent that silently stops answering; whether `--sandbox` is set on an
   agent whose tools need it, and whether the region supports sandboxing at all; the
   per-tool authorization on any MCP server it uses, via `diagrid mcpserver access`; then
-  the run history, `diagrid managed-agent runs --thread <id>`.
+  the run history, `diagrid managed-agent runs list --agent <name> --thread <id>`.
+  `runs` is a command group, not a command — `list`, `show`, `cancel` and `tail` sit
+  under it, and each requires both `--agent` and `--thread`. All of it is restricted to
+  Diagrid accounts, per the availability row above.
 - **Token budgets** apply to either. A budget in `enforce` mode **rejects** requests once
   the window's allowance is spent, which looks like an unresponsive agent rather than an
   error. `diagrid tokenbudget list` — functional, but hidden from help and absent from

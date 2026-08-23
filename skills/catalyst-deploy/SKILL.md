@@ -88,7 +88,7 @@ right resource type, and check `diagrid app list` and `diagrid agent list` befor
 | An agent whose code you run yourself | `diagrid agent create <name>` | The Agent provisions and manages its own |
 | An MCP server | `diagrid mcpserver create <name>` | The MCP server, likewise |
 
-`diagrid appid` still works and is the lower-level view, but on v1.63.0 it is hidden from
+`diagrid appid` still works and is the lower-level view, but on v1.66.0 it is hidden from
 help in favour of `app`, `agent` and `mcpserver`. The two are not flag-compatible —
 `app create` takes `--endpoint` and `--endpoint-token`, while `appid create` takes
 `--app-endpoint` and `--app-token`, plus the protocol, health-check, body-size and
@@ -214,7 +214,8 @@ Then prove the path rather than trusting the status. These exercise one API each
 separate the platform from the application:
 
 - `diagrid call invoke`, `call publish`, `call state`, `call bindings`, `call conversation`.
-- `diagrid listen --app-id <id> --invoke <method>` streams inbound requests to your
+  The App ID goes in `--id` on all five; `--app-id` is only a hidden deprecated alias.
+- `diagrid listen --id <app-id> --invoke <method>` streams inbound requests to your
   terminal with no application code deployed. Nothing arriving means the problem is
   upstream of the app; requests arriving and still failing means it is not.
 
