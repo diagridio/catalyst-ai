@@ -5,3 +5,6 @@ skills-lock.json
 # The linter is executed from CI and locally; its bytecode cache is not source.
 __pycache__/
 *.pyc
+
+# Agent worktrees are ephemeral scratch, not source.
+.claude/worktrees/
