@@ -133,7 +133,10 @@ so it re-runs on every replay while the engine has no record it ever ran.
 If a design fans out over pub/sub rather than over activities, note the shape of a
 Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan** — free,
 enterprise and internal alike, and no plan upgrade raises it. It is a platform default
-rather than a free-tier restriction. These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer. Fan out across *topics* on the one
+rather than a free-tier restriction. These are plan values overlaid per organization,
+not constants in the code, so read the live quota rather than asserting the 1 — and do
+not promise a user it can be raised for them, which is a commercial question rather than
+one you can answer. Fan out across *topics* on the one
 pub/sub component. A design
 that needs several pub/sub components does not fit and needs reshaping, not an upgrade.
 Publishing from the workflow body is also direct I/O — it belongs in an activity either
@@ -204,7 +207,11 @@ When the diagnosis turns on a payload you cannot see, **try the CLI first**: wit
 is applied by the MCP server to MCP responses, and `diagrid workflow get <workflow-id>
 --project <project> --id <app>` does not go through it. It returns `input` and `output` for
 the run and for every activity in the history — which is the whole point here, because a
-divergence is read from the sequence of activity inputs. Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+divergence is read from the sequence of activity inputs. Two conditions: confirm the CLI
+is logged into the same organization — the CLI session and the MCP connection are
+separate identities and can sit in different ones — and say which surface the value came
+from. Never forge a data-sharing header, and never ask an administrator to raise the
+organization's level so you can finish an answer.
 
 Only if the CLI is unavailable too, say the payload was withheld **and hand the user a link
 to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
@@ -214,10 +221,11 @@ cross-fallback between them** — `?project=` is matched against the name-like p
 numeric uid passed as `?project=` matches no project name, so the console does not switch
 project at all: it stays on whatever project is already selected, where the run id does
 not resolve. Name goes in `?project=`, number in `?projectId=`, and if you cannot tell
-which you are holding, omit the parameter. Never hardcode the host — derive it from the
-API URL already in play, since production, staging, dev and local all differ. A link that
-404s or lands on the wrong project is worse than no link: if you cannot build one
-confidently, give the run id and app id as plain text.
+which you are holding, omit the parameter. Do not hardcode or hand-derive the host:
+prefer `diagrid web`, which opens the console for the environment the session is logged in
+to, and see `catalyst-setup` section 3 for the API-host mapping when you need the URL
+itself. A link that 404s or lands on the wrong project is worse than no link: if you
+cannot build one confidently, give the run id and app id as plain text.
 
 That is enough to locate a divergence: compare the recorded sequence of scheduled names
 against the sequence the current code would emit. The workflow archive export is refused

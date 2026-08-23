@@ -177,7 +177,7 @@ the CLI is unavailable too, hand them a console link so they can read it themsel
 section 6.
 
 Two conditions on that fallback. **Confirm the CLI is logged into the same organization** —
-section 1 notes the CLI session and the MCP connection are separate identities that can sit
+section 2 notes the CLI session and the MCP connection are separate identities that can sit
 in different organizations, and a payload read from the wrong one is a worse answer than a
 refusal. And **say which surface the value came from**, so the user can tell a CLI read from
 a tool read.

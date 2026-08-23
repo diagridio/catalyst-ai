@@ -201,7 +201,10 @@ than reconstructing it in the body, so it is visible to a reviewer.
 
 - **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Catalyst
   plan — free, enterprise and internal alike — and no plan upgrade raises it.
-  These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer. A dedupe or
+  These are plan values overlaid per organization, not constants in the code, so read
+  the live quota rather than asserting the 1 — and do not promise a user it can be
+  raised for them, which is a commercial question rather than one you can answer. A
+  dedupe or
   intent table backed by the managed KV store therefore shares one component with all
   other state in the project: namespace your keys (`dedupe:<workflow>:<key>`) rather than
   assuming a dedicated store. Do not propose a second KV store as the fix.
@@ -214,7 +217,10 @@ than reconstructing it in the body, so it is visible to a reviewer.
   `input` and `output` for every activity in the history. That is the direct evidence for
   this skill's question — the same activity name repeated with the same input is a retry,
   and whether it reached the provider twice is exactly what you are trying to establish.
-  Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+  Two conditions: confirm the CLI is logged into the same organization — the CLI session
+  and the MCP connection are separate identities and can sit in different ones — and say
+  which surface the value came from. Never forge a data-sharing header, and never ask an
+  administrator to raise the organization's level so you can finish an answer.
   If the CLI is unavailable too, say "the payload is not available at this data-sharing level"
   — never "the activity returned nothing", which the user has no way to detect as wrong.
   What remains available over MCP: event types and names, timestamps, `task_scheduled_id`,
@@ -226,9 +232,11 @@ than reconstructing it in the body, so it is visible to a reviewer.
   numeric uid (`prj-` prefix optional). A numeric uid passed as `?project=` matches no
   name, so the console never switches project and the run does not resolve where it
   lands. Name goes in `?project=`, number in `?projectId=`; if you cannot tell which you
-  hold, omit the parameter. Never hardcode the host — derive it from the API URL in play,
-  as production, staging, dev and local differ. A link that 404s or opens the wrong
-  project is worse than no link: fall back to the run id and app id in plain text.
+  hold, omit the parameter. Do not hardcode or hand-derive the host: prefer `diagrid web`,
+  which opens the console for the environment the session is logged in to, and see
+  `catalyst-setup` section 3 for the API-host mapping when you need the URL itself. A link
+  that 404s or opens the wrong project is worse than no link: fall back to the run id and
+  app id in plain text.
 
 ## Rules
 

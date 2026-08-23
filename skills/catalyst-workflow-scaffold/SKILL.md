@@ -76,7 +76,10 @@ Two related facts, so you do not go looking for a flag that is gone:
 
 A project holds **one managed pub/sub and one managed KV store** on every plan — free,
 enterprise and internal alike — and no plan upgrade raises it, so never offer one as the
-fix. Fan work out across topics on the one broker. These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer.
+fix. Fan work out across topics on the one broker. These are plan values overlaid per
+organization, not constants in the code, so read the live quota rather than asserting
+the 1 — and do not promise a user it can be raised for them, which is a commercial
+question rather than one you can answer.
 
 ## 4. Write the workflow so replay cannot change its mind
 
@@ -195,9 +198,12 @@ before telling the user the data is unreachable. Its output is also richer than 
 the same activity name appears once per attempt, with its input each time, which is how you
 see that an activity was retried and what it was retried with.
 
-Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+Two conditions: confirm the CLI is logged into the same organization — the CLI session
+and the MCP connection are separate identities and can sit in different ones — and say
+which surface the value came from. Never forge a data-sharing header, and never ask an
+administrator to raise the organization's level so you can finish an answer.
 
-When a payload really is missing, report that it was withheld and by which surface. Never
+When a payload really is missing, say so and name the surface that withheld it. Never
 say "the workflow produced no output" — that sends the user to debug working code, and on
 the MCP path the remedy is an org-level setting they may not know exists.
 

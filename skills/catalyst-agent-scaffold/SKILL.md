@@ -218,7 +218,11 @@ the management API, the list endpoints need `includeData=true`; the single-execu
 returns payloads without it. **The CLI needs no flag because it is not filtered at all** —
 withholding is applied by the MCP server to MCP responses, so `diagrid workflow get
 <workflow-id> --project <project> --id <app>` remains the fallback that can still show a
-payload an MCP tool withheld. Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+payload an MCP tool withheld. Two conditions: confirm the CLI is logged into the same
+organization — the CLI session and the MCP connection are separate identities and can
+sit in different ones — and say which surface the value came from. Never forge a
+data-sharing header, and never ask an administrator to raise the organization's level so
+you can finish an answer.
 
 So never report a missing payload as "the agent produced no output". Say it was withheld
 and by which surface. A tool that refuses is likewise not an agent that failed; report
