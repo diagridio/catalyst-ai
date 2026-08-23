@@ -74,7 +74,8 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "this at review time because it reads exactly like a plural of `appid`."
     ),
     "go-sdk/workflow": (
-        "does not exist in any released tag. Go's workflow API is "
+        "existed in go-sdk v1.10.0 through v1.13.0 and was removed in v1.14.0, so "
+        "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
 }

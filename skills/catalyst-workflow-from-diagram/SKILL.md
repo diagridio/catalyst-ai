@@ -238,9 +238,11 @@ result against the boxes it should have visited. `workflow get` prints the histo
 comparing that list to the picture is the only end-to-end proof the translation was
 faithful, and it is cheaper than reading the generated code again.
 
-Payloads are withheld by default on every surface, and by deleting the key rather than
+Payloads are withheld by default **over MCP tools**, and by deleting the key rather than
 returning an empty value. An absent `output` is not a workflow that produced nothing —
-report that it was withheld, or you will send someone to debug working code.
+report that it was withheld, or you will send someone to debug working code. The CLI does
+not go through that filter: `diagrid workflow get <workflow-id> --project <project> --id
+<app>` returns `input` and `output` for the run and for every activity in its history.
 
 ## 9. Hand back the diagram you implemented
 

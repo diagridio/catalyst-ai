@@ -46,6 +46,7 @@ stable key deduplicates nothing. You need both.
 | Publish an event | Duplicate downstream work | Deterministic message id, and make the consumer idempotent too |
 | `DELETE` by id | Second delete is a no-op | Already idempotent — nothing to do |
 | `PUT` a full computed document to a fixed key | Same document written twice | Already idempotent — nothing to do |
+| Raise a business rejection, at a call site that carries a retry policy | Re-runs a rejection that cannot ever succeed | Return the rejection as data; reserve the retry policy for transient failures |
 | Read-only lookup | Nothing observable | Not an idempotency concern |
 | Generate a key with `uuid()` *inside* the body | A new key per run, so the key deduplicates nothing | Derive the key from the activity input or the activity context |
 | Append to a file or object | Content duplicated | Write to a key derived from the idempotency key instead of appending |
@@ -153,13 +154,34 @@ inside the activity body. Engine-driven retries use durable timers, so the backo
 survives a worker restart and every attempt appears in history.
 
 A retry loop written inside the activity body is invisible to history, does not survive
-a crash, and multiplies with the engine's own retries. Do not add one. If you need
-per-error control, express it in the retry policy's error predicate, or return a typed
-result the orchestrator can branch on.
+a crash, and multiplies with the engine's own retries. Do not add one.
 
 Retry transient failures — timeouts, connection resets, 429, 503, transient deadlocks.
 Do not retry input validation failures, business rejections, or permanent 4xx: they
 consume the retry budget and delay the real failure without any chance of succeeding.
+
+**Classify the failure, then choose where it is expressed.** There are two routes, and
+they are not equally available:
+
+1. **Return the rejection as a typed result the orchestrator branches on.** Always
+   available, in every SDK, because it is just a return value. Reach for this first.
+2. **Express it in the retry policy's error predicate.** Only if your SDK has one — and
+   several do not. `dapr-ext-workflow`'s Python `RetryPolicy` (verified on 1.18.3) takes
+   `first_retry_interval`, `max_number_of_attempts`, `backoff_coefficient`,
+   `max_retry_interval` and `retry_timeout`, and **no predicate of any kind**. Check your
+   own SDK's policy type before designing around one; where there is none, the typed result
+   is not an alternative, it is the only route.
+
+Concretely, for a business rejection: give the call site no retry policy at all, or give the
+activity a return type that carries the rejection — `{"outcome": "rejected", "reason": ...}`
+— and let the orchestrator decide. Raising an exception the engine can see is what puts the
+rejection into the retry budget.
+
+**A direct-call unit test cannot catch this.** Calling the activity function yourself never
+involves the engine, so no retry happens and the test passes no matter how the call site is
+configured. A full suite proves nothing here. Assert the *classification* instead: every
+activity that can raise a permanent rejection is either called with no retry policy, or
+returns that rejection as a value.
 
 ## Keep the payload small
 
@@ -182,11 +204,16 @@ than reconstructing it in the body, so it is visible to a reviewer.
 - **A missing output in run history may be withheld, not absent.** At the default
   `metadata` data-sharing level, workflow and activity `input`, `output` and
   `customStatus` are **removed from the response**, not returned empty. When you are
-  checking history to find out whether a duplicate occurred, you cannot see payloads. Say
-  "the payload is not available at this data-sharing level" — never "the activity
-  returned nothing", which the user has no way to detect as wrong. What is available:
-  event types and names, timestamps, `task_scheduled_id`, `task_execution_id`, the retry
-  origin key, and failure messages with stack traces.
+  checking history to find out whether a duplicate occurred, you cannot see payloads over
+  MCP. **You can over the CLI:** withholding is applied by the MCP server to MCP responses,
+  so `diagrid workflow get <workflow-id> --project <project> --id <app>` still returns
+  `input` and `output` for every activity in the history. That is the direct evidence for
+  this skill's question — the same activity name repeated with the same input is a retry,
+  and whether it reached the provider twice is exactly what you are trying to establish. If
+  the CLI is unavailable too, say "the payload is not available at this data-sharing level"
+  — never "the activity returned nothing", which the user has no way to detect as wrong.
+  What remains available over MCP: event types and names, timestamps, `task_scheduled_id`,
+  `task_execution_id`, the retry origin key, and failure messages with stack traces.
 - **Link the user to the run** when deciding whether a duplicate happened depends on a
   payload you cannot see. The route is `/workflows/<appId>/<runId>` on the console host.
   The project is a query parameter with two spellings and **no cross-fallback** —
@@ -205,6 +232,10 @@ than reconstructing it in the body, so it is visible to a reviewer.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every
   time.
 - **Never let check-then-act stand as the only protection.** Require a conditional write.
+- **One retry policy per failure class, not one per workflow.** If a single policy object
+  is applied to every activity call in an orchestrator, that is the finding — say so. It
+  means the transient calls and the ones that can be permanently rejected are being retried
+  identically, and the rejections are spending the budget.
 - **Do not report a withheld payload as an empty one.** Name the data-sharing level.
 - **Do not resolve an unknown outcome by guessing.** A `pending` intent with no
   reconciliation path is a question for the user.

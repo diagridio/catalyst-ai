@@ -244,6 +244,29 @@ The environment server then serves each App ID's `DAPR_HTTP_ENDPOINT`,
 (`--app-id-env-server-port` moves it). Your debug configuration reads them from there
 instead of you copying a token into a launch profile where it will rot.
 
+Leave `--app-port` out of that command if nothing calls *into* your process. A pure
+workflow worker has no inbound endpoint to attach.
+
+### A worker needs two variables and no `dev run` at all
+
+A process that only registers workflows and activities and polls for work items dials
+Catalyst outbound. It needs no local app connection, no tunnel and no port. The smallest
+thing that works is your own process with two variables set:
+
+| Variable | Where the value comes from |
+| --- | --- |
+| `DAPR_GRPC_ENDPOINT` | `diagrid project get <project> -o json` → `.status.endpoints.grpc.url` |
+| `DAPR_API_TOKEN` | `diagrid appid get <app> --project <project> -o json` → `.status.apiToken` |
+
+Then start the process directly — `python app.py`, `go run .`, whatever it is.
+
+Prefer `dev run --app-id-env-server-enabled` when you can: it serves the same two values,
+keeps the token out of your shell history, and refreshes it. Reach for the variables
+directly when you cannot — a container, a CI job, a run configuration that will not shell
+out. **The App ID token is a credential.** Do not echo it, do not write it into a file that
+gets committed, and do not paste it into a launch profile; read it at start-up from the
+environment or a secret store, the same as a database password.
+
 ## 7. When the sidecar or the connection does not come up
 
 Route by the message you actually saw. Guessing here wastes a whole iteration.
@@ -276,6 +299,12 @@ Two quieter failure modes with no error to grep for:
   read the startup warnings before debugging your code.
 - **`agent-registry` is managed by Diagrid.** It is skipped if your resources declare it.
   Do not try to create or edit it.
+- **A port conflict in a worker that never needed a port.** If an HTTP server was added so
+  that `--app-port` had something to answer, that server is now its own failure mode: the
+  worker registers the workflow and every activity successfully, then dies at bind because
+  something else — commonly a container — already holds the port. The startup log reads as
+  healthy right up to the error, which sends people looking at the workflow registration.
+  A workflow worker needs no port at all; see section 6.
 
 If you get past all of that and requests still are not arriving, stop guessing at the app
 and check the path: `diagrid listen --id <app-id> --invoke <method>` streams inbound

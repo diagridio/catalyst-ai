@@ -211,8 +211,11 @@ App IDs it creates, so you get the infrastructure by running.
 payloads are withheld by default — withheld by deleting the key, not by returning an
 empty value. Over MCP tools, `input`, `output` and `customStatus` are all removed, and
 only an organization administrator can raise the org's data-sharing level to `full`. Over
-the management API, `includeData=true` unlocks payloads on the list endpoints only. The
-CLI has no such flag at all.
+the management API, the list endpoints need `includeData=true`; the single-execution read
+returns payloads without it. **The CLI needs no flag because it is not filtered at all** —
+withholding is applied by the MCP server to MCP responses, so `diagrid workflow get
+<workflow-id> --project <project> --id <app>` remains the fallback that can still show a
+payload an MCP tool withheld.
 
 So never report a missing payload as "the agent produced no output". Say it was withheld
 and by which surface. A tool that refuses is likewise not an agent that failed; report

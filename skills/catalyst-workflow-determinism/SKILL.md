@@ -199,8 +199,12 @@ data-sharing level.* Then reason from what is available:
 - `failure_details_error_message`, `failure_details_stack_trace`,
   `failure_details_is_non_retriable`
 
-When the diagnosis turns on a payload you cannot see, say it was withheld **and hand the
-user a link to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
+When the diagnosis turns on a payload you cannot see, **try the CLI first**: withholding
+is applied by the MCP server to MCP responses, and `diagrid workflow get <workflow-id>
+--project <project> --id <app>` does not go through it. It returns `input` and `output` for
+the run and for every activity in the history — which is the whole point here, because a
+divergence is read from the sequence of activity inputs. Only if the CLI is unavailable
+too, say the payload was withheld **and hand the user a link to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
 the console host. The project is a query parameter with two spellings and **no
 cross-fallback between them** — `?project=` is matched against the name-like project id
 (`default`), `?projectId=` against the numeric uid (the `prj-` prefix is optional). A
