@@ -1,6 +1,6 @@
 ---
 name: catalyst-debug
-description: Diagnose why something in Diagrid Catalyst is not working. Covers a workflow run that failed, an App ID that is not ready, an agent that is not answering, a component that will not connect. Use when a resource is broken, stuck, or erroring.
+description: Diagnose why something in Diagrid Catalyst is broken or stuck, then stop, kill, rerun or purge a workflow run. Covers a run that failed or hangs, an App ID not ready, an agent not answering, a component that will not connect.
 ---
 
 # Diagnose a Catalyst failure
@@ -155,13 +155,25 @@ hazard tables and the fixes.
 
 These mutate. Ask first, and state the consequence up front.
 
-| Intent | Call | Consequence to state |
-| --- | --- | --- |
-| Hold it | `catalyst_pause_workflow_run` / `catalyst_resume_workflow_run` | Reversible; history is kept. |
-| Unblock a waiting run | `catalyst_raise_workflow_event` | Not idempotent: a run awaiting two events consumes two. |
-| Retry from a point | `catalyst_rerun_workflow_run` | Creates a **new** run from the original's input, resuming from a chosen event. Both the event and an id for the new run are required — nothing generates the id. The original is untouched, so any id the user recorded still points at the failure. |
-| Stop it | `catalyst_terminate_workflow_run` | Irreversible: it cannot be resumed. History is kept. Confirm before calling. |
-| Delete history | `diagrid workflow purge` — no MCP tool exists | Irreversible, and it destroys the evidence for this diagnosis. Export first if the user may need it: `diagrid workflow archive export`. |
+| Intent | MCP tool | CLI | Consequence to state |
+| --- | --- | --- | --- |
+| Hold it | `catalyst_pause_workflow_run` / `catalyst_resume_workflow_run` | `diagrid workflow pause --id <app> --instance-id <run-id>`, and `resume` with the same flags | Reversible; history is kept. |
+| Unblock a waiting run | `catalyst_raise_workflow_event` | `diagrid workflow raise-event --id <app> --instance-id <run-id> --event-name <name> --data '<json>'` | Not idempotent: a run awaiting two events consumes two. |
+| Retry from a point | `catalyst_rerun_workflow_run` | `diagrid workflow rerun --id <app> --instance-id <run-id> --event-id <n> --new-workflow-id <new-run-id>` | Creates a **new** run from the original's input, resuming from a chosen event. Both the event and an id for the new run are required — nothing generates the id. The original is untouched, so any id the user recorded still points at the failure. |
+| Stop it | `catalyst_terminate_workflow_run` | `diagrid workflow terminate --id <app> --instance-id <run-id>` | Irreversible: it cannot be resumed. History is kept. Confirm before calling. |
+| Delete history | none — no MCP tool exists | `diagrid workflow purge --id <app> --instance-id <run-id>`, or `--bulk` with `--status`/`--name`/`--older-than` filters | Irreversible, and it destroys the evidence for this diagnosis. Export first if the user may need it: `diagrid workflow archive export`. A single purge takes `-y`, and `--bulk` lists what it matched and asks before deleting unless `--approve` is set — do not reach for either flag on the user's behalf. |
+
+**The CLI column is the one that works in a session with no `catalyst_*` tools**, which is
+most of them. Do not report a run as unstoppable because the MCP tool is absent.
+
+**Every lifecycle verb takes the run in `--instance-id`. `get` is the only one that takes
+it positionally.** `diagrid workflow get <run-id> --id <app>` has no `--instance-id` at
+all, and `terminate`, `pause`, `resume`, `rerun`, `raise-event` and `purge` accept no
+positional argument — carrying `get`'s shape across to any of them fails with
+`required flag(s) "instance-id" not set`, or on the unexpected argument. It is the same
+trap as `workflow start`, which also requires `--instance-id`. Getting this wrong on
+`terminate` is the worst place to get it wrong: the user reads a plausible command,
+runs it, sees an error, and no longer trusts the diagnosis it came with.
 
 If `workflow list` or `workflow get` fails outright rather than returning nothing, the
 project has no managed workflow store and the Workflows API is unavailable there. That is
