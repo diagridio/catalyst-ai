@@ -149,8 +149,10 @@ hours, and they all fail *silently* or with an unhelpful error.
   allow **3 projects per region**, and `dev run` will **create one if you typo
   `--project`** — spending a slot without asking.
 - **One pub/sub and one KV store per project, on every plan.** `cra:free`,
-  `cra:enterprise` and `cra:internal` alike. This is architectural, not a free-tier limit
-  — paying does not raise it. A multi-agent topology shares one pub/sub across topics.
+  `cra:enterprise` and `cra:internal` alike, so no plan upgrade buys a second one. A
+  multi-agent topology shares one pub/sub across topics. These are plan values overlaid
+  per organization rather than constants in the code, so the skills read the live quota
+  instead of asserting the 1.
 - **`diagrid agent` and `diagrid managed-agent` are different resources.** `agent` fronts
   *your* app; `managed-agent` is Catalyst-hosted and takes the LLM flags. "Create an
   agent" unqualified picks the wrong one.

@@ -20,16 +20,29 @@ choose between them, but you must never conflate them.
 | Who runs the loop | Your process | Catalyst |
 | You write code | Yes | No |
 | Shape | `--endpoint`, `--archive-*` | `--llm-provider`, `--llm-model`, `--sandbox`, `--web-tools`, `--github-*` |
-| Can the user create it | Yes | **No — hidden and restricted to Diagrid accounts** |
+| Can the user create it | Yes | **No — hidden, gated to Diagrid accounts, and feature-gated per environment on top** |
 
-**`managed-agent` is not an option an external user can pick today.** Verified in the CLI
-source at v1.66.0: the parent command sets `Hidden = true` unconditionally, and every
-subcommand — `list`, `get`, `create`, `update`, `delete`, `chat`, `runs` — carries a
-pre-run gate that refuses unless the logged-in account's email ends in `@diagrid.io`. It
-is an early-development surface, named `managed-agent` specifically to keep the `agent`
-noun free for the generic Agent resource. Treat it as something to recognise, not
-something to offer — presenting it as a choice sends the user down a path that ends in a
-permission error.
+**`managed-agent` is not an option any user can pick today, and it is gated three times
+over.** Verified at v1.66.0:
+
+1. The parent command sets `Hidden = true` unconditionally, so it is absent from
+   `diagrid --help` for everyone.
+2. Every subcommand — `list`, `get`, `create`, `update`, `delete`, `chat`, `runs` —
+   carries a pre-run gate that refuses unless the logged-in account's email ends in
+   `@diagrid.io`.
+3. **Past both of those, the environment refuses anyway.** A Diagrid account on
+   production gets `Durable agents are not available in this environment / Ensure you are
+   using the latest Diagrid CLI and that the feature is enabled for your account`.
+
+That third layer matters because it decides what you should predict. Do not tell a Diagrid
+user they will hit a permission error — they will not; they will be told the feature is not
+enabled for their account, which is a different problem with a different remedy. And do not
+read that message as "your CLI is out of date", which is the first thing it suggests and
+usually is not the cause.
+
+It is an early-development surface, named `managed-agent` specifically to keep the `agent`
+noun free for the generic Agent resource. Treat it as something to recognise, not something
+to offer.
 
 So in practice there is one path: **an app you write, fronted by `diagrid agent`.** That
 starts at step 3.
@@ -172,9 +185,10 @@ which project to use rather than creating one. The managed components have fixed
 
 ## 7. Fit the topology to one pub/sub
 
-A project holds **exactly one managed pub/sub and exactly one managed KV store**. This
-is how the platform is built, on every plan — paying does not raise it, so never present
-it as a free-tier limit.
+A project holds **one managed pub/sub and one managed KV store** on every plan — free,
+enterprise and internal alike. It is a platform default rather than a free-tier limit, and
+no plan upgrade raises it, so never offer an upgrade as the fix. (A negotiated
+per-organization override exists; a live quota read beats this document.)
 
 A coordinator with specialists therefore **shares one broker and separates the agents by
 topic**, one topic per specialist plus one for results. Design for that from the start;
@@ -204,15 +218,24 @@ inconsistently, so read them off the current plans page instead of hardcoding on
   the scaffold is not finished — usually the workflow store or a component name.
 
 On `dev run` the short `-p` means `--app-port`, not `--project`, and `--id` names the App
-ID. `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for
-App IDs it creates, so you get the infrastructure by running.
+ID. `--app-port` **is** wanted here, unlike for a pure workflow worker: an agent exposes an
+endpoint Catalyst calls into, so there is a port to connect. `diagrid dev run` provisions
+the managed pub/sub, KV store and workflow store for App IDs it creates, so you get the
+infrastructure by running.
 
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
 empty value. Over MCP tools, `input`, `output` and `customStatus` are all removed, and
 only an organization administrator can raise the org's data-sharing level to `full`. Over
-the management API, `includeData=true` unlocks payloads on the list endpoints only. The
-CLI has no such flag at all.
+the management API, the list endpoints need `includeData=true`; the single-execution read
+returns payloads without it. **The CLI needs no flag because it is not filtered at all** —
+withholding is applied by the MCP server to MCP responses, so `diagrid workflow get
+<workflow-id> --project <project> --id <app>` remains the fallback that can still show a
+payload an MCP tool withheld. Two conditions: confirm the CLI is logged into the same
+organization — the CLI session and the MCP connection are separate identities and can
+sit in different ones — and say which surface the value came from. Never forge a
+data-sharing header, and never ask an administrator to raise the organization's level so
+you can finish an answer.
 
 So never report a missing payload as "the agent produced no output". Say it was withheld
 and by which surface. A tool that refuses is likewise not an agent that failed; report
@@ -250,10 +273,11 @@ after that number, finds none, and **silently falls back to the user's default p
 — no error, just the wrong data. Name goes in `project`, number in `projectId`, and if
 you cannot tell which you hold, omit the parameter.
 
-Derive the host from the API URL the session is using; prod, staging, dev and local
-differ, so any hardcoded host is wrong for someone. If you cannot determine it, print the
-identifiers as plain text and let `diagrid web` open the console — **a link that 404s or
-lands on the wrong project is worse than no link.**
+Do not hardcode or hand-derive the host; prod, staging, dev and local differ, so any
+hardcoded host is wrong for someone. Prefer `diagrid web`, which opens the console for the
+environment the session is logged in to, and see `catalyst-setup` section 3 for the mapping
+when you need the URL itself. If you cannot establish it, print the identifiers as plain
+text — **a link that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
@@ -269,7 +293,9 @@ lands on the wrong project is worse than no link.**
   language has no installable adapter instead of guessing one.
 - **Do not scaffold per-language or per-framework variants of this skill.** One skill
   detects both; a shelf of near-identical skills competes for the same request and loses.
-- **Do not describe the single pub/sub as a plan limit.** It is the architecture.
+- **Do not offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
+  every plan, so no plan change buys a second one. Read the live quota rather than
+  asserting the 1 — see section 7.
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.

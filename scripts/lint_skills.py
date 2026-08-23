@@ -74,8 +74,23 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "this at review time because it reads exactly like a plural of `appid`."
     ),
     "go-sdk/workflow": (
-        "does not exist in any released tag. Go's workflow API is "
+        "existed in go-sdk v1.10.0 through v1.13.0 and was removed in v1.14.0, so "
+        "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
+    ),
+    "CLI cannot show": (
+        "false. `diagrid workflow get` returns `input`, `output` and "
+        "`customStatus` with no flag, for the run and for every activity in its "
+        "history. Withholding is applied by the MCP server to MCP responses only "
+        "(`internal/filter` is imported by `services/catalyst/mcp/*` alone), so "
+        "the CLI is the fallback that can still show a withheld payload. This "
+        "shipped in catalyst-workflow-scaffold, inside the very section about not "
+        "misreporting field availability."
+    ),
+    "on every surface": (
+        "payloads are withheld over MCP tools, not on every surface. The CLI and "
+        "the single-execution management read both return them. Saying otherwise "
+        "sends the model to the console when a working command was available."
     ),
 }
 

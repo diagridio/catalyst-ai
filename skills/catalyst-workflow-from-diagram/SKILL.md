@@ -196,9 +196,12 @@ managed workflow store is already there, which is most of what makes this shorte
 running Dapr yourself — do not emit a `statestore.yaml` for it, and do not tell the
 user to run a broker.
 
-**A project holds exactly one managed pub/sub and exactly one managed KV store.** One
-is the limit on every plan, free and paid alike — this is the platform's shape, not a
-trial restriction, and upgrading does not buy a second broker. It matters here more
+**A project holds one managed pub/sub and one managed KV store.** One is the limit on
+every plan, free and paid alike, and no plan upgrade buys a second broker, so never offer
+one as the fix. These are plan values overlaid per organization, not constants in the
+code, so read the live quota rather than asserting the 1 — and do not promise a user it
+can be raised for them, which is a commercial question rather than one you can answer.
+It matters here more
 than anywhere else, because fan-out is what diagrams are *for*: a parallel gateway with
 four branches drawn as four queues is four **topics on the one broker**. Say that as
 the fact it is.
@@ -214,10 +217,17 @@ project you should be in.
 Then run it:
 
 - `diagrid dev scaffold` writes the dev config for the project.
-- `diagrid dev run --project default --id <app> --app-port <port> -- <run command>`
+- `diagrid dev run --project default --id <app> -- <run command>`
 
-`--id` names the App ID. On `dev run` the short `-p` means `--app-port`, not
-`--project`. Check any command against `--help` before you rely on it, including these:
+`--id` names the App ID. On `dev run` the short `-p` means `--app-port`, not `--project`.
+
+**Omit `--app-port`.** What a diagram translates into is a workflow worker: it dials
+Catalyst outbound and polls for work items, so there is no inbound endpoint to expose. Add
+`--app-port` only if Catalyst must call *into* the application — service invocation,
+pub/sub delivery, an agent endpoint. Building an HTTP server just to answer a port you do
+not need is a common first-run failure, and it fails confusingly: the worker registers
+every workflow and activity, then dies at bind because something else holds the port.
+Check any command against `--help` before you rely on it, including these:
 this CLI moves flags between minor versions, and `appid` has already become `app`
 without the flags coming along.
 
@@ -238,9 +248,15 @@ result against the boxes it should have visited. `workflow get` prints the histo
 comparing that list to the picture is the only end-to-end proof the translation was
 faithful, and it is cheaper than reading the generated code again.
 
-Payloads are withheld by default on every surface, and by deleting the key rather than
+Payloads are withheld by default **over MCP tools**, and by deleting the key rather than
 returning an empty value. An absent `output` is not a workflow that produced nothing —
-report that it was withheld, or you will send someone to debug working code.
+report that it was withheld, or you will send someone to debug working code. The CLI does
+not go through that filter: `diagrid workflow get <workflow-id> --project <project> --id
+<app>` returns `input` and `output` for the run and for every activity in its history.
+Two conditions: confirm the CLI is logged into the same organization — the CLI session
+and the MCP connection are separate identities and can sit in different ones — and say
+which surface the value came from. Never forge a data-sharing header, and never ask an
+administrator to raise the organization's level so you can finish an answer.
 
 ## 9. Hand back the diagram you implemented
 
