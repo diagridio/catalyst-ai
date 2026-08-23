@@ -89,7 +89,7 @@ diagrid dev run --project default --id <app> --app-port <port> -- <your run comm
 Everything after `--` is your process. Omit the command and `dev run` only attaches the
 connection, which is how you launch from a debugger.
 
-Flags worth knowing, all present on v1.63.0:
+Flags worth knowing, all present on v1.66.0:
 
 | Flag | Note |
 | --- | --- |
@@ -188,16 +188,17 @@ so it is the one part of this loop that is absent from a read-only tool surface 
 | | |
 | --- | --- |
 | MCP | `catalyst_start_workflow` — needs `projectId`, `appId` and `name` |
-| CLI | `diagrid workflow start <workflow-name> --id <app-id> -p <project> --data '<json>'` |
+| CLI | `diagrid workflow start <workflow-name> --id <app-id> --instance-id <run-id> -p <project> --data '<json>'` |
 
-**Capture the instance id.** The MCP tool returns it, and it is how every later call
-refers to that run — reading its status, its history, or stopping it. Losing it means
-listing runs and guessing which one was yours, which is ambiguous the moment two runs
-start in the same second.
+**Capture the instance id.** It is how every later call refers to that run — reading its
+status, its history, or stopping it. Losing it means listing runs and guessing which one
+was yours, which is ambiguous the moment two runs start in the same second.
 
-The two interfaces differ here in a way worth knowing: the CLI lets you *choose* the
-instance id with `--instance-id`, which is useful when you want a predictable handle
-across a rebuild. The MCP tool assigns one and hands it back.
+The two interfaces differ here in a way that changes what you type. **On the CLI
+`--instance-id` is required**, so you supply the handle and a command without it fails
+with `required flag(s) "instance-id" not set` before anything starts. That is convenient
+once you know it — a predictable handle across a rebuild — and a wasted iteration if you
+do not. The MCP tool is the opposite: it assigns an id and hands it back.
 
 Stopping a run is a separate matter and is deliberately not in this skill — it is
 irreversible and belongs with diagnosis rather than iteration.
@@ -277,7 +278,7 @@ Two quieter failure modes with no error to grep for:
   Do not try to create or edit it.
 
 If you get past all of that and requests still are not arriving, stop guessing at the app
-and check the path: `diagrid listen --app-id <id> --invoke <method>` streams inbound
+and check the path: `diagrid listen --id <app-id> --invoke <method>` streams inbound
 requests straight to your terminal with no application code involved. Nothing arriving
 means the problem is upstream of your process.
 

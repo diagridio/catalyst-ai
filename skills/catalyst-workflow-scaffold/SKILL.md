@@ -128,14 +128,21 @@ App IDs are not.
 
 Start one instance and inspect it:
 
-- `diagrid workflow start <workflow-name> --project default --id <app> -d '<json>'`
+- `diagrid workflow start <workflow-name> --project default --id <app> --instance-id <run-id> -d '<json>'`
 - `diagrid workflow list --project default`
-- `diagrid workflow get <workflow-id> --project default --id <app>`
+- `diagrid workflow get <run-id> --project default --id <app>`
 
-The workflow name and the workflow id are **positional**, not flags: `start` takes the
-name and accepts `--instance-id`, while `get` takes the id and has no `--instance-id` at
-all. Check `--help` before emitting a flag rather than inferring it from a sibling
-command — this pair does not match.
+The workflow name and the run id are **positional**, not flags, and the two commands are
+shaped differently in three ways worth checking rather than inferring:
+
+- `start` **requires `--instance-id`** — you name the run, nothing generates it, and
+  omitting it fails with `required flag(s) "instance-id" not set`.
+- `get` takes the run id positionally and has no `--instance-id` at all.
+- `get` also has no `--output` flag. It always prints YAML, so `-o json` on it is an
+  unknown flag rather than a format choice — the one place `-o json` does not apply.
+
+The App ID goes in `--id`. `--app-id` still parses as a hidden deprecated alias and
+prints a notice, but it is absent from `--help`, so write `--id`.
 
 Workflow exploration is only available for the managed workflow store — another reason
 to stay in `default`.

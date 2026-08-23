@@ -19,9 +19,11 @@ Check in this order and stop at the first that answers:
 1. **Are Catalyst MCP tools available?** If tools named `catalyst_*` are listed, the
    connection exists. Call `catalyst_whoami`. If it returns an organization, you are
    done — report the org and project and stop.
-2. **Is the CLI present and logged in?** `diagrid --version`, then
+2. **Is the CLI present and logged in?** `diagrid version`, then
    `diagrid project list`. If that returns projects, the CLI path works and you can
-   answer questions today even with no MCP tools.
+   answer questions today even with no MCP tools. `version` is a subcommand, not a
+   flag — there is no `--version` on the root command, and reaching for one fails
+   with `unknown flag` before you learn anything.
 3. Otherwise continue below.
 
 ## 2. Read the error, do not guess
