@@ -133,8 +133,8 @@ so it re-runs on every replay while the engine has no record it ever ran.
 If a design fans out over pub/sub rather than over activities, note the shape of a
 Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan** — free,
 enterprise and internal alike, and no plan upgrade raises it. It is a platform default
-rather than a free-tier restriction. Fan out across *topics* on the one pub/sub component.
-A design
+rather than a free-tier restriction. These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer. Fan out across *topics* on the one
+pub/sub component. A design
 that needs several pub/sub components does not fit and needs reshaping, not an upgrade.
 Publishing from the workflow body is also direct I/O — it belongs in an activity either
 way.
@@ -204,8 +204,10 @@ When the diagnosis turns on a payload you cannot see, **try the CLI first**: wit
 is applied by the MCP server to MCP responses, and `diagrid workflow get <workflow-id>
 --project <project> --id <app>` does not go through it. It returns `input` and `output` for
 the run and for every activity in the history — which is the whole point here, because a
-divergence is read from the sequence of activity inputs. Only if the CLI is unavailable
-too, say the payload was withheld **and hand the user a link to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
+divergence is read from the sequence of activity inputs. Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+
+Only if the CLI is unavailable too, say the payload was withheld **and hand the user a link
+to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
 the console host. The project is a query parameter with two spellings and **no
 cross-fallback between them** — `?project=` is matched against the name-like project id
 (`default`), `?projectId=` against the numeric uid (the `prj-` prefix is optional). A

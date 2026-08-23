@@ -176,10 +176,16 @@ management API and never passes through that filter. `diagrid workflow get <work
 the CLI is unavailable too, hand them a console link so they can read it themselves — see
 section 6.
 
+Two conditions on that fallback. **Confirm the CLI is logged into the same organization** —
+section 1 notes the CLI session and the MCP connection are separate identities that can sit
+in different organizations, and a payload read from the wrong one is a worse answer than a
+refusal. And **say which surface the value came from**, so the user can tell a CLI read from
+a tool read.
+
 Do not attempt to route around the *level* itself — do not forge a data-sharing header, and
 do not ask an administrator to raise the org so you can finish an answer. It is a
-deliberate control. Reading the same data through a surface the user is already entitled to
-use is not routing around it; it is using the product.
+deliberate control. Reading the same data, in the same organization, through a surface the
+user is already entitled to use is not routing around it; it is using the product.
 
 ## 5. Quotas and metrics
 

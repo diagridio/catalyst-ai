@@ -205,8 +205,10 @@ inconsistently, so read them off the current plans page instead of hardcoding on
   the scaffold is not finished — usually the workflow store or a component name.
 
 On `dev run` the short `-p` means `--app-port`, not `--project`, and `--id` names the App
-ID. `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for
-App IDs it creates, so you get the infrastructure by running.
+ID. `--app-port` **is** wanted here, unlike for a pure workflow worker: an agent exposes an
+endpoint Catalyst calls into, so there is a port to connect. `diagrid dev run` provisions
+the managed pub/sub, KV store and workflow store for App IDs it creates, so you get the
+infrastructure by running.
 
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
@@ -216,7 +218,7 @@ the management API, the list endpoints need `includeData=true`; the single-execu
 returns payloads without it. **The CLI needs no flag because it is not filtered at all** —
 withholding is applied by the MCP server to MCP responses, so `diagrid workflow get
 <workflow-id> --project <project> --id <app>` remains the fallback that can still show a
-payload an MCP tool withheld.
+payload an MCP tool withheld. Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
 
 So never report a missing payload as "the agent produced no output". Say it was withheld
 and by which surface. A tool that refuses is likewise not an agent that failed; report
@@ -254,10 +256,11 @@ after that number, finds none, and **silently falls back to the user's default p
 — no error, just the wrong data. Name goes in `project`, number in `projectId`, and if
 you cannot tell which you hold, omit the parameter.
 
-Derive the host from the API URL the session is using; prod, staging, dev and local
-differ, so any hardcoded host is wrong for someone. If you cannot determine it, print the
-identifiers as plain text and let `diagrid web` open the console — **a link that 404s or
-lands on the wrong project is worse than no link.**
+Do not hardcode or hand-derive the host; prod, staging, dev and local differ, so any
+hardcoded host is wrong for someone. Prefer `diagrid web`, which opens the console for the
+environment the session is logged in to, and see `catalyst-setup` section 3 for the mapping
+when you need the URL itself. If you cannot establish it, print the identifiers as plain
+text — **a link that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
@@ -273,7 +276,9 @@ lands on the wrong project is worse than no link.**
   language has no installable adapter instead of guessing one.
 - **Do not scaffold per-language or per-framework variants of this skill.** One skill
   detects both; a shelf of near-identical skills competes for the same request and loses.
-- **Do not describe the single pub/sub as a plan limit.** It is the architecture.
+- **Do not offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
+  every plan, so no plan change buys a second one. Read the live quota rather than
+  asserting the 1 — see section 7.
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.

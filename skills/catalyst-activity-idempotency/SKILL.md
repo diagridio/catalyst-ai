@@ -165,12 +165,15 @@ they are not equally available:
 
 1. **Return the rejection as a typed result the orchestrator branches on.** Always
    available, in every SDK, because it is just a return value. Reach for this first.
-2. **Express it in the retry policy's error predicate.** Only if your SDK has one — and
-   several do not. `dapr-ext-workflow`'s Python `RetryPolicy` (verified on 1.18.3) takes
-   `first_retry_interval`, `max_number_of_attempts`, `backoff_coefficient`,
-   `max_retry_interval` and `retry_timeout`, and **no predicate of any kind**. Check your
-   own SDK's policy type before designing around one; where there is none, the typed result
-   is not an alternative, it is the only route.
+2. **Express it in the retry policy's error predicate.** Only if your SDK's policy type
+   exposes one — and several do not. `dapr-ext-workflow`'s Python `RetryPolicy` (verified
+   on 1.18.3) takes `first_retry_interval`, `max_number_of_attempts`,
+   `backoff_coefficient`, `max_retry_interval` and `retry_timeout`, and **exposes no
+   predicate**. The engine underneath it does support one — durabletask's own retry policy
+   carries `non_retryable_error_types` — but the wrapper never passes it through, so from
+   your code there is nothing to set. Check your own SDK's policy type before designing
+   around a predicate; where it exposes none, the typed result is not an alternative, it is
+   the only route.
 
 Concretely, for a business rejection: give the call site no retry policy at all, or give the
 activity a return type that carries the rejection — `{"outcome": "rejected", "reason": ...}`
@@ -197,7 +200,8 @@ than reconstructing it in the body, so it is visible to a reviewer.
 ## Catalyst notes
 
 - **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Catalyst
-  plan — free, enterprise and internal alike — and no plan upgrade raises it. A dedupe or
+  plan — free, enterprise and internal alike — and no plan upgrade raises it.
+  These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer. A dedupe or
   intent table backed by the managed KV store therefore shares one component with all
   other state in the project: namespace your keys (`dedupe:<workflow>:<key>`) rather than
   assuming a dedicated store. Do not propose a second KV store as the fix.
@@ -209,8 +213,9 @@ than reconstructing it in the body, so it is visible to a reviewer.
   so `diagrid workflow get <workflow-id> --project <project> --id <app>` still returns
   `input` and `output` for every activity in the history. That is the direct evidence for
   this skill's question — the same activity name repeated with the same input is a retry,
-  and whether it reached the provider twice is exactly what you are trying to establish. If
-  the CLI is unavailable too, say "the payload is not available at this data-sharing level"
+  and whether it reached the provider twice is exactly what you are trying to establish.
+  Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+  If the CLI is unavailable too, say "the payload is not available at this data-sharing level"
   — never "the activity returned nothing", which the user has no way to detect as wrong.
   What remains available over MCP: event types and names, timestamps, `task_scheduled_id`,
   `task_execution_id`, the retry origin key, and failure messages with stack traces.
@@ -232,10 +237,9 @@ than reconstructing it in the body, so it is visible to a reviewer.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every
   time.
 - **Never let check-then-act stand as the only protection.** Require a conditional write.
-- **One retry policy per failure class, not one per workflow.** If a single policy object
-  is applied to every activity call in an orchestrator, that is the finding — say so. It
-  means the transient calls and the ones that can be permanently rejected are being retried
-  identically, and the rejections are spending the budget.
+- **One retry policy per failure class, not one per workflow.** One policy object applied
+  to every activity call in an orchestrator is the finding: it retries permanent rejections
+  on the same schedule as transient failures.
 - **Do not report a withheld payload as an empty one.** Name the data-sharing level.
 - **Do not resolve an unknown outcome by guessing.** A `pending` intent with no
   reconciliation path is a question for the user.

@@ -57,8 +57,10 @@ Diagrid runs several environments, and they are separate worlds: different API h
 different auth issuer, different console, different credentials. Getting this wrong looks
 like a permissions problem and is not one.
 
-- **`DIAGRID_URL` is the switch.** `diagrid login` has no `--api-url` flag. Setting
-  `DIAGRID_URL` before `diagrid login` is the only way to point the CLI somewhere else.
+- **`DIAGRID_URL` is the switch.** `diagrid login` has no `--api-url` flag; set
+  `DIAGRID_URL` before `diagrid login` to point the CLI at another environment. (A hidden
+  `--api` flag on `login` sets the same value. It is a development affordance, not the
+  supported route — use `DIAGRID_URL`.)
 - **`GET <api-host>/cli.envs.json` is the authoritative descriptor** for any environment.
   It returns `apiUrl`, `issuerUrl` and `authClientId`. Read it rather than inferring an
   environment from a hostname.
@@ -70,8 +72,11 @@ like a permissions problem and is not one.
   console for the environment you are actually logged in to. When you need the URL rather
   than a browser, the CLI maps the API host onto `catalyst.<env>`: `staging.diagrid.dev` →
   `catalyst.staging.diagrid.dev`, `.stg.diagrid.io` → `catalyst.stg.diagrid.io`,
-  `.dev.diagrid.io` → `catalyst.dev.diagrid.io`, `.local.diagrid.io` →
-  `catalyst.local.diagrid.io`, and everything else → `catalyst.diagrid.io`.
+  `.dev.diagrid.io` → `catalyst.dev.diagrid.io`, `.local.diagrid.io` **or a
+  `.7f000001.nip.io` loopback host** → `catalyst.local.diagrid.io`, and everything else →
+  `catalyst.diagrid.io`. Do not drop the nip.io branch when you compute this by hand:
+  `7f000001` is hex for `127.0.0.1` and it is how onebox and self-hosted clusters are
+  addressed, so missing it sends a self-hosted user to the **production** console.
 
 **Say the cost before you switch, not after.** The CLI stores one login at a time, so a
 login against another environment replaces the one you had, and returning to it is another

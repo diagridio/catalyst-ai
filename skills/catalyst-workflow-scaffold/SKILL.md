@@ -74,9 +74,9 @@ Two related facts, so you do not go looking for a flag that is gone:
 - `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for any
   App ID it creates. You get them by running, not by configuring.
 
-A project holds **exactly one managed pub/sub and exactly one managed KV store**. That
-is a property of the platform on every plan, not a free-tier restriction — paying does
-not raise it. Fan work out across topics on the one broker.
+A project holds **one managed pub/sub and one managed KV store** on every plan — free,
+enterprise and internal alike — and no plan upgrade raises it, so never offer one as the
+fix. Fan work out across topics on the one broker. These are plan values overlaid per organization, not constants in the code, so read the live quota rather than asserting the 1 — and do not promise a user it can be raised for them, which is a commercial question rather than one you can answer.
 
 ## 4. Write the workflow so replay cannot change its mind
 
@@ -135,13 +135,16 @@ became `app`, and in the agent commands a single name changed which resource it 
 Run `diagrid version` and the relevant `--help`, then match what you actually see rather
 than what you remember.
 
-**`dev run` has a much larger flag surface than the line above, and it is documented
-elsewhere.** `-e, --env` passes environment variables through to your process,
-`--app-id-env-server-enabled` serves the App ID's connection details to it, and
-`--app-log-destination` redirects its logs. The full surface lives in `catalyst-develop` —
-read it *before* working around a variable you cannot pass. Hand-building an environment
-file to route around a flag that already exists one skill away is the expensive kind of
-mistake here, and it is easy to make, because this section quotes only the flags it needs.
+**`dev run` has a much larger flag surface than the line above.** The three worked around
+most often, because this section does not quote them: **`-e, --env`** passes environment
+variables through to your process, **`--app-id-env-server-enabled`** serves the App ID's
+connection details to it, and **`--app-log-destination`** redirects its logs. Those names
+are here so you do not need another skill to find them; `catalyst-develop` documents the
+full surface, and `diagrid dev run --help` lists it too.
+
+Check one of those before building a workaround. Hand-building an environment file to route
+around a flag that already exists is the expensive mistake here, and it is easy to make
+from this section alone.
 
 Budget the App IDs. A region allows **10 resources, where every app, agent and MCP
 server counts as one**, and 3 projects. Scaffold one App ID for the workflow and add
@@ -192,6 +195,8 @@ before telling the user the data is unreachable. Its output is also richer than 
 the same activity name appears once per attempt, with its input each time, which is how you
 see that an activity was retried and what it was retried with.
 
+Two conditions: confirm the CLI is logged into the same organization — the CLI session and the MCP connection are separate identities and can sit in different ones — and say which surface the value came from. Never forge a data-sharing header, and never ask an administrator to raise the organization's level so you can finish an answer.
+
 When a payload really is missing, report that it was withheld and by which surface. Never
 say "the workflow produced no output" — that sends the user to debug working code, and on
 the MCP path the remedy is an org-level setting they may not know exists.
@@ -225,10 +230,12 @@ after that number, finds nothing, and **silently falls back to the user's defaul
 project** — no error, just the wrong data. Name goes in `project`, number goes in
 `projectId`, and if you cannot tell which you are holding, leave the parameter off.
 
-Derive the host from the API URL the session is actually using. Prod, staging, dev and
-local are different hosts, so a hardcoded one will be wrong for someone. If the host is
-not determinable, print the App ID and run id as plain text and let `diagrid web` open the
-console — **a link that 404s or lands on the wrong project is worse than no link.**
+Do not hardcode or hand-derive the host. Prod, staging, dev and local are different hosts,
+so a hardcoded one will be wrong for someone. Prefer `diagrid web`, which opens the console
+for the environment the session is logged in to; `catalyst-setup` section 3 carries the
+mapping when you need the URL itself. If the host is not determinable, print the App ID and
+run id as plain text — **a link that 404s or lands on the wrong project is worse than no
+link.**
 
 ## Rules
 

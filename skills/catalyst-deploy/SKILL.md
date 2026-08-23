@@ -229,11 +229,12 @@ summary, a file or a commit** — it is the credential for that identity.
 Once something exists, give the user a way to look at it. Naming a resource you cannot
 link to is a weaker answer than naming it with a link.
 
-Derive the console host from the API host the session is already talking to; production,
-staging, development and local are different hosts, so a hardcoded one is wrong for
-someone. The CLI's own mapping is a `.dev` API host to the dev console, `.stg` to
-staging, a local host to `localhost:4200`, and everything else to production. If you
-cannot determine the host confidently, print the identifiers as plain text.
+Do not hardcode or hand-derive the console host — production, staging, development and
+local are different hosts, so a hardcoded one is wrong for someone. **Run `diagrid web`,**
+which opens the console for the environment the session is logged in to. When you need the
+URL itself, `catalyst-setup` section 3 carries the full API-host → console-host mapping,
+including the loopback form a hand-rolled mapping usually misses. If you cannot establish
+the host confidently, print the identifiers as plain text.
 
 Use only these routes:
 
@@ -286,9 +287,10 @@ empty project and then reports that nothing is in it.
 - **Check headroom before designing, not after building.** `diagrid org usage`. App IDs,
   connections and subscriptions are capped per region across the whole organization, so a
   second project buys nothing.
-- **Never present the single pub/sub or KV store as a plan limit.** It is 1 on every plan.
-  Describe the shape that works — one broker with many topics, one store with many key
-  prefixes.
+- **Never offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
+  every plan, so no plan change buys a second one. Read the live quota rather than
+  asserting the 1. Describe the shape that works — one broker with many topics, one store
+  with many key prefixes.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
 - **Say `app`, `agent` or `managed-agent`, never just "agent".** They are different
