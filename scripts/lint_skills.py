@@ -42,11 +42,18 @@ MAX_SKILLS = 12
 # Total description budget, well inside Codex's cap so we notice before it bites.
 MAX_TOTAL_DESCRIPTION_CHARS = 5000
 
-# Frontmatter is an allow-list, not a suggestion. `allowed-tools` and `model` are
-# Claude-Code-only and this repo installs into Codex and Copilot too; a skill
-# that silently loses its tool restriction on another client is worse than one
-# that never claimed to have it. CAT-1730 originally required `mcp_tools:` and
-# `cli_fallback:` here — dropped 2026-08-22, expressed in prose instead.
+# Frontmatter is an allow-list, not a suggestion. This repo installs into Claude
+# Code, Codex and Copilot, and their frontmatter contracts are neither identical
+# nor jointly documented anywhere: measured on Codex 0.149.0, its bundled
+# skill-authoring validator accepts exactly
+# {name, description, license, allowed-tools, metadata} and rejects the rest, so
+# `model` fails there while `allowed-tools` does not. Rather than track three
+# contracts, keep to the pair every client demonstrably reads — verified end to
+# end for Codex, whose model-visible prompt ingests all ten of these skills with
+# nothing but name and description. A skill that silently loses its tool
+# restriction on another client is worse than one that never claimed to have it.
+# CAT-1730 originally required `mcp_tools:` and `cli_fallback:` here — dropped
+# 2026-08-22, expressed in prose instead.
 ALLOWED_FRONTMATTER_KEYS = {"name", "description"}
 
 # Things that must never appear in a skill, each because it shipped somewhere and
@@ -232,9 +239,11 @@ def check_skill(skill_dir: Path, f: Findings) -> str | None:
         f.error(
             where,
             f"frontmatter keys not allowed: {', '.join(unknown)}. Allowed: "
-            f"{', '.join(sorted(ALLOWED_FRONTMATTER_KEYS))}. `allowed-tools` and "
-            f"`model` are Claude-Code-only and this repo installs into Codex and "
-            f"Copilot too — express the restriction in prose instead.",
+            f"{', '.join(sorted(ALLOWED_FRONTMATTER_KEYS))}. This repo installs "
+            f"into Claude Code, Codex and Copilot and their frontmatter "
+            f"contracts differ — Codex's own skill validator rejects `model` "
+            f"outright — so nothing here may depend on per-client handling. "
+            f"Express the restriction in prose instead.",
         )
 
     name = data.get("name")

@@ -3,8 +3,12 @@
 Build and operate [Diagrid Catalyst](https://diagrid.io) by prompting — Dapr Workflows,
 Durable Agents, and the running system.
 
-**Verified working in Claude Code** (10 skills registered) **and GitHub Copilot**. Codex is
-[not yet verified](#-codex-not-verified-and-the-installers-own-report-disagrees-with-itself).
+**Verified end to end in Claude Code** — installs in under 5 seconds, all 10 skills
+register, and a real Catalyst question fires the right skill and gets a grounded answer.
+In **Codex** and **GitHub Copilot** the install and all 10 skills are verified, and Codex
+is confirmed to put them in front of the model; neither has yet answered a Catalyst
+question here, for reasons that are
+[nothing to do with the skills](#what-is-and-is-not-verified-per-client).
 
 > **Internal preview.** This is the first internal rollout. Read
 > [What works today](#what-works-today) before you start, because one significant piece
@@ -19,14 +23,17 @@ claude plugin marketplace add diagridio/catalyst-ai
 claude plugin install catalyst-ai@diagrid
 ```
 
-Then check it landed:
+Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin details catalyst-ai@diagrid
+claude plugin list                           # expect Version: 0.3.2 or later
+claude plugin details catalyst-ai@diagrid    # expect 10 skills
 ```
 
-You should see **10 skills**. If you see fewer, jump to
-[If you installed an early version](#if-you-installed-an-early-version).
+`list` reports the version you actually have. `details` reports the version the
+marketplace is offering, reading the installed copy only when the two agree — so on its
+own it can show you 10 skills while your session loads 9. If either looks wrong, jump to
+[If your install is behind](#if-your-install-is-behind).
 
 **This repo is still private**, so the install clones over SSH
 (`git@github.com:diagridio/catalyst-ai.git`). You need an SSH key that can read
@@ -40,32 +47,52 @@ npx skills add diagridio/catalyst-ai -a github-copilot
 ```
 
 Use **repeated `-a` flags** if you pass more than one. The comma form
-(`-a codex,github-copilot`) is what the upstream README documents and it silently installs
-nothing — verified, not assumed.
+(`-a codex,github-copilot`) is what the upstream README documents, and it prints
+`Invalid agents:`, installs nothing, and **exits 0** — so anything checking the exit code
+sees success. Verified, not assumed.
 
-This writes all ten skills to `.agents/skills/`, the shared location that Copilot reads.
-`npx skills list` confirms them as available to **Antigravity, Gemini CLI, GitHub Copilot
-and Zed**.
+This writes all ten skills to `.agents/skills/`, and Copilot's own listing confirms it
+reads them:
 
-### ⚠️ Codex: not verified, and the installer's own report disagrees with itself
+```bash
+copilot skill list        # all 10 under "Project skills"
+```
 
-**We cannot currently say Codex works, so don't assume it does.** Tested on `skills`
-1.5.23 against this repo:
+Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
+`.claude/skills/`, so one directory covers it. Don't rely on `npx skills list` for this —
+its "Agents:" line only names agents it detects as **installed on your machine**, so it
+will quietly leave out a client you haven't installed yet.
 
-| | |
-| --- | --- |
-| `npx skills add … -a codex` prints | `copy → Codex` for every skill |
-| directories created | `.agents/skills/` only — **no `.codex/`** |
-| `npx skills list` reports | Antigravity, Gemini CLI, GitHub Copilot, Zed — **Codex absent** |
+### Codex
 
-So the installer claims success, creates nothing Codex-specific, and its own listing
-doesn't count Codex as wired up. It's possible Codex reads `.agents/skills/` anyway and
-only the listing is incomplete — but nobody has run Codex against these skills to find
-out, and "the install said OK" is exactly the evidence that has been wrong before here.
+```bash
+npx skills add diagridio/catalyst-ai -a codex
+```
 
-If you use Codex, please try it and tell us what happens. A skill that never fires looks
-identical to a session where nothing relevant came up, which is why this needs a human to
-confirm rather than an installer's exit code.
+`.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
+there by design, so seeing no `.codex/` created is correct rather than a failed install.
+Codex reads them: `codex debug prompt-input` renders the model-visible prompt, and all ten
+appear in its `<skills_instructions>` block with their descriptions intact, byte for byte.
+Codex's own guidance text says automatic skill selection is allowed by default, so you
+shouldn't have to name a skill — though nobody has yet confirmed that from a real session.
+
+Earlier versions of this README warned that Codex might not work, on the strength of
+`npx skills list` omitting Codex. That turned out to mean only that Codex wasn't installed
+on the machine doing the checking. Details in
+[docs/cold-start-measurement.md](docs/cold-start-measurement.md).
+
+### What is and is not verified, per client
+
+| | skills install | skills register | a question answered |
+| --- | --- | --- | --- |
+| Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
+| Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | ⛔ needs a ChatGPT/OpenAI credential we don't have |
+| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | ⛔ `copilot -p` gets HTTP 403 *not authorized to use this Copilot feature* on the account we tried — nothing to do with the skills |
+
+If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
+useful thing you can report** — with the wording you used and which skill fired. A skill
+that never fires looks identical to a session where nothing relevant came up, which is why
+this needs a human rather than an installer's exit code.
 
 ## Then just ask
 
@@ -105,7 +132,9 @@ skill — the workflow skill reads your repo and works out that it's a Python pr
 
 **Cost:** roughly **1030 tokens always-on** across all ten (~103 each), added to every
 session whether or not a skill fires. Each skill costs a few thousand more only when it
-actually fires.
+actually fires. That figure is **per model** — `claude plugin details` resolves a tokenizer
+from your active model, so the same ten descriptions cost ~103 each on Sonnet 5 and Opus 5
+and ~68 each on Haiku 4.5. Quote the model with the number or it isn't reproducible.
 
 ## What works today
 
@@ -135,9 +164,10 @@ diagrid login
 diagrid project list
 ```
 
-If the second command works, you're ready. The skills assume CLI **v1.63.0 or later** —
-several flags moved between 1.51 and 1.63, and every command in these skills is pinned to
-1.63.0 behaviour.
+If the second command works, you're ready. Every command in these skills is verified in CI
+against the CLI release pinned in `.diagrid-cli-version`, currently **v1.66.0** — so that's
+the version to be on. Several flags moved between 1.51 and 1.66, and nothing here is
+checked against anything older.
 
 ## Things the skills know that you might not
 
@@ -169,24 +199,36 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **The scaffolded dev file holds a live API token per App ID.** Gitignore it before you
   run anything.
 
-## If you installed an early version
+## If your install is behind
 
-`claude plugin details` showing fewer than 10 skills means you have a stale cache.
+Two different things go wrong here, with two different fixes. Start with
+`claude plugin list`, because that's the command that reports what you actually have.
 
-Claude Code caches a plugin under its declared version at
-`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` and **will not refresh a
-version directory it already has** — `marketplace update` reports success and changes
-nothing. If you installed while the version was `0.1.0`, you're pinned to whatever it held
-then.
+**Your version is older than `main`.** The marketplace is a git clone pinned at whatever
+commit it last fetched, so an install from last week stays on last week's version, with
+last week's skills. `claude plugin install` will *not* move it — it reports "already
+installed" and changes nothing:
+
+```bash
+claude plugin marketplace update diagrid
+claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
+claude plugin list                           # expect Version: 0.3.2 or later
+```
+
+**Your version is right but skills are missing.** Claude Code caches a plugin under its
+declared version at `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` and **will
+not refresh a version directory it already has**. Measured: a half-populated version
+directory served 4 skills of 10, while both `marketplace update` and `plugin install`
+reported success and repaired nothing. Deleting the directory is the only fix:
 
 ```bash
 rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
-claude plugin marketplace update diagrid
+claude plugin install catalyst-ai@diagrid
 claude plugin details catalyst-ai@diagrid    # expect 10 skills
 ```
 
-CI now fails any change to plugin content that doesn't bump the version, so this shouldn't
-recur.
+CI now fails any change to plugin content that doesn't bump the version, so the second one
+shouldn't recur.
 
 ## Feedback
 

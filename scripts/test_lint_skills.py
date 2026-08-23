@@ -101,7 +101,7 @@ def main() -> int:
     ))
 
     cases.append(case(
-        "a Claude-Code-only frontmatter key",
+        "a frontmatter key outside name/description",
         lambda s: write(s, "extra-key", "---\nname: extra-key\ndescription: Fine.\nallowed-tools: Read\n---\n\nBody.\n"),
     ))
 
