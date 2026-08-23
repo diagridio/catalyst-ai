@@ -237,11 +237,13 @@ By resource:
 3. Check the credential without printing it. `--show-sensitive-values` exists on
    `diagrid component get`; leave it off unless the user asks, and never paste the result
    into a summary that outlives the answer.
-4. If this is a second pub/sub or a second KV store in one project, stop. The limit is 1
-   per project on **every** plan, so it will never succeed and retrying is wasted effort.
-   Say so as an architectural fact and describe the shape that works: one broker, many
-   topics; one store, many keys. Do not call it a free-tier limit and do not suggest an
-   upgrade — paying does not raise it.
+4. If this is a second pub/sub or a second KV store in one project, read the limit before
+   concluding anything. It is 1 per project on **every** plan, so the create normally fails
+   no matter how often you retry — but the per-project limits carry a per-organization
+   override, so read the live quota rather than asserting the 1. When it really is 1, say
+   so as a platform default and describe the shape that works: one broker, many topics; one
+   store, many keys. Do not call it a free-tier limit and do not suggest an upgrade — no
+   plan upgrade raises it.
 
 An MCP server is the same shape of problem with one extra trap: a **disabled** MCP server
 reports `ready`, because disabled is a fully reconciled state. Its message says it is

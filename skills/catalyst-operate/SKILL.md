@@ -34,9 +34,13 @@ Two project-scoped limits are fixed and never worth investigating:
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
 Both are 1 on every plan — free, enterprise and internal alike. A multi-agent topology
-separates traffic by topic and by key prefix, not by broker or store. State this as an
-architectural fact. Never present it as a free-tier limit or suggest an upgrade: paying
-does not raise it, and a user who upgrades on your advice has been misled.
+separates traffic by topic and by key prefix, not by broker or store. State it as a
+platform default. Never present it as a free-tier limit or a reason to upgrade: no plan
+upgrade raises it, and a user who upgrades on your advice has been misled.
+
+These are plan limits with a per-organization override, not constants in the code. If a
+live quota read shows a higher number, that organization has a negotiated limit and the
+live value wins over this document. Read the budget rather than asserting the 1.
 
 ## 2. Attribute every value
 

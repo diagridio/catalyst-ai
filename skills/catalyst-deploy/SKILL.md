@@ -48,8 +48,10 @@ one MCP server is six of them. The remedy in that message is to contact Diagrid 
 not to change plan — do not tell the user an upgrade fixes it without checking.
 
 **One managed pub/sub and one managed KV store per project, on every plan** — free,
-enterprise and internal alike. This is the architecture, not a free-tier restriction, and
-paying does not raise it. A multi-service or multi-agent design therefore separates
+enterprise and internal alike. It is a platform default rather than a free-tier
+restriction, and no plan upgrade raises it. (A negotiated per-organization override does
+exist, so if a live quota read disagrees with the 1, trust the live read.) A multi-service
+or multi-agent design therefore separates
 traffic by **topic** on the one broker and by **key prefix** in the one store. Design for
 that from the start; presenting it as a limitation to work around produces a design that
 cannot be built. Note also that creating a managed pub/sub or KV store spends a

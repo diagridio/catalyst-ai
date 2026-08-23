@@ -197,7 +197,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
 ## Catalyst notes
 
 - **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Catalyst
-  plan — free, enterprise and internal alike. Paying does not raise it. A dedupe or
+  plan — free, enterprise and internal alike — and no plan upgrade raises it. A dedupe or
   intent table backed by the managed KV store therefore shares one component with all
   other state in the project: namespace your keys (`dedupe:<workflow>:<key>`) rather than
   assuming a dedicated store. Do not propose a second KV store as the fix.

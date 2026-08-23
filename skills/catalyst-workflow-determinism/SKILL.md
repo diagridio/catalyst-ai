@@ -132,8 +132,9 @@ so it re-runs on every replay while the engine has no record it ever ran.
 
 If a design fans out over pub/sub rather than over activities, note the shape of a
 Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan** — free,
-enterprise and internal alike, and paying does not raise it. This is architectural, not a
-free-tier restriction. Fan out across *topics* on the one pub/sub component. A design
+enterprise and internal alike, and no plan upgrade raises it. It is a platform default
+rather than a free-tier restriction. Fan out across *topics* on the one pub/sub component.
+A design
 that needs several pub/sub components does not fit and needs reshaping, not an upgrade.
 Publishing from the workflow body is also direct I/O — it belongs in an activity either
 way.

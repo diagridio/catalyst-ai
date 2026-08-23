@@ -256,7 +256,7 @@ thing that works is your own process with two variables set:
 | Variable | Where the value comes from |
 | --- | --- |
 | `DAPR_GRPC_ENDPOINT` | `diagrid project get <project> -o json` → `.status.endpoints.grpc.url` |
-| `DAPR_API_TOKEN` | `diagrid appid get <app> --project <project> -o json` → `.status.apiToken` |
+| `DAPR_API_TOKEN` | `diagrid app get <app> --project <project> -o json` → `.status.apiToken` |
 
 Then start the process directly — `python app.py`, `go run .`, whatever it is.
 

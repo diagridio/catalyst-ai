@@ -172,9 +172,10 @@ which project to use rather than creating one. The managed components have fixed
 
 ## 7. Fit the topology to one pub/sub
 
-A project holds **exactly one managed pub/sub and exactly one managed KV store**. This
-is how the platform is built, on every plan — paying does not raise it, so never present
-it as a free-tier limit.
+A project holds **one managed pub/sub and one managed KV store** on every plan — free,
+enterprise and internal alike. It is a platform default rather than a free-tier limit, and
+no plan upgrade raises it, so never offer an upgrade as the fix. (A negotiated
+per-organization override exists; a live quota read beats this document.)
 
 A coordinator with specialists therefore **shares one broker and separates the agents by
 topic**, one topic per specialist plus one for results. Design for that from the start;
