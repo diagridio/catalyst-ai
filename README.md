@@ -3,7 +3,7 @@
 Build and operate [Diagrid Catalyst](https://diagrid.io) by prompting — Dapr Workflows,
 Durable Agents, and the running system.
 
-**Verified working in Claude Code** (9 skills registered) **and GitHub Copilot**. Codex is
+**Verified working in Claude Code** (10 skills registered) **and GitHub Copilot**. Codex is
 [not yet verified](#-codex-not-verified-and-the-installers-own-report-disagrees-with-itself).
 
 > **Internal preview.** This is the first internal rollout. Read
@@ -25,7 +25,7 @@ Then check it landed:
 claude plugin details catalyst-ai@diagrid
 ```
 
-You should see **9 skills**. If you see fewer, jump to
+You should see **10 skills**. If you see fewer, jump to
 [If you installed an early version](#if-you-installed-an-early-version).
 
 **This repo is still private**, so the install clones over SSH
@@ -43,7 +43,7 @@ Use **repeated `-a` flags** if you pass more than one. The comma form
 (`-a codex,github-copilot`) is what the upstream README documents and it silently installs
 nothing — verified, not assumed.
 
-This writes all nine skills to `.agents/skills/`, the shared location that Copilot reads.
+This writes all ten skills to `.agents/skills/`, the shared location that Copilot reads.
 `npx skills list` confirms them as available to **Antigravity, Gemini CLI, GitHub Copilot
 and Zed**.
 
@@ -91,6 +91,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | --- | --- |
 | `catalyst-setup` | Connect this session to Catalyst and confirm it works |
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
+| `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
 | `catalyst-agent-scaffold` | Stand up a Durable Agent, Catalyst-hosted or your own app |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
@@ -102,7 +103,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
 
-**Cost:** roughly **930 tokens always-on** across all nine (~103 each), added to every
+**Cost:** roughly **1030 tokens always-on** across all ten (~103 each), added to every
 session whether or not a skill fires. Each skill costs a few thousand more only when it
 actually fires.
 
@@ -168,7 +169,7 @@ hours, and they all fail *silently* or with an unhelpful error.
 
 ## If you installed an early version
 
-`claude plugin details` showing fewer than 9 skills means you have a stale cache.
+`claude plugin details` showing fewer than 10 skills means you have a stale cache.
 
 Claude Code caches a plugin under its declared version at
 `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` and **will not refresh a
@@ -179,7 +180,7 @@ then.
 ```bash
 rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
 claude plugin marketplace update diagrid
-claude plugin details catalyst-ai@diagrid    # expect 9 skills
+claude plugin details catalyst-ai@diagrid    # expect 10 skills
 ```
 
 CI now fails any change to plugin content that doesn't bump the version, so this shouldn't
