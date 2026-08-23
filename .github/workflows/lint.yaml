@@ -10,6 +10,12 @@ name: lint
 #
 # So scripts/lint_skills.py is the real gate, and scripts/test_lint_skills.py
 # proves it still catches each thing it claims to. Both run here.
+#
+# lint_skills.py catches banned *substrings*, which is the wrong shape for the
+# defect that has now shipped twice: `--appids` only became a banned substring
+# after it went out, and `--instance-id` is spelled correctly, exists, and is
+# REQUIRED — invisible in `--help`, which does not render required-ness at all.
+# The `cli` job below closes that by downloading the pinned CLI and asking it.
 
 on:
   pull_request:
@@ -41,6 +47,69 @@ jobs:
 
       - name: Lint the skills
         run: python3 scripts/lint_skills.py
+
+  cli:
+    # Every `diagrid` command and flag in the skills, checked against the CLI
+    # release pinned in .diagrid-cli-version. This is the only gate here that
+    # can catch the two defects that shipped in a week:
+    #
+    #   `diagrid project logs --appids <id>`   no such flag on any command
+    #   `diagrid workflow start` with no --instance-id   the flag is REQUIRED
+    #
+    # Neither was catchable by review or by a substring list. The second is the
+    # instructive one: `MarkFlagRequired` sets a cobra annotation that the help
+    # renderer ignores, so the page a reviewer reads shows `-i, --instance-id
+    # string   Instance ID of the workflow` and looks optional. The annotation
+    # survives only in the generated bash completion script, which is where the
+    # checker reads it from.
+    #
+    # The CLI is a checksummed download, not a piped install script.
+    # downloads.diagrid.io/cli/install.sh is public and honours RELEASE_VERSION,
+    # but piping it would be unpinned remote code on every pull request, so this
+    # reads the same public GCS objects and verifies them against the pin.
+    #
+    # There is deliberately no `diagrid login` here, and no credential. The gate
+    # only ever runs `--help`, which cobra answers before any pre-run hook, so it
+    # needs none. The one consequence is that `managed-agent` — which this CLI
+    # will not resolve as a command without a @diagrid.io identity, unlike the
+    # merely-hidden `appid` and `tokenbudget` — cannot be inspected here. It is
+    # declared in `[identity_gated]` in .diagrid-cli-version and reported as
+    # unverifiable rather than as absent, so the verdict does not depend on who
+    # is logged in. Giving this job a credential to close that gap would trade a
+    # named blind spot for a secret in CI, which is a bad trade.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache the pinned CLI
+        # Keyed on the pin file, so a version bump misses the cache and a rerun
+        # of the same commit does not re-download 34MB. The checksum is verified
+        # on a cache hit too — a cache is not a trust boundary.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/diagrid-cli-pin
+          key: diagrid-cli-${{ hashFiles('.diagrid-cli-version') }}
+
+      - name: Download the pinned CLI
+        # A named step so a checksum mismatch or a 404 on a bumped version reads
+        # as a download failure rather than as a skills failure.
+        run: python3 scripts/diagrid_cli_pin.py
+
+      - name: Test the CLI gate
+        # Runs first, same reason as the linter's own tests: a gate nobody has
+        # pointed at a broken fixture is not a gate. Every case here is built
+        # against the real pinned binary, and the suite includes controls that
+        # must PASS — including one with no commands in it at all, because a
+        # checker whose extractor silently matches nothing would otherwise be
+        # green on everything.
+        run: python3 scripts/test_check_cli_surface.py
+
+      - name: Check every documented command and flag
+        run: python3 scripts/check_cli_surface.py
 
   version:
     # A change to plugin content that does not move `version` ships to nobody.

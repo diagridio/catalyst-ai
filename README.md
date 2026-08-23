@@ -197,8 +197,9 @@ diagnosis.
 
 Also worth reporting, in rough order of value:
 
-1. A command or flag a skill emitted that **didn't work**. Every one is pinned to CLI
-   v1.63.0, so a mismatch means either drift or a mistake, and both are worth catching.
+1. A command or flag a skill emitted that **didn't work**. Every one is checked in CI
+   against the CLI release pinned in `.diagrid-cli-version`, so a mismatch means either
+   you are on a different version or the check has a hole. Both are worth catching.
 2. A skill that fired when a **different** one should have.
 3. Anything a skill told you that turned out to be wrong.
 
@@ -207,12 +208,14 @@ File in Linear against the *AI-Native Catalyst* project, or post in
 
 ## Contributing
 
-Four gates run on every PR, and each one exists because something got past
-`claude plugin validate --strict` in practice:
+Three gates run on every PR, each with its own test suite, and each exists because
+something got past review or past `claude plugin validate --strict` in practice:
 
 ```bash
 python3 scripts/lint_skills.py            # the real gate
 python3 scripts/test_lint_skills.py       # proves the gate still catches what it claims
+python3 scripts/check_cli_surface.py      # every diagrid command, against the pinned CLI
+python3 scripts/test_check_cli_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
 ```
@@ -220,7 +223,38 @@ python3 scripts/test_check_version_bump.py
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
 link resolving when the skill is installed *alone*, and a **0.20 similarity cap between any
-two descriptions** so skills don't compete for the same trigger.
+two descriptions** so skills don't compete for the same trigger. It also bans a list of
+substrings that each shipped somewhere and broke.
+
+`check_cli_surface.py` downloads the CLI release pinned in `.diagrid-cli-version`, verifies
+it by sha256, and checks every `diagrid …` command in every skill against it: the command
+path exists, every long flag and shorthand exists, and no invocation omits a flag the CLI
+marks **required**. That last one is the reason it exists. A banned-substring list cannot
+express "this flag is spelled correctly and is required" — `--help` does not render
+required-ness at all, so `-i, --instance-id string   Instance ID of the workflow` reads as
+optional on the page and fails at parse time in a terminal. It is also honest about what it
+cannot see, and prints that list on every run: MCP tool names, console routes, package
+coordinates and quota numbers are not in the CLI.
+
+One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
+and `managed-agent` is not merely hidden — the CLI will not resolve it as a command at all
+without a `@diagrid.io` identity, while `appid` and `tokenbudget` are hidden and resolve for
+anyone. So `managed-agent` is declared in `[identity_gated]` in `.diagrid-cli-version`, and
+the gate names those invocations as **unverifiable** instead of reporting them absent. Run
+the gate locally on a Diagrid account and they are checked in full, flags and required flags
+included; the pass/fail verdict is the same either way. Reporting a working command as
+nonexistent would be the worst outcome available here — the fix it invites is deleting
+correct content from a skill.
+
+The same environment split runs the other way for required flags, so **a green run on your
+machine does not guarantee a green run in CI**. Some requirements are applied from local
+config: `dev stop` requires `--project` when no default project is configured and does not
+when one is, from the same binary. CI is unconfigured, so it sees the strictest set — which
+is also the set a brand-new user meets. Treat CI as authoritative and write the flag in.
+
+Bumping the pinned CLI is a deliberate edit to `.diagrid-cli-version` — version and all
+four checksums. Expect the gate to fail on whatever the new release moved; that failure is
+the point, so fix the skill rather than the gate.
 
 If you add a skill, bump `version` in `.claude-plugin/plugin.json`. Everyone who already
 installed keeps the old content otherwise, and nothing tells them.
