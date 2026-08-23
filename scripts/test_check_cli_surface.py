@@ -199,6 +199,19 @@ SPECS: list[Spec] = [
         "| CLI | `diagrid workflow start <workflow-name> --id <app-id> -p <project>` |\n",
         must_say='requires `--instance-id`',
     ),
+    # `--help` bypasses cobra's required-flag validation, so a documented
+    # `<cmd> --help` cannot fail on a missing required flag and must not be
+    # reported as if it could. Verified against the pinned CLI: `diagrid workflow
+    # start --help` exits 0 while `diagrid workflow start` exits 1. Without the
+    # exemption in _check_required this case fails, because `workflow start`
+    # carries a required `--instance-id` and `dev run` a required `--project`
+    # whenever no default project is configured — which is exactly CI.
+    Spec(
+        "a `--help` invocation is exempt from the required-flag rule",
+        "The full surface is in `diagrid workflow start --help`, and "
+        "`diagrid dev run --help` lists the rest.\n",
+        expect="pass",
+    ),
     Spec(
         "HISTORICAL: prose that presents a required flag as a choice",
         "The CLI lets you choose the instance id with `--instance-id`.\n\n"

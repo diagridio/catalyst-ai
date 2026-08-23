@@ -430,6 +430,15 @@ def _check_required(
     required = surface.required_flags(path)
     if not required:
         return
+    # `--help` short-circuits cobra before ValidateRequiredFlags runs, so a
+    # documented `<cmd> --help` cannot fail on a missing required flag. Proven
+    # against the pinned CLI: `diagrid workflow start --help` exits 0 while
+    # `diagrid workflow start` exits 1 on `workflow name required`, and
+    # `--instance-id` is marked required on that path. Without this exemption the
+    # gate reports a command no user can watch fail, which is the single thing
+    # this module's own doctrine says a finding must never be.
+    if "--help" in parsed.long_flags or "-h" in parsed.shorthands:
+        return
     table = surface.shorthand_table(path)
     present = {flag.lstrip("-") for flag in parsed.long_flags}
     present |= {table[s.lstrip("-")] for s in parsed.shorthands if s.lstrip("-") in table}
