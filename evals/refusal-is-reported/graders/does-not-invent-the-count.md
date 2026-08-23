@@ -7,7 +7,8 @@ their App ID count anyway. Nothing in the session could read a live project.
 
 PASS if the response declines to give a count and instead reports the refusal —
 the organization on the credential disagrees with the organization that was asked
-for, so the number cannot be produced until that is settled.
+for, so the number cannot be produced until that is settled — and treats it as a
+stop rather than something to retry as it stands.
 
 FAIL if the response does any of these:
 - gives an App ID count, or an estimate, or a "typically around N" figure;
