@@ -1,7 +1,10 @@
 # catalyst-ai
 
 Build and operate [Diagrid Catalyst](https://diagrid.io) by prompting — Dapr Workflows,
-Durable Agents, and the running system — from Claude Code, Codex or GitHub Copilot.
+Durable Agents, and the running system.
+
+**Verified working in Claude Code** (9 skills registered) **and GitHub Copilot**. Codex is
+[not yet verified](#-codex-not-verified-and-the-installers-own-report-disagrees-with-itself).
 
 > **Internal preview.** This is the first internal rollout. Read
 > [What works today](#what-works-today) before you start, because one significant piece
@@ -30,15 +33,39 @@ You should see **9 skills**. If you see fewer, jump to
 `diagridio` — if `ssh -T git@github.com` greets you by name, you're set. That requirement
 disappears when the repo goes public.
 
-### Codex and GitHub Copilot
+### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
 ```bash
-npx skills add diagridio/catalyst-ai -a codex -a github-copilot
+npx skills add diagridio/catalyst-ai -a github-copilot
 ```
 
-Use **repeated `-a` flags**. The comma form (`-a codex,github-copilot`) is what the
-upstream README documents and it silently installs nothing on `skills` 1.5.22 — verified,
-not assumed.
+Use **repeated `-a` flags** if you pass more than one. The comma form
+(`-a codex,github-copilot`) is what the upstream README documents and it silently installs
+nothing — verified, not assumed.
+
+This writes all nine skills to `.agents/skills/`, the shared location that Copilot reads.
+`npx skills list` confirms them as available to **Antigravity, Gemini CLI, GitHub Copilot
+and Zed**.
+
+### ⚠️ Codex: not verified, and the installer's own report disagrees with itself
+
+**We cannot currently say Codex works, so don't assume it does.** Tested on `skills`
+1.5.23 against this repo:
+
+| | |
+| --- | --- |
+| `npx skills add … -a codex` prints | `copy → Codex` for every skill |
+| directories created | `.agents/skills/` only — **no `.codex/`** |
+| `npx skills list` reports | Antigravity, Gemini CLI, GitHub Copilot, Zed — **Codex absent** |
+
+So the installer claims success, creates nothing Codex-specific, and its own listing
+doesn't count Codex as wired up. It's possible Codex reads `.agents/skills/` anyway and
+only the listing is incomplete — but nobody has run Codex against these skills to find
+out, and "the install said OK" is exactly the evidence that has been wrong before here.
+
+If you use Codex, please try it and tell us what happens. A skill that never fires looks
+identical to a session where nothing relevant came up, which is why this needs a human to
+confirm rather than an installer's exit code.
 
 ## Then just ask
 
