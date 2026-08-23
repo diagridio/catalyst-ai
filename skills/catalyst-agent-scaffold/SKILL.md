@@ -20,16 +20,29 @@ choose between them, but you must never conflate them.
 | Who runs the loop | Your process | Catalyst |
 | You write code | Yes | No |
 | Shape | `--endpoint`, `--archive-*` | `--llm-provider`, `--llm-model`, `--sandbox`, `--web-tools`, `--github-*` |
-| Can the user create it | Yes | **No — hidden and restricted to Diagrid accounts** |
+| Can the user create it | Yes | **No — hidden, gated to Diagrid accounts, and feature-gated per environment on top** |
 
-**`managed-agent` is not an option an external user can pick today.** Verified in the CLI
-source at v1.66.0: the parent command sets `Hidden = true` unconditionally, and every
-subcommand — `list`, `get`, `create`, `update`, `delete`, `chat`, `runs` — carries a
-pre-run gate that refuses unless the logged-in account's email ends in `@diagrid.io`. It
-is an early-development surface, named `managed-agent` specifically to keep the `agent`
-noun free for the generic Agent resource. Treat it as something to recognise, not
-something to offer — presenting it as a choice sends the user down a path that ends in a
-permission error.
+**`managed-agent` is not an option any user can pick today, and it is gated three times
+over.** Verified at v1.66.0:
+
+1. The parent command sets `Hidden = true` unconditionally, so it is absent from
+   `diagrid --help` for everyone.
+2. Every subcommand — `list`, `get`, `create`, `update`, `delete`, `chat`, `runs` —
+   carries a pre-run gate that refuses unless the logged-in account's email ends in
+   `@diagrid.io`.
+3. **Past both of those, the environment refuses anyway.** A Diagrid account on
+   production gets `Durable agents are not available in this environment / Ensure you are
+   using the latest Diagrid CLI and that the feature is enabled for your account`.
+
+That third layer matters because it decides what you should predict. Do not tell a Diagrid
+user they will hit a permission error — they will not; they will be told the feature is not
+enabled for their account, which is a different problem with a different remedy. And do not
+read that message as "your CLI is out of date", which is the first thing it suggests and
+usually is not the cause.
+
+It is an early-development surface, named `managed-agent` specifically to keep the `agent`
+noun free for the generic Agent resource. Treat it as something to recognise, not something
+to offer.
 
 So in practice there is one path: **an app you write, fronted by `diagrid agent`.** That
 starts at step 3.
