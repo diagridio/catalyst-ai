@@ -26,19 +26,26 @@ answer, and stay inside it.
 `catalyst_whoami` and `diagrid project list` both return every project in the
 organization. That is an inventory, not an instruction to read all of them. An
 organization holds other people's projects, and each one you add multiplies every read in
-section 3. Measured on a ten-project organization, answering "is anything broken in my
-project" by sweeping the organization took 72 calls; of the 55 that named a project, 42
-named one of nine projects nobody had asked about.
+section 3. Measured on an organization with ten projects, answering "is anything broken
+in my project" by sweeping all of them spent well over half its calls on projects nobody
+had asked about — and every one of those is a round trip whose result the answer then has
+to carry.
 
 **Which project is the current one.** The CLI has one, set by `diagrid project use
 <project>`, and `diagrid project list` marks it with a leading `*`. That is the single
 read where the table carries something `-o json` does not: the marker is absent from the
 JSON, so take it from the table and read the JSON for everything else.
 
-The MCP surface has no current project — every project-scoped tool takes `project` as an
-explicit argument. So an unqualified question means `default` there. Say which project
-you chose and why, in one line, so a wrong assumption is visible immediately rather than
-buried under the reads that follow it.
+The MCP surface has no current project — every project-scoped tool takes the project as
+an explicit argument. Take the argument's *name* from the tool's own schema rather than
+assuming it: the two OpenAPI specs behind the surface disagree on capitalisation, so it
+is `projectId` on the management operations and `ProjectId` on the controlplane ones, and
+no operation names it plain `project`. That is the console's URL parameter, a different
+system — section 6 covers it, and the two are easy to confuse.
+
+An unqualified question means `default` on the MCP path. Say which project you chose and
+why, in one line, so a wrong assumption is visible immediately rather than buried under
+the reads that follow it.
 
 **Widening the scope is a decision you state.** "Anything broken anywhere", "across the
 organization", a second project by name — all legitimate, and all worth one sentence
@@ -106,9 +113,10 @@ Two gaps in that table are deliberate, not oversights:
   the user wants changed goes through the CLI or the console, with their consent.
 
 `-o json` on any CLI read gives you the full object; the default table view drops
-fields. Read the JSON before concluding that a field does not exist. The one documented
-exception runs the other way — `diagrid project list` marks the current project with a
-leading `*` in the table and not at all in the JSON, per section 1. `diagrid workflow
+fields. Read the JSON before concluding that a field does not exist. One read runs the other way:
+`diagrid project list` marks the current project with a leading `*` in the table and not
+at all in the JSON, so take that marker from the table and every other field from the
+JSON. See section 1. `diagrid workflow
 get` is the exception — it has no `--output` flag and always prints YAML, so `-o json`
 there is an unknown flag rather than a formatting choice.
 
