@@ -249,6 +249,37 @@ class Result:
         return not self.spec.must_say or self.spec.must_say in self.output
 
 
+def warm_npx() -> str | None:
+    """Populate the npx cache once, serially. Returns a reason it could not.
+
+    Every case below is a separate gate process running
+    `npx --yes skills@<pinned>`, and npx unpacks that package into ONE cache
+    directory keyed by the spec, whatever the concurrency. Four processes racing
+    to create it is how this suite first went red, on macos CI only:
+
+        npm error code ENOTEMPTY
+        npm error ENOTEMPTY: directory not empty, rmdir
+          '/Users/runner/.npm/_npx/<hash>/node_modules/yallist/dist'
+
+    npm exited 190, the gate faithfully reported "the installer exited 190",
+    and the case was rejected for a reason with nothing to do with its fixture.
+    Worth dwelling on: the pass/fail verdict was still *correct*, because the
+    case expected a rejection. `must_say` is the only reason anyone found out —
+    which is exactly the argument for asserting on the message and not the
+    exit code.
+
+    `--help` rather than `add`: it populates the same cache entry and touches
+    nothing else.
+    """
+    proc = subprocess.run(
+        ["npx", "--yes", check_install.SKILLS_PACKAGE, "--help"],
+        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900,
+    )
+    if proc.returncode != 0:
+        return f"exit {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}"
+    return None
+
+
 def run_case(spec: Spec) -> Result:
     with tempfile.TemporaryDirectory() as tmp:
         source = Path(tmp) / "source"
@@ -340,6 +371,14 @@ def main() -> int:
         print(f"  {'ok  ' if ok else 'FAIL'}  layout: {name}")
         if not ok:
             print(f"           {detail}")
+
+    # Before any fan-out. A failure here is the environment, not a finding, and
+    # saying so beats six cases all blaming their own fixtures.
+    reason = warm_npx()
+    if reason is not None:
+        print(f"\ncannot warm the npx cache, so nothing below would mean "
+              f"anything — {reason}", file=sys.stderr)
+        return 1
 
     with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
         results = list(pool.map(run_case, SPECS))

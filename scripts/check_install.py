@@ -98,6 +98,14 @@ INSTALL_TIMEOUT = 900
 
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
+# npm failing on its own account, as distinct from the installer failing. Two
+# concurrent `npx` invocations race on one shared cache directory keyed by the
+# package spec, and the loser gets `ENOTEMPTY: directory not empty, rmdir
+# ~/.npm/_npx/<hash>/node_modules/...` and exit 190. That reads nothing like a
+# skills defect and must not be reported as one — it sent a maintainer looking
+# at a fixture once already.
+_NPM_FAILURE = re.compile(r"^npm (?:error|ERR!)", re.MULTILINE)
+
 # Stated in the gate's own output so a green run is not read as more assurance
 # than it is.
 UNVERIFIABLE = [
@@ -547,10 +555,16 @@ def main(argv: list[str]) -> int:
             if status != 0:
                 # Not the gate — the count below is — but a non-zero exit means
                 # the checks that follow would only describe the wreckage.
-                f.error(
-                    mode.name,
-                    f"the installer exited {status}. It said:\n     {tail(output)}",
-                )
+                if _NPM_FAILURE.search(output):
+                    why = (
+                        f"npm itself failed with exit {status}, before the "
+                        f"installer had a verdict, so this is the environment "
+                        f"and not this repo — a cache race between concurrent "
+                        f"`npx` invocations looks exactly like this. It said:"
+                    )
+                else:
+                    why = f"the installer exited {status}. It said:"
+                f.error(mode.name, f"{why}\n     {tail(output)}")
                 continue
             check_layout(dest, expected, mode, f)
             cov = check_links(dest, expected, mode, f)
