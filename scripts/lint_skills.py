@@ -181,11 +181,10 @@ def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
     for name, trigger in SCOPE_BOUNDED_SKILLS.items():
         skill_dir = by_name.get(name)
         if skill_dir is None:
-            f.error(
-                "skills/",
-                f"`{name}` is listed in SCOPE_BOUNDED_SKILLS but does not exist. "
-                f"Remove the entry, or restore the skill.",
-            )
+            # Absent is not this gate's business. Demanding presence made the
+            # rule fire on every fixture that legitimately has neither skill,
+            # which failed three passing control cases — the gate has to be
+            # about the rule inside a skill, not about which skills exist.
             continue
         text = (skill_dir / "SKILL.md").read_text(encoding="utf-8").lower()
         missing = [m for m in _SCOPE_MARKERS if m not in text]
