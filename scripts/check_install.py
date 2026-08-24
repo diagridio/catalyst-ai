@@ -133,6 +133,14 @@ UNVERIFIABLE = [
     "of the directories, so this is a coverage gap rather than a blind spot — "
     "what it does not prove is that a lone `-a codex` still produces a complete "
     "`.agents/skills`.",
+    "Whether a link ESCAPES its own skill with `../`. This gate installs "
+    "everything at once (`-s '*'`), so `../other-skill/SKILL.md` genuinely "
+    "resolves here — and would genuinely break for anyone who installed that "
+    "skill on its own. That is a real and different property, owned by "
+    "`check_skill` and `check_isolation` in lint_skills.py, which ban `../` "
+    "outright and install each skill alone. Repeating the rule here would be "
+    "duplication; leaving it unsaid would let 'every installed skill resolves' "
+    "read as more than it means.",
 ]
 
 
@@ -235,6 +243,11 @@ def run_installer(source: Path, dest: Path, mode: Mode) -> tuple[int, str]:
             cwd=dest,
             capture_output=True,
             text=True,
+            # Pinned rather than left to the locale, matching every read_text in
+            # this repo. A runner with a C locale would otherwise fail to decode
+            # the installer's box-drawing output and raise mid-check.
+            encoding="utf-8",
+            errors="replace",
             stdin=subprocess.DEVNULL,
             timeout=INSTALL_TIMEOUT,
         )
@@ -400,6 +413,14 @@ def check_lock(dest: Path, expected: Sequence[str], mode: Mode, f: Findings) -> 
         data = json.loads(lock.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         f.error(mode.name, f"{LOCK_FILE} is not readable JSON ({exc})")
+        return
+    if not isinstance(data, dict):
+        # Valid JSON is not the same as the shape this reads. A bare list would
+        # otherwise reach `.get` and raise, turning a finding into a traceback.
+        f.error(
+            mode.name,
+            f"{LOCK_FILE} parsed as {type(data).__name__}, not an object",
+        )
         return
     recorded = set(data.get("skills") or {})
     if recorded != set(expected):

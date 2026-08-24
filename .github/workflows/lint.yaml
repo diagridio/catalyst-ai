@@ -45,9 +45,17 @@ jobs:
         # tell valid frontmatter from a block that will fail to load in a client.
         run: pip install --quiet pyyaml
 
+      - name: Test the link extractor
+        # Runs before the linter's own tests, because the linter now resolves
+        # links through scripts/skill_links.py and so does the `install` job
+        # below. Two lines of regex holding up two gates: if it stops matching,
+        # both report no findings and both look clean.
+        run: python3 scripts/test_skill_links.py
+
       - name: Test the linter
-        # Runs first: a linter whose own tests fail cannot be trusted to gate
-        # anything, and a green lint would then be worse than no lint.
+        # Runs first among the linter's own checks: a linter whose tests fail
+        # cannot be trusted to gate anything, and a green lint would then be
+        # worse than no lint.
         run: python3 scripts/test_lint_skills.py
 
       - name: Lint the skills
@@ -96,7 +104,17 @@ jobs:
     # pass vacuously or fail for a reason that says nothing about this repo.
     # `fail-fast: false` because the whole point of two runners is the symlink
     # semantics, and cancelling one the moment the other goes red throws away
-    # the comparison.
+    # the comparison. It earned that on the first run: macos went red and ubuntu
+    # green, and the difference was the finding.
+    #
+    # No package cache here, unlike the `cli` job's 34MB pinned binary, and that
+    # is a decision rather than an omission. The whole job runs in under 20s, so
+    # there is little to win — and restoring `~/.npm/_npx` from a cache is the
+    # closest thing to the failure this job already hit once, where concurrent
+    # npx invocations racing on that directory produced `ENOTEMPTY` on macos and
+    # npm exited 190. A half-restored tree is exactly what makes npm try to
+    # repair it. Trading a real flake for a second or two is a bad trade; the
+    # suite warms the cache serially instead, in `warm_npx()`.
     strategy:
       fail-fast: false
       matrix:

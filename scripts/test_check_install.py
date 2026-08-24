@@ -244,6 +244,13 @@ class Result:
 
     @property
     def ok(self) -> bool:
+        # Borrowed from test_check_cli_surface.py, and for its reason: a case
+        # that asserts only `expect` would otherwise be satisfied by a gate that
+        # crashed before printing anything, which is the same vacuity the
+        # control cases exist to catch. Every spec sets `must_say` today; the
+        # guard is here so the first one that does not is still honest.
+        if not self.output.strip():
+            return False
         if self.rejected != (self.spec.expect == "reject"):
             return False
         return not self.spec.must_say or self.spec.must_say in self.output
@@ -273,11 +280,28 @@ def warm_npx() -> str | None:
     """
     proc = subprocess.run(
         ["npx", "--yes", check_install.SKILLS_PACKAGE, "--help"],
-        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        stdin=subprocess.DEVNULL,
+        timeout=check_install.INSTALL_TIMEOUT,
     )
     if proc.returncode != 0:
         return f"exit {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}"
     return None
+
+
+def case_timeout(spec: Spec) -> int:
+    """The gate's own worst case for this spec, plus room to report it.
+
+    The gate gives each mode `INSTALL_TIMEOUT` and catches its own expiry, so a
+    spec running two modes can legitimately take twice that before printing
+    anything. Setting the outer budget equal to the inner one — which an earlier
+    version did — means the wrapper fires first on a slow runner and the clean
+    per-case report is replaced by a traceback.
+    """
+    return len(spec.modes) * check_install.INSTALL_TIMEOUT + 300
 
 
 def run_case(spec: Spec) -> Result:
@@ -288,7 +312,25 @@ def run_case(spec: Spec) -> Result:
         argv = [sys.executable, str(GATE), "--source", str(source)]
         for mode in spec.modes:
             argv += ["--mode", mode]
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=1800)
+        try:
+            proc = subprocess.run(
+                argv,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stdin=subprocess.DEVNULL,
+                timeout=case_timeout(spec),
+            )
+        except subprocess.TimeoutExpired:
+            # Reported as a case, not raised. An exception here escapes
+            # `ThreadPoolExecutor.map` and replaces the whole report with a
+            # traceback, losing the five results that did finish.
+            return Result(
+                spec,
+                rejected=False,
+                output=f"the gate did not finish within {case_timeout(spec)}s",
+            )
         return Result(spec, proc.returncode != 0, (proc.stdout + proc.stderr).strip())
 
 
@@ -314,7 +356,16 @@ def dangling_link(source: Path) -> None:
     write_skill(source / "skills", "fixture-gamma", extra="And [gone](reference/missing.md).\n")
 
 
-def escaping_link(source: Path) -> None:
+def link_outside_the_skill(source: Path) -> None:
+    """A `../` link at a target that does not exist under any agent root.
+
+    Named for what it actually asserts. It is NOT a test of the `../`-escape
+    rule — that rule belongs to lint_skills.py, and check_install.py declares it
+    out of scope in its own `UNVERIFIABLE` list, because installing everything
+    at once (`-s '*'`) makes `../other-skill/SKILL.md` genuinely resolve here.
+    What this pins is that a `../` target with nothing behind it is still
+    reported rather than waved through as "outside my remit".
+    """
     two_skills(source)
     write_skill(source / "skills", "fixture-gamma", extra="See [shared](../shared/thing.md).\n")
 
@@ -341,8 +392,8 @@ SPECS = (
         modes=("default", "copy"),
     ),
     Spec(
-        "a link that escapes the skill directory",
-        escaping_link,
+        "a `../` link at a target that is not there either",
+        link_outside_the_skill,
         must_say="does not resolve",
         modes=("default", "copy"),
     ),
