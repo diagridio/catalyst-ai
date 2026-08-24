@@ -26,6 +26,8 @@ from pathlib import Path
 
 import yaml
 
+from skill_links import link_path, local_link_targets
+
 REPO = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO / "skills"
 
@@ -314,16 +316,13 @@ def check_skill(skill_dir: Path, f: Findings) -> str | None:
         )
 
     # `../` cannot resolve once a skill is installed on its own: `npx skills`
-    # copies the skill directory alone, so a sibling reference dangles. This is
+    # installs the skill directory alone, so a sibling reference dangles. This is
     # the rule whose absence produced 124 dangling links upstream.
-    for m in re.finditer(r"\]\(([^)]+)\)", text):
-        target = m.group(1)
+    for target in local_link_targets(text):
         if target.startswith("../"):
             f.error(where, f"link `{target}` escapes the skill directory with `../`")
-        elif not target.startswith(("http://", "https://", "#", "mailto:")):
-            local = (skill_dir / target.split("#")[0]).resolve()
-            if not local.exists():
-                f.error(where, f"link `{target}` does not resolve to a file in this skill")
+        elif not (skill_dir / link_path(target)).resolve().exists():
+            f.error(where, f"link `{target}` does not resolve to a file in this skill")
 
     for banned, why in BANNED_SUBSTRINGS.items():
         if banned in text and not allows_banned(text, banned):
@@ -342,6 +341,12 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
 
     This is the gate whose absence caused the upstream breakage: installed one at
     a time, a skill that leans on a sibling directory has nothing to lean on.
+
+    A copytree, not an install. scripts/check_install.py runs the real
+    `npx skills` and checks the layout it actually writes — where the content
+    lives once and the other agent directories are symlinks into it — which is a
+    different traversal from this one. The two gates share their link extraction
+    (skill_links) so they cannot disagree about what a link is.
     """
     for skill_dir in skill_dirs:
         with tempfile.TemporaryDirectory() as tmp:
@@ -349,11 +354,8 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
             shutil.copytree(skill_dir, dest)
             for md in dest.rglob("*.md"):
                 text = md.read_text(encoding="utf-8")
-                for m in re.finditer(r"\]\(([^)]+)\)", text):
-                    target = m.group(1)
-                    if target.startswith(("http://", "https://", "#", "mailto:")):
-                        continue
-                    if not (md.parent / target.split("#")[0]).resolve().exists():
+                for target in local_link_targets(text):
+                    if not (md.parent / link_path(target)).resolve().exists():
                         f.error(
                             str(skill_dir.relative_to(REPO)),
                             f"installed alone, `{target}` in {md.name} does not resolve",
