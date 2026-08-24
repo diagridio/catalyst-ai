@@ -96,6 +96,14 @@ LOCK_FILE = "skills-lock.json"
 # Generous: the first run in a cold CI job downloads the package.
 INSTALL_TIMEOUT = 900
 
+# The installer phones home on every invocation. Verified by reading the
+# installed 1.5.22 bundle: it fetches `https://add-skill.vercel.sh/t` and
+# flushes with a 5s timeout unless one of these is set, and it also knows
+# `/audit`. In a gate that is pure downside — up to five seconds of latency per
+# run and one more remote host standing between a pull request and a verdict.
+# Both names appear in the bundle, so both are set.
+NO_TELEMETRY = {"DO_NOT_TRACK": "1", "DISABLE_TELEMETRY": "1"}
+
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 # npm failing on its own account, as distinct from the installer failing. Two
@@ -241,6 +249,7 @@ def run_installer(source: Path, dest: Path, mode: Mode) -> tuple[int, str]:
         proc = subprocess.run(
             installer_argv(source, mode),
             cwd=dest,
+            env={**os.environ, **NO_TELEMETRY},
             capture_output=True,
             text=True,
             # Pinned rather than left to the locale, matching every read_text in
@@ -257,8 +266,34 @@ def run_installer(source: Path, dest: Path, mode: Mode) -> tuple[int, str]:
 
 
 def tail(text: str, lines: int = 12) -> str:
-    kept = [line for line in text.splitlines() if line.strip()][-lines:]
+    kept = [line.strip() for line in text.splitlines() if line.strip()][-lines:]
     return "\n     ".join(kept)
+
+
+def reset_dir(dest: Path) -> None:
+    """Empty a directory without replacing it, so a retry starts clean."""
+    for child in dest.iterdir():
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
+def vacuity_error(cov: Coverage) -> str | None:
+    """Why a run that examined nothing must not pass, or None if it examined something.
+
+    A gate that silently checks nothing is worse than no gate, and this is the
+    shape of that failure here: the walk stopped descending, or link extraction
+    stopped matching. Asserted at the top level as well as per skill, because a
+    per-skill guard cannot fire if the loop it lives in never runs — which is
+    exactly what an empty `expected` or an unwritten agent root produces.
+    """
+    if cov.files and cov.links:
+        return None
+    return (
+        f"read {cov.files} markdown file(s) and {cov.links} link(s) — nothing "
+        f"was actually examined, so a pass here would mean nothing"
+    )
 
 
 # --------------------------------------------------------------------------
@@ -573,6 +608,20 @@ def main(argv: list[str]) -> int:
         with tempfile.TemporaryDirectory(prefix="catalyst-install-") as tmp:
             dest = Path(tmp)
             status, output = run_installer(source, dest, mode)
+
+            if status != 0 and _NPM_FAILURE.search(output):
+                # Retried exactly once, and only when NPM failed rather than the
+                # installer. A registry blip or a cache race is not a finding
+                # about this repo, and this gate runs on every pull request. The
+                # installer's own verdict is never retried — a gate that asks
+                # again until it likes the answer is not a gate.
+                f.note(
+                    f"{mode.name} mode: npm failed once — {tail(output, 1)} — "
+                    f"retried from a clean directory"
+                )
+                reset_dir(dest)
+                status, output = run_installer(source, dest, mode)
+
             if status != 0:
                 # Not the gate — the count below is — but a non-zero exit means
                 # the checks that follow would only describe the wreckage.
@@ -590,18 +639,9 @@ def main(argv: list[str]) -> int:
             check_layout(dest, expected, mode, f)
             cov = check_links(dest, expected, mode, f)
             coverage[mode.name] = cov
-            if not cov.files or not cov.links:
-                # A gate that silently checks nothing is worse than no gate, and
-                # this is the shape of that failure here: the walk stopped
-                # descending, or link extraction stopped matching. Asserted at
-                # the top level as well as per skill, because the per-skill
-                # guard cannot fire if the loop it lives in never runs.
-                f.error(
-                    mode.name,
-                    f"read {cov.files} markdown file(s) and {cov.links} link(s) — "
-                    f"nothing was actually examined, so a pass here would mean "
-                    f"nothing",
-                )
+            vacuous = vacuity_error(cov)
+            if vacuous is not None:
+                f.error(mode.name, vacuous)
 
     return report(source, expected, coverage, f)
 

@@ -31,6 +31,7 @@ Run: python3 scripts/test_check_install.py
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -50,9 +51,13 @@ GATE = Path(__file__).resolve().parent / "check_install.py"
 
 BODY = "---\nname: {name}\ndescription: A fixture skill, well inside the cap.\n---\n\n{extra}"
 
-# Each case is an independent gate process that itself shells out to npx. Four
-# keeps a two-core runner honest while still cutting the wall clock.
-_WORKERS = 4
+# Each case is an independent gate process that itself shells out to npx, so
+# the ceiling is concurrent node processes rather than anything CPU-bound.
+# Derived rather than written down: an earlier `_WORKERS = 4` was justified
+# against "a two-core runner" with nothing in the code checking that, and a
+# constant defended by an assumption nobody measures is how the npx cache race
+# below got in. Capped at 4 because more only deepens that contention.
+_WORKERS = min(4, os.cpu_count() or 2)
 
 _DEFAULT = next(m for m in MODES if not m.flags)
 _COPY = next(m for m in MODES if m.flags)
@@ -86,7 +91,11 @@ def fake_install(
     *,
     symlink: bool,
     absolute: bool = False,
+    wrong_target: bool = False,
     omit_from_agent: Sequence[str] = (),
+    omit_skill_md: Sequence[str] = (),
+    no_markdown: Sequence[str] = (),
+    content_symlink: Sequence[str] = (),
     lock_names: Sequence[str] | None = None,
     dangling_link: bool = False,
     code_span: bool = False,
@@ -94,9 +103,21 @@ def fake_install(
     """An installed layout built by hand, optionally with one defect in it."""
     content = root / CONTENT_ROOT
     content.mkdir(parents=True)
+    elsewhere = root / "elsewhere"
+    elsewhere.mkdir()
     for name in names:
         (content / name / "reference").mkdir(parents=True)
         (content / name / "reference" / "detail.md").write_text("# Detail\n", encoding="utf-8")
+        if name in no_markdown:
+            # A skill directory with content that is not markdown. Nothing for
+            # the link walk to read, which is the only way the "contains no
+            # markdown at all" guard is reachable from a hand-built tree.
+            shutil.rmtree(content / name)
+            (content / name).mkdir()
+            (content / name / "notes.txt").write_text("not markdown\n", encoding="utf-8")
+            continue
+        if name in omit_skill_md:
+            continue
         extra = ""
         if dangling_link:
             extra += "And [gone](reference/missing.md).\n"
@@ -108,6 +129,13 @@ def fake_install(
             encoding="utf-8",
         )
 
+    # The content root is supposed to hold the files themselves in both modes.
+    # Turning an entry there into a symlink is the one way to check that.
+    for name in content_symlink:
+        real = elsewhere / name
+        shutil.move(str(content / name), str(real))
+        (content / name).symlink_to(real, target_is_directory=True)
+
     for agent_root in AGENT_ROOTS:
         if agent_root == CONTENT_ROOT:
             continue
@@ -118,7 +146,11 @@ def fake_install(
             if name in omit_from_agent:
                 continue
             if symlink:
-                target = content / name if absolute else depth_up / CONTENT_ROOT / name
+                # `wrong_target` is relative and well-formed and points at the
+                # wrong skill — the case neither `absolute` nor a missing entry
+                # can produce, and the one a reader would assume was covered.
+                pointee = names[(list(names).index(name) + 1) % len(names)] if wrong_target else name
+                target = content / pointee if absolute else depth_up / CONTENT_ROOT / pointee
                 (target_dir / name).symlink_to(target, target_is_directory=True)
             else:
                 shutil.copytree(content / name, target_dir / name)
@@ -149,13 +181,32 @@ def layout_checks() -> list[tuple[str, bool, str]]:
             check_install.check_links(root, names, mode, f)
             return f
 
-    def add(name: str, build_kwargs: dict, mode, want_errors: bool) -> None:
+    def add(
+        name: str,
+        build_kwargs: dict,
+        mode,
+        want_errors: bool,
+        must_say: str | None = None,
+    ) -> None:
+        """One fixture, its expected verdict, and optionally the words it must use.
+
+        `must_say` matters more here than it looks. Several of these fixtures
+        trip more than one assertion at once — a directory with no markdown in
+        it also has no SKILL.md — so "did it error" cannot tell you WHICH
+        assertion fired, and a case can go green while the assertion it was
+        written for is dead. Naming the message is what pins it.
+        """
         f = verdict(build_kwargs, mode)
         got = bool(f.errors)
+        ok = got == want_errors
+        if ok and must_say:
+            ok = any(must_say in err for err in f.errors)
         checks.append((
-            name,
-            got == want_errors,
-            f"wanted {'errors' if want_errors else 'none'}, got: {f.errors or 'none'}",
+            f"layout: {name}",
+            ok,
+            f"wanted {'errors' if want_errors else 'none'}"
+            + (f" containing {must_say!r}" if must_say else "")
+            + f", got: {f.errors or 'none'}",
         ))
 
     # The controls. Without these, every rejection below is consistent with a
@@ -217,8 +268,78 @@ def layout_checks() -> list[tuple[str, bool, str]]:
         {"symlink": True, "lock_names": ["fixture-alpha"]},
         _DEFAULT,
         True,
+        must_say=LOCK_FILE,
     )
 
+    # The four below were added after a mutation pass showed their assertions
+    # could be deleted with the whole suite still green. Each names its message,
+    # because each fixture trips more than one check.
+
+    # The content root holds the files themselves in both modes. If an entry
+    # there becomes a symlink, nothing is self-contained and `--copy` is a lie.
+    add(
+        "a symlink where the content root should hold real files",
+        {"symlink": True, "content_symlink": ["fixture-beta"]},
+        _DEFAULT,
+        True,
+        must_say="is not a real directory",
+    )
+
+    # A well-formed relative symlink pointing at the WRONG skill. Neither the
+    # absolute case nor a missing entry can produce this, and it is the one a
+    # reader would assume was already covered.
+    add(
+        "a relative symlink pointing at the wrong skill",
+        {"symlink": True, "wrong_target": True},
+        _DEFAULT,
+        True,
+        must_say="which is not",
+    )
+
+    add(
+        "an installed skill with no SKILL.md",
+        {"symlink": True, "omit_skill_md": ["fixture-beta"]},
+        _DEFAULT,
+        True,
+        must_say="SKILL.md is not a readable file",
+    )
+
+    # The per-skill vacuity guard. Unreachable from a real install — the
+    # installer will not discover a skill that has no SKILL.md — so a hand-built
+    # tree is the only way to fire it.
+    add(
+        "an installed skill containing no markdown at all",
+        {"symlink": True, "no_markdown": ["fixture-beta"]},
+        _DEFAULT,
+        True,
+        must_say="contains no markdown at all",
+    )
+
+    return checks
+
+
+def vacuity_checks() -> list[tuple[str, bool, str]]:
+    """The top-level guard, which lives in `main()` and so no fixture reaches.
+
+    Pulled out as a pure function precisely so it could be tested. A run that
+    examined nothing must never pass, and the per-skill guard cannot cover this
+    because it sits inside a loop that an empty install never enters.
+    """
+    cases = (
+        ("nothing at all is a vacuous pass", check_install.Coverage(0, 0), True),
+        ("files but no links is vacuous", check_install.Coverage(40, 0), True),
+        ("links but no files cannot happen, and is still vacuous",
+         check_install.Coverage(0, 30), True),
+        ("the real numbers are not vacuous", check_install.Coverage(40, 30), False),
+    )
+    checks = []
+    for name, cov, want_error in cases:
+        got = check_install.vacuity_error(cov)
+        checks.append((
+            f"vacuity: {name}",
+            (got is not None) == want_error,
+            f"wanted {'an error' if want_error else 'None'}, got {got!r}",
+        ))
     return checks
 
 
@@ -416,10 +537,10 @@ def main() -> int:
     started = time.monotonic()
     failures = 0
 
-    checks = layout_checks()
+    checks = layout_checks() + vacuity_checks()
     for name, ok, detail in checks:
         failures += not ok
-        print(f"  {'ok  ' if ok else 'FAIL'}  layout: {name}")
+        print(f"  {'ok  ' if ok else 'FAIL'}  {name}")
         if not ok:
             print(f"           {detail}")
 
