@@ -48,8 +48,13 @@ npx skills add diagridio/catalyst-ai -a github-copilot
 
 Use **repeated `-a` flags** if you pass more than one. The comma form
 (`-a codex,github-copilot`) is what the upstream README documents, and it prints
-`Invalid agents:`, installs nothing, and **exits 0** — so anything checking the exit code
-sees success. Verified, not assumed.
+`Invalid agents:`, installs nothing and exits **1** — so it fails honestly, and a step
+checking the exit code catches it. Re-measured on 1.5.22 and 1.5.23; an earlier version
+of this line claimed exit 0, which was a measurement error.
+
+The failure that *is* silent is a missing `-y` where nothing can answer the prompt, which
+is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
+and assert a skill count rather than an exit code.
 
 This writes all ten skills to `.agents/skills/`, and Copilot's own listing confirms it
 reads them:

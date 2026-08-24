@@ -17,11 +17,32 @@ diagnosis, and neither is a plausible story with no read behind it.
 | An App ID never became ready | `catalyst_get_appid` | section 4 |
 | An agent does not answer | `catalyst_get_agent`, `diagrid agent registry list` | section 5 |
 | A component will not connect | `catalyst_get_component` | section 6 |
+| Nothing named — "is anything broken?" | `diagrid project list`, then the project | below |
 
 Prefer the `catalyst_*` MCP tools; fall back to the `diagrid` CLI, which is the only
 route to logs. Say which one produced each finding — the CLI session and the MCP
 connection are separate identities and can be pointed at different organizations, which
 is invisible unless you attribute your evidence.
+
+### One project, named
+
+A question with no symptom in it — "is anything broken", "is my project healthy" — is
+about **one** project: the one the session is pointed at. Resolve it, name it in your
+answer, say which projects you did not look at, and stay inside it. An organization holds
+other people's projects, and sweeping them turns a bounded diagnosis into a survey nobody
+asked for.
+
+The CLI's current project is marked with a leading `*` in `diagrid project list` — that
+marker is in the table and not in `-o json`, so take it from the table. The MCP surface
+has no current project at all, so an unqualified question means `default` there.
+
+Widening is legitimate and is a decision you state first: "anything broken anywhere",
+"across the organization", a named second project, or any plural or comparing question
+("which of my projects uses the most quota") all need more than one project, and some
+need every one of them. Say how many you are about to read before you start. Note that
+`staging` and `prod` are usually Catalyst **environments**, not projects — a different
+axis, one login at a time, covered by `catalyst-setup`. Do not go hunting for a project
+by those names.
 
 Read the project first, in every case: `catalyst_get_project`, or
 `diagrid project get <name> -o json`. Managed workflow storage and agent infrastructure
@@ -368,6 +389,10 @@ Then the fix, separately, and as a proposal if it mutates anything.
 
 - **Never report an absent field as an empty value.** See section 3. It is the one error
   here the user cannot catch.
+- **Stay in one project unless asked otherwise, and say which.** A question with no
+  symptom is about the current project. Name it, name what you did not look at, and widen
+  only on request — or when the question is plural or comparing, which needs more than one
+  project by its nature. See section 1.
 - **Do not guess a cause to fill a gap.** "The reason field is empty and the dapr logs
   show nothing in that window" is a useful answer. An invented mechanism is not.
 - **Do not mutate to investigate.** Terminating, purging, redeploying and recreating all
