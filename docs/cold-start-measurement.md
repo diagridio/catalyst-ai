@@ -326,22 +326,44 @@ The README's *"Verified working in … GitHub Copilot"* therefore overstates the
 evidence and is corrected in this PR. Ten skills registering is not the same as
 one question being answered.
 
-## The comma form fails and exits 0
+## The comma form fails — loudly. Corrected.
 
-Confirmed on 1.5.23, with the mechanism that makes it dangerous:
+**This section previously claimed the comma form exits 0, and that is wrong.**
+Re-measured on both 1.5.22 and 1.5.23, from a clean temp directory each time:
 
 ```
-$ npx skills add diagridio/catalyst-ai -a codex,github-copilot
+$ npx skills add <source> -a codex,github-copilot -s '*' -y
 ■  Invalid agents: codex,github-copilot
 $ echo $?
-0
-$ find . -maxdepth 3        # nothing installed
-.
+1                           # not 0
 ```
 
-It prints an error, installs nothing, and **exits 0** — so a script, a CI step or
-a setup guide that checks the exit code sees success. Repeated `-a` flags are the
-only correct form.
+Exit **1**, nothing installed, on both versions — so it is not a version
+difference and the original reading was a measurement error, most likely an exit
+code taken through a pipe, where `$?` reports the last stage rather than `skills`.
+Repeated `-a` flags remain the only correct form, but the wrong form fails
+honestly and a CI step checking the exit code does catch it.
+
+### The silent failure is a different one, and it is worse
+
+What does exit 0 having installed nothing is a **missing `-y` where nothing can
+answer the prompt** — which is every CI runner:
+
+```
+$ npx skills add <source> -a claude-code -s '*' < /dev/null
+…
+└  Done!  Review skills before use; they run with full agent permissions.
+$ echo $?
+0
+$ ls .agents/skills | wc -l
+0
+```
+
+It prints **`Done!`**, installs zero skills, and exits **0**. A step that trusts
+either the exit code or the output sees a successful install of nothing. That is
+why the installer gate added in #20 asserts a positive skill count derived from
+the repo's own `skills/` directory, rather than checking the exit code — an exit
+code cannot detect this and neither can reading the log.
 
 ## The token-cost figure depends on the model, not just the descriptions
 
