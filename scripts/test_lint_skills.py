@@ -17,7 +17,14 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-LINTER = REPO / "scripts" / "lint_skills.py"
+SCRIPTS = REPO / "scripts"
+
+# Every module the linter needs at the fixture root. `skill_links` is imported
+# rather than inlined so that this gate and scripts/check_install.py cannot
+# disagree about what counts as a link; the cost is that the fixture needs it
+# too, and forgetting it fails every case with an ImportError that looks like a
+# defect in the case.
+MODULES = ("lint_skills.py", "skill_links.py")
 
 GOOD = """---
 name: {name}
@@ -42,7 +49,8 @@ def run_linter(root: Path) -> subprocess.CompletedProcess:
     """
     scripts = root / "scripts"
     scripts.mkdir(exist_ok=True)
-    shutil.copy(LINTER, scripts / "lint_skills.py")
+    for module in MODULES:
+        shutil.copy(SCRIPTS / module, scripts / module)
     return subprocess.run(
         [sys.executable, str(scripts / "lint_skills.py")],
         cwd=root,

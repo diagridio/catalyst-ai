@@ -16,6 +16,11 @@ name: lint
 # after it went out, and `--instance-id` is spelled correctly, exists, and is
 # REQUIRED — invisible in `--help`, which does not render required-ness at all.
 # The `cli` job below closes that by downloading the pinned CLI and asking it.
+#
+# And lint_skills.py only ever SIMULATES an install, with `shutil.copytree`. The
+# `install` job runs the real `npx skills add` in both of its modes, because the
+# installed layout is not a flat copy and because the installer can finish
+# successfully having installed the wrong number of skills.
 
 on:
   pull_request:
@@ -40,13 +45,102 @@ jobs:
         # tell valid frontmatter from a block that will fail to load in a client.
         run: pip install --quiet pyyaml
 
+      - name: Test the link extractor
+        # Runs before the linter's own tests, because the linter now resolves
+        # links through scripts/skill_links.py and so does the `install` job
+        # below. Two lines of regex holding up two gates: if it stops matching,
+        # both report no findings and both look clean.
+        run: python3 scripts/test_skill_links.py
+
       - name: Test the linter
-        # Runs first: a linter whose own tests fail cannot be trusted to gate
-        # anything, and a green lint would then be worse than no lint.
+        # Runs first among the linter's own checks: a linter whose tests fail
+        # cannot be trusted to gate anything, and a green lint would then be
+        # worse than no lint.
         run: python3 scripts/test_lint_skills.py
 
       - name: Lint the skills
         run: python3 scripts/lint_skills.py
+
+  install:
+    # The install path itself, run rather than simulated.
+    #
+    # `lint_skills.py` has `check_isolation`, which copies each skill alone with
+    # `shutil.copytree` and asserts every link resolves. Good gate, still here,
+    # not replaced. But it never runs the command the README tells users to run,
+    # and the layout that command produces is not a flat copy: in default mode
+    # `npx skills` writes the content once into `.agents/skills/<name>/` and
+    # makes each other agent directory a symlink into it, so every relative link
+    # is resolved THROUGH a symlink. With `--copy` each agent directory gets its
+    # own real copy. Two documented modes, one of them tested by proxy and the
+    # other not at all.
+    #
+    # The assertion is a positive count, not an exit status, because those come
+    # apart — and they come apart most sharply right here, on a runner. Verified
+    # on skills@1.5.22 and 1.5.23:
+    #
+    #   A root `SKILL.md` shadows the whole `skills/` tree. The installer
+    #   reports `Found 1 skill`, installs that one, and exits 0. Nine skills
+    #   silently never arrive.
+    #
+    #   With no terminal to prompt from and no `-y`, it finds the skills,
+    #   installs none of them, and exits 0. That is this environment exactly.
+    #
+    # The count is derived from this repo's own `skills/` directory rather than
+    # written down as 10, so adding a skill cannot quietly weaken the gate.
+    #
+    # The agent list is REPEATED `-a` flags. `-a claude-code,codex,
+    # github-copilot` is a different command: both versions read the
+    # comma-joined string as one unknown agent name, print `Invalid agents:`,
+    # and install nothing.
+    #
+    # Installed from the local checkout, not from `diagridio/catalyst-ai`, so
+    # the job needs no GitHub auth and tests the working tree rather than what
+    # is already on main. Node and network are the only requirements — the gate
+    # is stdlib Python, so there is nothing to pip install.
+    #
+    # ubuntu and macos, and deliberately not windows. `npx skills` cannot create
+    # a symlink there without Developer Mode or an elevated shell, so default
+    # mode either falls back to copying or fails outright; a windows leg would
+    # pass vacuously or fail for a reason that says nothing about this repo.
+    # `fail-fast: false` because the whole point of two runners is the symlink
+    # semantics, and cancelling one the moment the other goes red throws away
+    # the comparison. It earned that on the first run: macos went red and ubuntu
+    # green, and the difference was the finding.
+    #
+    # No package cache here, unlike the `cli` job's 34MB pinned binary, and that
+    # is a decision rather than an omission. The whole job runs in under 20s, so
+    # there is little to win — and restoring `~/.npm/_npx` from a cache is the
+    # closest thing to the failure this job already hit once, where concurrent
+    # npx invocations racing on that directory produced `ENOTEMPTY` on macos and
+    # npm exited 190. A half-restored tree is exactly what makes npm try to
+    # repair it. Trading a real flake for a second or two is a bad trade; the
+    # suite warms the cache serially instead, in `warm_npx()`.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test the installer gate
+        # Runs first, same reason as the other two suites: a gate nobody has
+        # pointed at a broken layout is not a gate. The cases that matter most
+        # are the controls — a correct tree in both modes has to come out green,
+        # or the rejections below prove only that the checker rejects whatever
+        # it is shown.
+        run: python3 scripts/test_check_install.py
+
+      - name: Install with the real installer and check what landed
+        run: python3 scripts/check_install.py
 
   cli:
     # Every `diagrid` command and flag in the skills, checked against the CLI
