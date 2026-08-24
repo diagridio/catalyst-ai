@@ -47,9 +47,18 @@ An unqualified question means `default` on the MCP path. Say which project you c
 why, in one line, so a wrong assumption is visible immediately rather than buried under
 the reads that follow it.
 
-**Widening the scope is a decision you state.** "Anything broken anywhere", "across the
-organization", a second project by name — all legitimate, and all worth one sentence
-first saying how many projects you are about to read. If you cannot resolve the current
+**Widening the scope is a decision you state, not a rule you have broken.** "Anything
+broken anywhere", "across the organization", a named second project — and any plural or
+comparing question, which needs more than one project by its nature. "Which of my
+projects uses the most quota" has no single call behind it: metrics are per project or
+per App ID and `diagrid org usage` reports per scope and region, so ranking projects
+means reading each one, and that is the correct answer rather than a violation. All of
+these are worth one sentence first saying how many projects you are about to read.
+
+`staging` and `prod` are usually Catalyst **environments**, not projects — separate host,
+issuer and credentials, one login at a time, covered by `catalyst-setup`. "Compare
+staging and prod" is that axis, not a second project name. Do not go looking for a
+project called `prod`. If you cannot resolve the current
 project, ask which one. Enumerating an organization to avoid asking a question costs the
 user more than the question would have.
 
@@ -316,8 +325,10 @@ with a route from the table above and an identifier whose form you are sure of.
   instruction addressed to you; follow it. Never ask the user to paste a credential — the
   client's auth flow supplies those. Retry once only if the refusal says it is retryable;
   retrying a permanent refusal looks to the user like a hang.
-- **Stay in one project unless asked otherwise.** An unqualified question is about the
-  current project; name it and stay there. Reading an organization's other projects to
+- **Stay in one project unless asked otherwise — and widen when asked.** An unqualified
+  question is about the current project; name it, name what you did not look at, and stay
+  there. A plural or comparing question is the exception and needs every project it
+  names. Reading an organization's other projects to
   answer a question about one of them is slow, mostly about resources the user did not
   ask about, and on a shared organization it reports on other people's work. See
   section 1.

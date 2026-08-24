@@ -156,6 +156,50 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
             )
 
 
+
+# Skills that answer an open question about a running system, and therefore all
+# need the same scope discipline: resolve one project, name it, widen only when
+# asked. The rule lives in each skill's own prose because this repo has no
+# shared-fragment mechanism — skills are self-contained by design, and `../` is
+# banned. Nothing else would notice one of these losing the rule, and the
+# neighbouring "Link to the console" sections in these same two skills have
+# already drifted in wording and section number, which is what this guards.
+SCOPE_BOUNDED_SKILLS: dict[str, str] = {
+    "catalyst-operate": "an unqualified inspection question",
+    "catalyst-debug": "a question with no symptom in it",
+}
+
+# Substrings that together mean the rule is present and complete: bound the
+# scope, name the project, and leave a reachable way to widen. Matched
+# case-insensitively against the whole SKILL.md.
+_SCOPE_MARKERS = ("stay inside it", "widening", "name it")
+
+
+def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
+    """Fail a scope-bounded skill that has lost the one-project rule."""
+    by_name = {d.name: d for d in skill_dirs}
+    for name, trigger in SCOPE_BOUNDED_SKILLS.items():
+        skill_dir = by_name.get(name)
+        if skill_dir is None:
+            f.error(
+                "skills/",
+                f"`{name}` is listed in SCOPE_BOUNDED_SKILLS but does not exist. "
+                f"Remove the entry, or restore the skill.",
+            )
+            continue
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8").lower()
+        missing = [m for m in _SCOPE_MARKERS if m not in text]
+        if missing:
+            f.error(
+                str(skill_dir.relative_to(REPO)),
+                f"answers {trigger} and has lost part of the one-project rule: "
+                f"{', '.join(repr(m) for m in missing)} absent.\n     Without it a "
+                f"vague question sweeps every project in the organization, "
+                f"including other people's. Measured before this rule existed: "
+                f"well over half the calls landed on projects nobody asked about.",
+            )
+
+
 @dataclass
 class Findings:
     errors: list[str] = field(default_factory=list)
@@ -366,6 +410,7 @@ def main() -> int:
 
     check_isolation(skill_dirs, f)
     check_description_collisions(descriptions, f)
+    check_scope_rule(skill_dirs, f)
     check_plugin_validate(f)
 
     total = sum(len(d) for d in descriptions.values())
