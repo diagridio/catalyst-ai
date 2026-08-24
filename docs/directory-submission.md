@@ -487,6 +487,36 @@ covering it. It **defaults to a dry run**: `--apply` is required to execute anyt
 refuses to apply unless `--org` matches `diagrid org current`, so it cannot silently seed
 `engineering-shared`.
 
+**It applies in two phases, and the reason is worth knowing before you run it.**
+`diagrid dev run` blocks in the foreground and v1.66.0 has no detach flag, so a script
+that shells out to it never returns. The first version did exactly that: it would have
+created the App ID, agent and MCP server, then hung before starting a single workflow
+run — leaving an organization with no runs at all and no error to explain why.
+
+So the plan stops at the worker instead of trying to supervise it:
+
+```
+# phase 1 — creates the App ID, agent and MCP server, then hands you the worker command
+python3 scripts/seed_reviewer_org.py --org <org> --mcpserver-url <url> \
+    --apply --prereqs-confirmed
+
+# then, in its own terminal, the command phase 1 printed:
+diagrid dev run --project default --id catalyst-demo -- python scripts/seed/app.py
+
+# phase 2 — starts the 24 runs and verifies the result
+python3 scripts/seed_reviewer_org.py --org <org> --mcpserver-url <url> \
+    --apply --prereqs-confirmed --phase runs
+```
+
+Each phase is independently re-runnable, so a failure part-way through is recovered by
+re-running that phase rather than by unpicking a half-seeded organization.
+
+**Phase 2 verifies rather than asserts.** It reads the runs back, parses them, and exits
+non-zero unless the organization actually carries at least 24 runs across 3 workflow
+names with at least 2 in `failed`. An exit code of 0 from every CLI call is not the same
+as an organization fit to demo, and the failed-run count is the first thing a reviewer
+will look for.
+
 Run it with no arguments to get the plan:
 
 ```
@@ -787,7 +817,7 @@ The fallback lever from the issue is unchanged and still an afternoon:
 | Filter behaviour | `internal/filter/{filter,level,scrub,policy}.go` | as recorded in [§5.1](#51-where-every-factual-claim-above-comes-from) |
 | AS / route PR states | `gh pr view 10349 10350 10355 10357 10360` | all five **open**, none merged |
 | Existing privacy policy | `https://www.diagrid.io/privacy-policy` | effective 3/11/24, no AI/assistant/model-provider disclosure |
-| Support address | `diagrid-docs` grep | `support@diagrid.io` (11 uses), `sales@` (19), `catalyst@` (2) |
+| Support address | `diagrid-docs` grep | `support@diagrid.io` (8), `sales@` (13), `catalyst@` (1) — `grep -rn '<addr>' . --exclude-dir=node_modules --exclude-dir=.git` |
 | Anthropic criteria | submission + pre-submission-checklist pages | read 2026-08-23 |
 | Category list | `https://claude.com/connectors` Use case filter | 11 categories, listed in [§9](#9-categories--recommendation) |
 | Icon | see [§8](#8-icon--not-found) | not found anywhere |

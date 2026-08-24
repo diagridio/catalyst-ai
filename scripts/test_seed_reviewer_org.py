@@ -15,6 +15,7 @@ Run: python3 scripts/test_seed_reviewer_org.py
 from __future__ import annotations
 
 import json
+import ast
 import subprocess
 import sys
 from pathlib import Path
@@ -89,19 +90,62 @@ def test_at_least_two_runs_carry_the_failing_input() -> None:
         check("FAILS" in s.purpose, f"a failing run does not say so in its purpose: {s.purpose!r}")
 
 
+FAILING_ACTIVITY = "charge_card"
+
+
 def test_the_failure_comes_from_an_activity_that_raises() -> None:
-    """The seed app must actually raise on the input the plan sends.
+    """The seed app must actually raise, reachably, on the input the plan sends.
 
     This is the test that stops the plan and the worker drifting apart: if someone
     changes FAILING_INPUT and not the activity, or removes the raise, the plan would go
     on claiming failures that never happen.
+
+    It reads the syntax tree rather than the text, because the text is too easy to
+    satisfy. A review of this file mutated the guard to
+
+        if False and invoice.get("card") == "expired":
+
+    which makes the raise permanently unreachable while leaving both `raise
+    RuntimeError` and `"expired"` present in the file — and the previous, grep-based
+    version of this test passed. The whole reviewer-org demo rests on those two runs
+    genuinely failing, so this is the one property here worth testing properly.
     """
-    app = (REPO / "scripts" / "seed" / "app.py").read_text()
-    check("raise RuntimeError" in app, "the seed worker no longer raises anywhere")
+    tree = ast.parse((REPO / "scripts" / "seed" / "app.py").read_text())
+    func = next(
+        (n for n in ast.walk(tree)
+         if isinstance(n, ast.FunctionDef) and n.name == FAILING_ACTIVITY),
+        None,
+    )
+    check(func is not None, f"scripts/seed/app.py has no {FAILING_ACTIVITY}() to fail in")
+    if func is None:
+        return
+
+    raises = [n for n in ast.walk(func) if isinstance(n, ast.Raise)]
+    check(bool(raises), f"{FAILING_ACTIVITY}() raises nothing, so no run can fail")
+
+    conditions = [n.test for n in ast.walk(func) if isinstance(n, ast.If)]
     check(
-        f'"{FAILING_INPUT["card"]}"' in app,
-        f"the seed worker does not react to card={FAILING_INPUT['card']!r}, "
-        "so the plan's failing runs would complete",
+        bool(conditions),
+        f"{FAILING_ACTIVITY}() raises unconditionally — every run would fail, not two",
+    )
+
+    # A guard that cannot be true makes the raise dead code. Catches `if False:` and
+    # `if False and ...`, which is the mutation that defeated the text-matching version.
+    for test in conditions:
+        for node in ast.walk(test):
+            if isinstance(node, ast.Constant) and node.value in (False, None, 0):
+                check(
+                    False,
+                    f"{FAILING_ACTIVITY}()'s guard contains a constant {node.value!r}, "
+                    f"so the raise is unreachable and the plan's failing runs would complete",
+                )
+
+    # And the reachable guard has to be about the value the plan actually sends.
+    guard_src = " ".join(ast.unparse(test) for test in conditions)
+    check(
+        FAILING_INPUT["card"] in guard_src,
+        f"{FAILING_ACTIVITY}() does not branch on card={FAILING_INPUT['card']!r} "
+        f"(guards: {guard_src!r}), so the plan's failing runs would complete",
     )
 
 

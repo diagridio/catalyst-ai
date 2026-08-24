@@ -63,7 +63,13 @@ SEED_APP = "scripts/seed/app.py"
 
 # The App ID hosting the worker. One App ID, not three: a region allows 10 resources
 # where every app, agent and MCP server counts as one, and three workflow DEFINITIONS
-# live happily in one worker. Workflow instances are not quotaed.
+# live happily in one worker. Workflow instances are not quotaed — there is no
+# run-count key in `diagrid org usage`.
+#
+# The agent below consumes a SECOND budget as well as that shared one:
+# `number_of_durable_agents` is its own limit (5 on cra:free) and is counted
+# separately. One agent is nowhere near it, but the shared App-ID cap is not the only
+# thing a larger seed would run into.
 APP_ID = "catalyst-demo"
 
 AGENT_NAME = "demo-assistant"
@@ -90,8 +96,28 @@ GUARD_NOTES = {
     "flag": "the CLI's own --ignore-if-exists",
     "read": "a read-first existence check; this create command has no --ignore-if-exists",
     "none": "read-only",
-    "instance-id": "deterministic --instance-id; a re-run collides rather than doubling the count",
+    # UNVERIFIED, unlike the four rows above. Whether `workflow start` rejects a
+    # duplicate --instance-id, and with what message, cannot be established from
+    # `--help`; confirming it means starting the same run twice for real. So the
+    # executor does not trust it: a failed start is only excused when stderr actually
+    # says the instance exists (see ALREADY_EXISTS), and the verification pass counts
+    # the runs that landed rather than assuming the starts worked.
+    "instance-id": "deterministic --instance-id; a re-run is EXPECTED to collide rather than double the count, but this is not verified",
 }
+
+# Substrings in `workflow start` stderr that mean "this instance id is already taken",
+# which is the one failure a re-run should shrug off. Anything else stops the run.
+# Deliberately narrow: the previous version treated EVERY non-zero exit as this case,
+# so an expired token on one of the two failing runs would have been reported as
+# success while the organization ended up short of the >=2 real failures it exists to
+# demonstrate.
+ALREADY_EXISTS = (
+    "already exists",
+    "already in use",
+    "duplicate",
+    "instance id already",
+    "workflow instance already",
+)
 
 
 @dataclass(frozen=True)
@@ -105,9 +131,17 @@ class Step:
     # A read-only command whose non-zero exit means "absent, so create it". Only set
     # for idempotency == "read".
     guard: list[str] | None = None
-    # True for steps that only read. The executor runs these even in a dry run, because
-    # a plan that has verified its own preconditions is worth more than one that has not.
+    # True for steps that only read. This drives the READ/WRITE label in the printed
+    # plan and the verification pass; it does NOT change how `apply` executes a step.
+    # A dry run executes nothing at all — `render_plan` is string formatting with no
+    # I/O — so the printed plan has verified none of its own preconditions.
     read_only: bool = False
+    # A step that hosts the worker rather than returning. `apply` refuses to execute
+    # one of these, because `diagrid dev run` blocks in the foreground and there is no
+    # detach flag on v1.66.0: running it through `subprocess.run` hangs the script
+    # before a single workflow run is started. Phase 1 stops at it; the operator runs
+    # it themselves; phase 2 issues the runs.
+    hosts_worker: bool = False
 
     def render(self) -> str:
         return shlex.join(self.argv)
@@ -259,10 +293,11 @@ def plan(cfg: Config) -> list[Step]:
             ],
             purpose=(
                 "run the worker so the three workflows are registered and the runs below "
-                "can execute. Long-running: start it, leave it up for the run steps, stop "
-                "it afterwards"
+                "can execute. YOU run this, in its own terminal, and leave it up: it "
+                "blocks in the foreground and v1.66.0 has no detach flag"
             ),
             idempotency="none",
+            hosts_worker=True,
         )
     )
 
@@ -457,8 +492,105 @@ def exists(guard: list[str]) -> bool:
     return proc.returncode == 0
 
 
-def apply(cfg: Config, steps: list[Step]) -> int:
-    """Execute the plan. Only reached with --apply --prereqs-confirmed."""
+def start_failed_because_it_exists(stderr: str) -> bool:
+    """Whether a failed `workflow start` failed only because the id was taken."""
+    low = stderr.lower()
+    return any(marker in low for marker in ALREADY_EXISTS)
+
+
+def verify(cfg: Config) -> int:
+    """Read the organization back and assert it meets CAT-1734's minimums.
+
+    The previous version streamed these reads to the terminal for a human to eyeball
+    and parsed nothing, so `apply` returned 0 whenever every CLI call exited 0 — which
+    is not the same as the organization being fit to demo. The one number a reviewer
+    will look for first is the count of runs that actually failed.
+    """
+    want_runs = cfg.runs_per_workflow * len(WORKFLOWS)
+    problems: list[str] = []
+
+    def read_json(argv: list[str]) -> object | None:
+        proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+        if proc.returncode != 0:
+            problems.append(f"{shlex.join(argv)} exited {proc.returncode}: {proc.stderr.strip()[:200]}")
+            return None
+        try:
+            return json.loads(proc.stdout or "null")
+        except json.JSONDecodeError as exc:
+            problems.append(f"{shlex.join(argv)} did not return JSON: {exc}")
+            return None
+
+    def records(doc: object) -> list[dict]:
+        if isinstance(doc, list):
+            return [r for r in doc if isinstance(r, dict)]
+        if isinstance(doc, dict):
+            for key in ("items", "results", "executions", "workflows"):
+                inner = doc.get(key)
+                if isinstance(inner, list):
+                    return [r for r in inner if isinstance(r, dict)]
+        return []
+
+    print("\n--- verifying ---")
+
+    all_runs = records(read_json(
+        ["diagrid", "workflow", "list", "--project", cfg.project, "--limit", "250", "-o", "json"]
+    ))
+    print(f"    runs total: {len(all_runs)} (want >= {want_runs})")
+    if len(all_runs) < want_runs:
+        problems.append(f"{len(all_runs)} runs, want at least {want_runs}")
+
+    failed = records(read_json(
+        ["diagrid", "workflow", "list", "--project", cfg.project,
+         "--status", "failed", "--limit", "250", "-o", "json"]
+    ))
+    print(f"    failed runs: {len(failed)} (want >= {cfg.failures})")
+    if len(failed) < cfg.failures:
+        problems.append(
+            f"{len(failed)} failed runs, want at least {cfg.failures}. This is the one a "
+            f"reviewer asks for first — an all-green organization demos nothing."
+        )
+
+    def name_of(rec: dict) -> str:
+        for key in ("workflowName", "name", "workflow"):
+            value = rec.get(key)
+            if isinstance(value, str) and value:
+                return value
+        return ""
+
+    names = {name_of(r) for r in all_runs} - {""}
+    print(f"    distinct workflow names: {len(names)} (want >= {len(WORKFLOWS)}) {sorted(names)}")
+    if len(names) < len(WORKFLOWS):
+        problems.append(f"{len(names)} distinct workflow names, want {len(WORKFLOWS)}")
+
+    for argv in (
+        ["diagrid", "managed-agent", "get", cfg.agent, "--project", cfg.project, "-o", "json"],
+        ["diagrid", "mcpserver", "get", cfg.mcpserver, "--project", cfg.project, "-o", "json"],
+    ):
+        if read_json(argv) is None:
+            problems.append(f"{shlex.join(argv[:3])} did not return a record")
+
+    if problems:
+        print("\nNOT fit to demo:", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+        return 1
+    print("    all minimums met")
+    return 0
+
+
+def apply(cfg: Config, steps: list[Step], phase: str) -> int:
+    """Execute one phase of the plan. Only reached with --apply --prereqs-confirmed.
+
+    Two phases, because the worker step blocks. `diagrid dev run` runs in the
+    foreground and v1.66.0 has no detach flag, so executing it through
+    `subprocess.run` hangs before a single run is started — the resources get created
+    and then nothing else ever happens. Rather than supervise a long-lived subprocess
+    the script cannot reliably poll for readiness, the plan stops there and hands the
+    command to the operator.
+
+    Each phase is independently re-runnable, which also means a failure part-way
+    through is recoverable by re-running that phase rather than being wedged.
+    """
     actual = current_org()
     if cfg.org not in actual:
         print(
@@ -468,22 +600,47 @@ def apply(cfg: Config, steps: list[Step]) -> int:
         )
         return 1
 
-    for i, step in enumerate(steps, 1):
+    worker_index = next((i for i, s in enumerate(steps) if s.hosts_worker), None)
+    if worker_index is None:
+        print("plan has no worker step — refusing to guess where the phases split.", file=sys.stderr)
+        return 1
+
+    if phase == "resources":
+        selected, following = steps[:worker_index], steps[worker_index]
+    else:
+        selected, following = steps[worker_index + 1:], None
+
+    for i, step in enumerate(selected, 1):
+        if step.hosts_worker:  # belt and braces; the slices above exclude it
+            print("refusing to execute the worker step; it blocks.", file=sys.stderr)
+            return 1
         if step.guard and exists(step.guard):
             print(f"[{i:02d}] skip — already present: {shlex.join(step.guard)}")
             continue
         print(f"[{i:02d}] {step.render()}")
-        proc = subprocess.run(step.argv, check=False)
-        if proc.returncode != 0:
-            # A failed `workflow start` on an id that already exists is the idempotent
-            # case and not an error; anything else stops the run, because continuing
-            # past a failed create leaves a half-seeded organization.
-            if step.idempotency == "instance-id":
-                print(f"     (instance id already used — treating as already seeded)")
-                continue
-            print(f"     FAILED (exit {proc.returncode}) — stopping", file=sys.stderr)
-            return proc.returncode
-    return 0
+        proc = subprocess.run(step.argv, capture_output=step.idempotency == "instance-id", text=True, check=False)
+        if proc.returncode == 0:
+            continue
+        stderr = proc.stderr or ""
+        if step.idempotency == "instance-id" and start_failed_because_it_exists(stderr):
+            print("     (instance id already taken — already seeded)")
+            continue
+        if stderr:
+            print(f"     {stderr.strip()[:300]}", file=sys.stderr)
+        print(f"     FAILED (exit {proc.returncode}) — stopping", file=sys.stderr)
+        return proc.returncode
+
+    if phase == "resources":
+        print(
+            "\n--- phase 1 done. Now start the worker, in its own terminal: ---\n"
+            f"    {following.render()}\n"
+            "It blocks; leave it running. Then, here:\n"
+            f"    {sys.argv[0]} --org {cfg.org} --apply --prereqs-confirmed "
+            f"--mcpserver-url {cfg.mcpserver_url} --phase runs\n"
+        )
+        return 0
+
+    return verify(cfg)
 
 
 def main(argv: list[str]) -> int:
@@ -499,6 +656,14 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--failures", type=int, default=2)
     ap.add_argument("--apply", action="store_true", help="execute the plan instead of printing it")
     ap.add_argument("--prereqs-confirmed", action="store_true", help="required alongside --apply")
+    ap.add_argument(
+        "--phase",
+        choices=("resources", "runs"),
+        default="resources",
+        help="resources: create the App ID, agent and MCP server, then stop and hand you "
+             "the worker command. runs: start the workflow runs and verify. Two phases "
+             "because `diagrid dev run` blocks and has no detach flag.",
+    )
     args = ap.parse_args(argv[1:])
 
     cfg = Config(
@@ -530,7 +695,7 @@ def main(argv: list[str]) -> int:
         print("--apply requires --mcpserver-url; there is no sensible default.", file=sys.stderr)
         return 2
 
-    return apply(cfg, steps)
+    return apply(cfg, steps, args.phase)
 
 
 if __name__ == "__main__":
