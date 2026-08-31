@@ -18,6 +18,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LINTER = REPO / "scripts" / "lint_skills.py"
+CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
 
 GOOD = """---
 name: {name}
@@ -43,6 +44,12 @@ def run_linter(root: Path) -> subprocess.CompletedProcess:
     scripts = root / "scripts"
     scripts.mkdir(exist_ok=True)
     shutil.copy(LINTER, scripts / "lint_skills.py")
+    # The tool gate reads the contract from the repo root it derives, so a
+    # fixture without one fails every case on a missing file rather than on the
+    # defect it was built to show. The control case caught exactly that.
+    contracts = root / "contracts"
+    contracts.mkdir(exist_ok=True)
+    shutil.copy(CONTRACT, contracts / CONTRACT.name)
     return subprocess.run(
         [sys.executable, str(scripts / "lint_skills.py")],
         cwd=root,
@@ -103,6 +110,19 @@ def main() -> int:
     cases.append(case(
         "a Claude-Code-only frontmatter key",
         lambda s: write(s, "extra-key", "---\nname: extra-key\ndescription: Fine.\nallowed-tools: Read\n---\n\nBody.\n"),
+    ))
+
+    # A model handed a tool name that does not exist calls it, is told "unknown
+    # tool", and carries on with whatever it can improvise. Nothing crashes.
+    cases.append(case(
+        "a skill naming a tool outside the curated surface",
+        lambda s: write(s, "bad-tool", GOOD.format(name="bad-tool") + "\nRun `catalyst_delete_everything` first.\n"),
+    ))
+
+    cases.append(case(
+        "a skill naming a real curated tool",
+        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `catalyst_list_projects` first.\n"),
+        expect="pass",
     ))
 
     cases.append(case(

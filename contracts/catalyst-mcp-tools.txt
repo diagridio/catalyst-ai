@@ -1,0 +1,49 @@
+# The curated Catalyst MCP tool surface.
+#
+# This is a VENDORED COPY of the manifest that ships in cloudgrid at
+# services/catalyst/mcp/internal/toolset/tools.go. It exists so this repo can
+# gate its prose without reaching across a repository boundary in CI.
+#
+# Why it needs a gate at all: a skill is prose a model acts on. A skill naming a
+# tool that does not exist does not crash — the model calls it, gets "unknown
+# tool", and improvises. And a tool that ships with no skill mentioning it is
+# invisible: the model never learns it is there. Both are silent.
+#
+# Regenerate from a cloudgrid checkout:
+#
+#   git -C <cloudgrid> show origin/main:services/catalyst/mcp/internal/toolset/tools.go \
+#     | grep -o 'Name:[[:space:]]*"catalyst_[a-z_]*"' \
+#     | grep -o 'catalyst_[a-z_]*' | sort -u
+#
+# Last synced: 2026-08-31, against cloudgrid main after PR #10603 (the curated
+# surface Reagent and directly-connected clients both now use).
+catalyst_get_access_policy
+catalyst_get_agent
+catalyst_get_appid
+catalyst_get_component
+catalyst_get_logs
+catalyst_get_mcp_server
+catalyst_get_metrics
+catalyst_get_project
+catalyst_get_region
+catalyst_get_template
+catalyst_get_workflow
+catalyst_get_workflow_run
+catalyst_list_access_policies
+catalyst_list_agents
+catalyst_list_app_tunnels
+catalyst_list_appids
+catalyst_list_audit_events
+catalyst_list_components
+catalyst_list_mcp_servers
+catalyst_list_projects
+catalyst_list_templates
+catalyst_list_workflow_runs
+catalyst_list_workflows
+catalyst_pause_workflow_run
+catalyst_raise_workflow_event
+catalyst_rerun_workflow_run
+catalyst_resume_workflow_run
+catalyst_start_workflow
+catalyst_terminate_workflow_run
+catalyst_whoami
