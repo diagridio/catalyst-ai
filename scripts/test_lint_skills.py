@@ -17,8 +17,15 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-LINTER = REPO / "scripts" / "lint_skills.py"
+SCRIPTS = REPO / "scripts"
 CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
+
+# Every module the linter needs at the fixture root. `skill_links` is imported
+# rather than inlined so that this gate and scripts/check_install.py cannot
+# disagree about what counts as a link; the cost is that the fixture needs it
+# too, and forgetting it fails every case with an ImportError that looks like a
+# defect in the case.
+MODULES = ("lint_skills.py", "skill_links.py")
 
 GOOD = """---
 name: {name}
@@ -43,7 +50,8 @@ def run_linter(root: Path) -> subprocess.CompletedProcess:
     """
     scripts = root / "scripts"
     scripts.mkdir(exist_ok=True)
-    shutil.copy(LINTER, scripts / "lint_skills.py")
+    for module in MODULES:
+        shutil.copy(SCRIPTS / module, scripts / module)
     # The tool gate reads the contract from the repo root it derives, so a
     # fixture without one fails every case on a missing file rather than on the
     # defect it was built to show. The control case caught exactly that.
@@ -108,7 +116,7 @@ def main() -> int:
     ))
 
     cases.append(case(
-        "a Claude-Code-only frontmatter key",
+        "a frontmatter key outside name/description",
         lambda s: write(s, "extra-key", "---\nname: extra-key\ndescription: Fine.\nallowed-tools: Read\n---\n\nBody.\n"),
     ))
 
@@ -210,6 +218,43 @@ def main() -> int:
             write(s, f"skill-{i:02d}", GOOD.format(name=f"skill-{i:02d}"))
 
     cases.append(case("more than 12 skills", too_many))
+
+    # The scope rule, which lives in two skills' prose because this repo has no
+    # shared-fragment mechanism. The defect being guarded is real and measured:
+    # before the rule existed, "is anything broken in my project?" made
+    # catalyst-operate read every project in a ten-project organization, well
+    # over half its calls landing on projects nobody asked about. The rule then
+    # went into catalyst-operate only — and the very next measured run routed to
+    # catalyst-debug instead, which did not have it. Same question, same defect,
+    # different front door. That is what this case exists to stop recurring.
+    SCOPED = ("---\nname: {n}\ndescription: {d}\n---\n\n"
+              "Resolve the current project, name it, and stay inside it.\n\n"
+              "Widening the scope is a decision you state first.\n")
+    OPERATE_D = ("Inspect a running project read-only — what is deployed, what "
+                 "state it sits in, which quota is close.")
+    DEBUG_D = ("Diagnose why a resource is stuck, then stop, kill or rerun a run. "
+               "Covers a failed run, an unready App ID, a silent agent.")
+
+    def scope_rule_dropped(s: Path) -> None:
+        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
+        # catalyst-debug keeps its body but loses the bounding rule entirely.
+        write(s, "catalyst-debug",
+              f"---\nname: catalyst-debug\ndescription: {DEBUG_D}\n---\n\n"
+              "Route by symptom, then read the project.\n")
+
+    cases.append(case("a scope-bounded skill that lost the one-project rule", scope_rule_dropped))
+
+    # Control for that rule: both skills carrying it must pass, or the gate would
+    # fail the very state it is meant to protect.
+    def scope_rule_present(s: Path) -> None:
+        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
+        write(s, "catalyst-debug", SCOPED.format(n="catalyst-debug", d=DEBUG_D))
+
+    cases.append(case(
+        "both scope-bounded skills carrying the rule",
+        scope_rule_present,
+        expect="pass",
+    ))
 
     # Report. The control expects PASS; everything else expects REJECT.
     failures = 0

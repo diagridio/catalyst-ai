@@ -305,3 +305,16 @@ text — **a link that 404s or lands on the wrong project is worse than no link.
      is a real defect.
      lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
 -->
+
+<!-- Section 1 describes what `diagrid agent` MEANT on CLI 1.51.0, because a
+     reader on that version will see it and a reader who remembers it will emit
+     it. The CLI gate checks every documented command against the pinned
+     v1.66.0, where these three moved to `managed-agent`, so it rejects them by
+     default — which is right: a skill that presents them as current is the
+     defect the gate exists for. They are acknowledged, not corrected, because
+     the sentence containing them is about the older version and stops being
+     true if the flags are changed to today's.
+     cli-allow: agent create --llm-provider — 1.51.0 spelling, named to date it
+     cli-allow: agent create --sandbox — 1.51.0 spelling, named to date it
+     cli-allow: agent chat — moved to `managed-agent chat` at 1.63.0
+-->

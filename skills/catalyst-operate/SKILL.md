@@ -17,6 +17,51 @@ to the `diagrid` CLI when the MCP tools are absent or refuse. If neither works t
 connection problem rather than an inspection problem — the `catalyst-setup` skill covers
 it, and there is nothing useful to read without a credential.
 
+### Answer about one project
+
+An unqualified question — "my project", "is anything broken", "what is deployed" — is
+about **one** project: the one the session is pointed at. Resolve it, name it in your
+answer, and stay inside it.
+
+`catalyst_whoami` and `diagrid project list` both return every project in the
+organization. That is an inventory, not an instruction to read all of them. An
+organization holds other people's projects, and each one you add multiplies every read in
+section 3. Measured on an organization with ten projects, answering "is anything broken
+in my project" by sweeping all of them spent well over half its calls on projects nobody
+had asked about — and every one of those is a round trip whose result the answer then has
+to carry.
+
+**Which project is the current one.** The CLI has one, set by `diagrid project use
+<project>`, and `diagrid project list` marks it with a leading `*`. That is the single
+read where the table carries something `-o json` does not: the marker is absent from the
+JSON, so take it from the table and read the JSON for everything else.
+
+The MCP surface has no current project — every project-scoped tool takes the project as
+an explicit argument. Take the argument's *name* from the tool's own schema rather than
+assuming it: the two OpenAPI specs behind the surface disagree on capitalisation, so it
+is `projectId` on the management operations and `ProjectId` on the controlplane ones, and
+no operation names it plain `project`. That is the console's URL parameter, a different
+system — section 6 covers it, and the two are easy to confuse.
+
+An unqualified question means `default` on the MCP path. Say which project you chose and
+why, in one line, so a wrong assumption is visible immediately rather than buried under
+the reads that follow it.
+
+**Widening the scope is a decision you state, not a rule you have broken.** "Anything
+broken anywhere", "across the organization", a named second project — and any plural or
+comparing question, which needs more than one project by its nature. "Which of my
+projects uses the most quota" has no single call behind it: metrics are per project or
+per App ID and `diagrid org usage` reports per scope and region, so ranking projects
+means reading each one, and that is the correct answer rather than a violation. All of
+these are worth one sentence first saying how many projects you are about to read.
+
+`staging` and `prod` are usually Catalyst **environments**, not projects — separate host,
+issuer and credentials, one login at a time, covered by `catalyst-setup`. "Compare
+staging and prod" is that axis, not a second project name. Do not go looking for a
+project called `prod`. If you cannot resolve the current
+project, ask which one. Enumerating an organization to avoid asking a question costs the
+user more than the question would have.
+
 Then read the project, even when the question is about one App ID. The project is the
 only object that names the managed infrastructure everything else sits on, and a large
 share of "X is missing" turns out to be "X's backing store was never enabled here".
@@ -77,7 +122,10 @@ Two gaps in that table are deliberate, not oversights:
   the user wants changed goes through the CLI or the console, with their consent.
 
 `-o json` on any CLI read gives you the full object; the default table view drops
-fields. Read the JSON before concluding that a field does not exist. `diagrid workflow
+fields. Read the JSON before concluding that a field does not exist. One read runs the other way:
+`diagrid project list` marks the current project with a leading `*` in the table and not
+at all in the JSON, so take that marker from the table and every other field from the
+JSON. See section 1. `diagrid workflow
 get` is the exception — it has no `--output` flag and always prints YAML, so `-o json`
 there is an unknown flag rather than a formatting choice.
 
@@ -277,6 +325,13 @@ with a route from the table above and an identifier whose form you are sure of.
   instruction addressed to you; follow it. Never ask the user to paste a credential — the
   client's auth flow supplies those. Retry once only if the refusal says it is retryable;
   retrying a permanent refusal looks to the user like a hang.
+- **Stay in one project unless asked otherwise — and widen when asked.** An unqualified
+  question is about the current project; name it, name what you did not look at, and stay
+  there. A plural or comparing question is the exception and needs every project it
+  names. Reading an organization's other projects to
+  answer a question about one of them is slow, mostly about resources the user did not
+  ask about, and on a shared organization it reports on other people's work. See
+  section 1.
 - **Read the project before reporting anything missing.** Managed workflow storage and
   agent infrastructure are project settings, and their absence looks exactly like an
   empty system.

@@ -170,6 +170,18 @@ For the platform logs, the type is the whole point:
 
 <!-- lint-allow-banned: --appids — named here only to steer away from it, which is the guidance the ban exists to produce -->
 
+<!-- The CLI's own exit message is quoted verbatim above, and it omits `--project`,
+     which `dev stop` requires when no default project is configured. Editing the
+     quote would misrepresent what the CLI prints, so the incomplete command stays
+     and the paragraph under it says why not to copy it.
+
+     This marker is file-scoped, so it also stops the CLI gate flagging any OTHER
+     bare `dev stop` in this file. Both real instructions here — the bullet below
+     the quote and the rule in the last section — carry `--project default`, and a
+     new one must too.
+     cli-allow: dev stop --project — a verbatim quote of the CLI's own incomplete suggestion
+-->
+
 Note the flag is `--ids`, not `--appids`, and the project name is a positional argument
 rather than a flag. `project logs` does not follow — it paginates with `--limit` and
 `--page`, and defaults to JSON output. `appid logs` is the one that takes `--follow`.
@@ -224,6 +236,11 @@ What genuinely does require a platform change:
 This is the trap that produces "it worked yesterday". Killing `dev run` stops your
 process but leaves the local app connection registered, and the CLI says so on exit:
 `Your dev session will remain active until you stop it by running: diagrid dev stop --id <id>`.
+
+**Do not paste that suggestion back verbatim.** It omits `--project`, which `dev stop`
+requires whenever no default project is configured — a fresh login, a CI shell, a new
+machine — and the command then dies on `required flag(s) "project" not set`. Add
+`--project` and it works everywhere.
 
 - `diagrid dev status` lists every connection in the project, with its status and whether
   its credentials have **expired**.
@@ -329,7 +346,8 @@ means the problem is upstream of your process.
   the components and the App IDs. Restarting the run resets those timers and makes a slow
   provision look like a hang.
 - **Stop what you started.** A dev session left running holds a local app connection on
-  the App ID. `diagrid dev status` shows it, `diagrid dev stop --id <app>` releases it.
+  the App ID. `diagrid dev status` shows it, `diagrid dev stop --id <app> --project default`
+  releases it.
 - **Do not delete resources to test a code change.** Nothing in an edit-run-observe cycle
   needs a component or App ID recreated, and `--rm-appids` on a shared project deletes
   what this run created out from under whoever else is using it.

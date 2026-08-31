@@ -26,6 +26,8 @@ from pathlib import Path
 
 import yaml
 
+from skill_links import link_path, local_link_targets
+
 REPO = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO / "skills"
 TOOL_CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
@@ -43,11 +45,18 @@ MAX_SKILLS = 12
 # Total description budget, well inside Codex's cap so we notice before it bites.
 MAX_TOTAL_DESCRIPTION_CHARS = 5000
 
-# Frontmatter is an allow-list, not a suggestion. `allowed-tools` and `model` are
-# Claude-Code-only and this repo installs into Codex and Copilot too; a skill
-# that silently loses its tool restriction on another client is worse than one
-# that never claimed to have it. CAT-1730 originally required `mcp_tools:` and
-# `cli_fallback:` here — dropped 2026-08-22, expressed in prose instead.
+# Frontmatter is an allow-list, not a suggestion. This repo installs into Claude
+# Code, Codex and Copilot, and their frontmatter contracts are neither identical
+# nor jointly documented anywhere: measured on Codex 0.149.0, its bundled
+# skill-authoring validator accepts exactly
+# {name, description, license, allowed-tools, metadata} and rejects the rest, so
+# `model` fails there while `allowed-tools` does not. Rather than track three
+# contracts, keep to the pair every client demonstrably reads — verified end to
+# end for Codex, whose model-visible prompt ingests all ten of these skills with
+# nothing but name and description. A skill that silently loses its tool
+# restriction on another client is worse than one that never claimed to have it.
+# CAT-1730 originally required `mcp_tools:` and `cli_fallback:` here — dropped
+# 2026-08-22, expressed in prose instead.
 ALLOWED_FRONTMATTER_KEYS = {"name", "description"}
 
 # Things that must never appear in a skill, each because it shipped somewhere and
@@ -150,6 +159,49 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
             )
 
 
+
+# Skills that answer an open question about a running system, and therefore all
+# need the same scope discipline: resolve one project, name it, widen only when
+# asked. The rule lives in each skill's own prose because this repo has no
+# shared-fragment mechanism — skills are self-contained by design, and `../` is
+# banned. Nothing else would notice one of these losing the rule, and the
+# neighbouring "Link to the console" sections in these same two skills have
+# already drifted in wording and section number, which is what this guards.
+SCOPE_BOUNDED_SKILLS: dict[str, str] = {
+    "catalyst-operate": "an unqualified inspection question",
+    "catalyst-debug": "a question with no symptom in it",
+}
+
+# Substrings that together mean the rule is present and complete: bound the
+# scope, name the project, and leave a reachable way to widen. Matched
+# case-insensitively against the whole SKILL.md.
+_SCOPE_MARKERS = ("stay inside it", "widening", "name it")
+
+
+def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
+    """Fail a scope-bounded skill that has lost the one-project rule."""
+    by_name = {d.name: d for d in skill_dirs}
+    for name, trigger in SCOPE_BOUNDED_SKILLS.items():
+        skill_dir = by_name.get(name)
+        if skill_dir is None:
+            # Absent is not this gate's business. Demanding presence made the
+            # rule fire on every fixture that legitimately has neither skill,
+            # which failed three passing control cases — the gate has to be
+            # about the rule inside a skill, not about which skills exist.
+            continue
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8").lower()
+        missing = [m for m in _SCOPE_MARKERS if m not in text]
+        if missing:
+            f.error(
+                str(skill_dir.relative_to(REPO)),
+                f"answers {trigger} and has lost part of the one-project rule: "
+                f"{', '.join(repr(m) for m in missing)} absent.\n     Without it a "
+                f"vague question sweeps every project in the organization, "
+                f"including other people's. Measured before this rule existed: "
+                f"well over half the calls landed on projects nobody asked about.",
+            )
+
+
 @dataclass
 class Findings:
     errors: list[str] = field(default_factory=list)
@@ -233,9 +285,11 @@ def check_skill(skill_dir: Path, f: Findings) -> str | None:
         f.error(
             where,
             f"frontmatter keys not allowed: {', '.join(unknown)}. Allowed: "
-            f"{', '.join(sorted(ALLOWED_FRONTMATTER_KEYS))}. `allowed-tools` and "
-            f"`model` are Claude-Code-only and this repo installs into Codex and "
-            f"Copilot too — express the restriction in prose instead.",
+            f"{', '.join(sorted(ALLOWED_FRONTMATTER_KEYS))}. This repo installs "
+            f"into Claude Code, Codex and Copilot and their frontmatter "
+            f"contracts differ — Codex's own skill validator rejects `model` "
+            f"outright — so nothing here may depend on per-client handling. "
+            f"Express the restriction in prose instead.",
         )
 
     name = data.get("name")
@@ -263,16 +317,13 @@ def check_skill(skill_dir: Path, f: Findings) -> str | None:
         )
 
     # `../` cannot resolve once a skill is installed on its own: `npx skills`
-    # copies the skill directory alone, so a sibling reference dangles. This is
+    # installs the skill directory alone, so a sibling reference dangles. This is
     # the rule whose absence produced 124 dangling links upstream.
-    for m in re.finditer(r"\]\(([^)]+)\)", text):
-        target = m.group(1)
+    for target in local_link_targets(text):
         if target.startswith("../"):
             f.error(where, f"link `{target}` escapes the skill directory with `../`")
-        elif not target.startswith(("http://", "https://", "#", "mailto:")):
-            local = (skill_dir / target.split("#")[0]).resolve()
-            if not local.exists():
-                f.error(where, f"link `{target}` does not resolve to a file in this skill")
+        elif not (skill_dir / link_path(target)).resolve().exists():
+            f.error(where, f"link `{target}` does not resolve to a file in this skill")
 
     for banned, why in BANNED_SUBSTRINGS.items():
         if banned in text and not allows_banned(text, banned):
@@ -291,6 +342,12 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
 
     This is the gate whose absence caused the upstream breakage: installed one at
     a time, a skill that leans on a sibling directory has nothing to lean on.
+
+    A copytree, not an install. scripts/check_install.py runs the real
+    `npx skills` and checks the layout it actually writes — where the content
+    lives once and the other agent directories are symlinks into it — which is a
+    different traversal from this one. The two gates share their link extraction
+    (skill_links) so they cannot disagree about what a link is.
     """
     for skill_dir in skill_dirs:
         with tempfile.TemporaryDirectory() as tmp:
@@ -298,11 +355,8 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
             shutil.copytree(skill_dir, dest)
             for md in dest.rglob("*.md"):
                 text = md.read_text(encoding="utf-8")
-                for m in re.finditer(r"\]\(([^)]+)\)", text):
-                    target = m.group(1)
-                    if target.startswith(("http://", "https://", "#", "mailto:")):
-                        continue
-                    if not (md.parent / target.split("#")[0]).resolve().exists():
+                for target in local_link_targets(text):
+                    if not (md.parent / link_path(target)).resolve().exists():
                         f.error(
                             str(skill_dir.relative_to(REPO)),
                             f"installed alone, `{target}` in {md.name} does not resolve",
@@ -410,6 +464,7 @@ def main() -> int:
     check_isolation(skill_dirs, f)
     check_tool_names(skill_dirs, f)
     check_description_collisions(descriptions, f)
+    check_scope_rule(skill_dirs, f)
     check_plugin_validate(f)
 
     total = sum(len(d) for d in descriptions.values())
