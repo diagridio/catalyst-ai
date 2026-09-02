@@ -30,6 +30,7 @@ from skill_links import link_path, local_link_targets
 
 REPO = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO / "skills"
+TOOL_CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
 
 # Codex caps the skill list at roughly 8000 characters and, when it overflows,
 # SHORTENS DESCRIPTIONS FIRST — and a shortened description is exactly what
@@ -362,6 +363,57 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
                         )
 
 
+# A tool reference is `catalyst_` plus lowercase words. The lookbehind keeps
+# `number_of_catalyst_subscriptions` — a quota field, not a tool — from matching,
+# and requiring at least one trailing character keeps the `catalyst_*` wildcard
+# the skills use to describe the whole family from matching either.
+TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z]+[a-z_]*")
+
+
+def check_tool_names(skill_dirs: list[Path], f: Findings) -> None:
+    """Hold the skills to the tool surface that actually ships.
+
+    Both directions are drift, and neither one fails loudly on its own:
+
+    * A skill naming a tool that does not exist is an error. The model calls it,
+      the server answers "unknown tool", and the model improvises the rest of the
+      task from whatever it has — which is the failure this whole repo exists to
+      prevent.
+    * A shipped tool that no skill mentions is a note, not an error. The model
+      cannot use a capability nobody told it about, but not every tool warrants
+      prose, so this reports rather than blocks.
+    """
+    if not TOOL_CONTRACT.is_file():
+        f.error("contracts/", f"{TOOL_CONTRACT.name} is missing — the tool gate cannot run")
+        return
+
+    shipped = {
+        line.strip()
+        for line in TOOL_CONTRACT.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+    if not shipped:
+        f.error("contracts/", f"{TOOL_CONTRACT.name} lists no tools")
+        return
+
+    mentioned: set[str] = set()
+    for skill_dir in skill_dirs:
+        for md in sorted(skill_dir.rglob("*.md")):
+            found = set(TOOL_REFERENCE.findall(md.read_text(encoding="utf-8")))
+            mentioned |= found
+            for unknown in sorted(found - shipped):
+                f.error(
+                    str(md.relative_to(REPO)),
+                    f"names `{unknown}`, which is not in the curated tool surface. "
+                    f"A model told to call it gets 'unknown tool' and improvises. "
+                    f"Fix the name, or re-sync {TOOL_CONTRACT.name} if the tool "
+                    f"genuinely shipped.",
+                )
+
+    for unused in sorted(shipped - mentioned):
+        f.note(f"`{unused}` ships but no skill mentions it — the model will not know it exists")
+
+
 def check_plugin_validate(f: Findings) -> None:
     """Run `claude plugin validate` as a weak extra signal, never as the gate.
 
@@ -410,6 +462,7 @@ def main() -> int:
             descriptions[skill_dir.name] = desc
 
     check_isolation(skill_dirs, f)
+    check_tool_names(skill_dirs, f)
     check_description_collisions(descriptions, f)
     check_scope_rule(skill_dirs, f)
     check_plugin_validate(f)
