@@ -120,13 +120,29 @@ different stage in each language, and that difference decides what you can scaff
 | .NET | `Diagrid.AI.Microsoft.AgentFramework` on NuGet, 1.0.10 | Published. Microsoft Agent Framework; targets net8.0, net9.0, net10.0 |
 | Java | `io.diagrid:diagrid-spring-ai-starter` on Maven Central, 0.2.0 | Published, Spring AI. Its own README says the APIs are not yet stable |
 | Go | `github.com/diagridio/go-ai` v0.1.1 | Root module resolves. The `adapters/*` submodules have no release tag, so they pin only as an untagged pseudo-version, and the repo has no CI |
-| TypeScript | none | **Not installable.** Nothing is published to npm, the `@diagrid` scope does not exist, and the default branch is empty — the work sits on unmerged branches |
+| TypeScript | `@diagrid/agent-mastra` on npm, 0.1.0 | Published and public. **Mastra only** — not a general TypeScript adapter. Needs Node >= 22.13.0. One version, first published 2026-08-23, so treat it as early |
 
-For **TypeScript**, say that plainly and offer the two things that do work: write the
-agent in a language with a published adapter, or drive Dapr Workflows directly with
-`@dapr/dapr`, which is published and does support workflows — you lose the framework
-bridge, not durability. Do **not** offer the hosted `managed-agent` as the TypeScript
-escape hatch; it is restricted per section 1, so it trades one dead end for another.
+For **TypeScript**, the answer depends on the framework, and getting that wrong sends
+someone to install a package that cannot bridge what they are using.
+
+On **Mastra**, scaffold against the adapter. It depends on `@diagrid/agent-core`
+itself, so do not ask anyone to install that — but `@mastra/core` and `zod` are peer
+dependencies and are not installed for them:
+
+```bash
+npm install @diagrid/agent-mastra @mastra/core zod
+```
+
+The peer ranges are `@mastra/core >=1.50.0 <2` and `zod ^4.0.0`, and it ships its own
+types. Its licence is BUSL-1.1, which is not what a user may assume from the other
+adapters — worth one sentence if they are evaluating rather than already committed.
+
+On **any other TypeScript framework** there is still no adapter, and the honest options
+are unchanged: write the agent in a language whose framework has a published adapter,
+or drive Dapr Workflows directly with `@dapr/dapr`, which is published and does support
+workflows — that loses the framework bridge, not durability. Do **not** offer the hosted
+`managed-agent` as the escape hatch; it is restricted per section 1, so it trades one
+dead end for another.
 
 For **Go**, do not pretend the adapter is a normal dependency. `go get` the root module
 by version, then pin each adapter to the pseudo-version `go get <path>@latest` resolves,
