@@ -16,17 +16,26 @@ working setup stop working.
 
 Check in this order and stop at the first that answers:
 
-1. **Are Catalyst MCP tools available?** If tools named `catalyst_*` are listed, the
-   connection exists. Call `catalyst_whoami`. If it returns an organization, you are
-   done — report the org and project and stop.
-2. **Is the CLI present and logged in?** `diagrid version`, then
+1. **Are Catalyst MCP tools available?** If `catalyst_*` tools are listed, the
+   connection exists. Clients prefix them — in Claude Code they appear as
+   `mcp__plugin_catalyst-ai_catalyst__catalyst_whoami` and so on — so match the ending.
+   Call `catalyst_whoami`. If it returns an organization, you are done — report the org
+   and project and stop.
+2. **Is the server registered but not signed in?** In Claude Code, installing this
+   plugin registers the Catalyst MCP server, listed as `plugin:catalyst-ai:catalyst`. Until the user signs in it
+   contributes no tools, so it looks exactly like case 3 below. Ask the user to open
+   `/mcp`, pick that server and complete the browser sign-in. That is the whole fix: you
+   cannot do it for them, and there is nothing for them to paste. Tools appear once it
+   finishes; then go back to step 1. If the user needs an answer before then, carry on to
+   step 3 as well and give them the CLI command that answers it today.
+3. **Is the CLI present and logged in?** `diagrid version`, then
    `diagrid project list`. If that returns projects, the CLI path works and you can
    answer questions today even with no MCP tools. `version` is a subcommand, not a
    flag — there is no `--version` on the root command, and reaching for one fails
    with `unknown flag` before you learn anything. Compare what `version` prints against
    the floor in section 2 while you are here; it costs nothing, and it is the check that
    explains most "this command does not exist" surprises later.
-3. Otherwise continue below.
+4. Otherwise continue below.
 
 ## 2. The CLI version floor
 
@@ -78,6 +87,27 @@ like a permissions problem and is not one.
   `7f000001` is hex for `127.0.0.1` and it is how onebox and self-hosted clusters are
   addressed, so missing it sends a self-hosted user to the **production** console.
 
+**The MCP server has its own host per environment, and its sign-in is separate from
+the CLI's.**
+
+| Environment | MCP server |
+| --- | --- |
+| Production | `https://mcp.cloud.r1.diagrid.io/mcp` |
+| Staging | `https://mcp.cloud.staging.diagrid.dev/mcp` |
+
+- **The plugin points at production.** Set `DIAGRID_MCP_URL` to another host before
+  starting Claude Code to change that, then sign in again from `/mcp`.
+- **A token only works on the host it was issued for.** Its audience is fixed at sign-in,
+  so a staging token sent to production is refused as `NOT_AUTHENTICATED`. That reads like
+  a permissions problem and is not one: check which host the server points at first.
+- **Signed in to one does not mean signed in to the other.** `diagrid login` and the MCP
+  sign-in are independent. A working CLI says nothing about the MCP server, and the
+  reverse.
+- **The tool list depends on the user's role.** Write tools, such as starting or
+  terminating a workflow run, are left out of the list entirely for a user whose role
+  cannot write. They are not refused when called — they are simply not there. If one is
+  missing, that is the user's role, not a broken connection; do not go looking for it.
+
 **Say the cost before you switch, not after.** The CLI stores one login at a time, so a
 login against another environment replaces the one you had, and returning to it is another
 interactive login. That is worth a sentence to the user in advance.
@@ -90,11 +120,20 @@ the user for an API key, which is never the right next step.
 
 | Kind | What it means | Do |
 | --- | --- | --- |
-| `NOT_AUTHENTICATED` | No credential, or it does not verify | The client's own auth flow handles this. Do not ask the user for a credential. If the client has not prompted, say so and stop. |
+| `NOT_AUTHENTICATED` | No credential, or it does not verify | The client's own auth flow handles this. Do not ask the user for a credential. If the client has not prompted, ask the user to sign in again from `/mcp`. If they just did, check the server points at the environment they meant (section 3). |
 | `NO_ORG` | Verified, but no organization resolved | Ask the user which organization, or run `diagrid org list`. |
 | `ORG_MISMATCH` | A supplied org disagrees with the credential | Stop. Report both values. Do not retry with either. |
 | `ORG_UNAVAILABLE` | Organization blocked or being deleted | Terminal. Tell the user to contact Diagrid support. Do not retry. |
 | `CATALYST_NOT_ENABLED` | No Catalyst entitlement, or an expired trial | Report which. These need different remedies — enabling versus renewing. |
+
+Two things during sign-in look like errors and are not:
+
+- **A `401` with `WWW-Authenticate: Bearer resource_metadata=...`** is how sign-in
+  starts. The client follows that header to find the sign-in server. It is not a failure,
+  and nothing needs fixing.
+- **The consent screen.** Partway through sign-in, the browser asks the user to approve
+  access for their organization. If they decline, sign-in stops and no tools appear. The
+  fix is to sign in again from `/mcp` and approve.
 
 If a refusal is marked retryable, wait briefly and retry once. If it is not, do not
 retry at all: a permanent refusal retried looks to the user like a hang.
@@ -105,7 +144,7 @@ Report three things, from a real call and not from configuration:
 
 - the organization, by name
 - the project you will work in
-- how you are reaching Catalyst — MCP tools or the CLI
+- how you are reaching Catalyst — MCP tools or the CLI — and, for MCP, which environment
 
 If any of the three is unknown, say which, and say what you tried. A confident
 "connected!" that turns out to be wrong costs more than an honest "the CLI works but
