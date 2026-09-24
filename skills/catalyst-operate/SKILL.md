@@ -108,6 +108,11 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list`, `diagrid subscription list`, `diagrid pubsub list`, `diagrid kv list` |
 | Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` | — |
 | Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <app-id>` |
+| One region in detail | `catalyst_get_region` | `diagrid region get <region-id>` |
+| Access policies — why a workflow or MCP call was refused | `catalyst_list_access_policies`, `catalyst_get_access_policy` | `diagrid workflow access-policy list`, `diagrid mcpserver access get <mcpserver>` |
+| Dev tunnels open on a project | `catalyst_list_app_tunnels` | `diagrid appid get <id> --all` |
+| Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` | — |
+| Who changed what, and when | `catalyst_list_audit_events` | `diagrid audit list` |
 | Request rates, error rates, quota consumption | `catalyst_get_metrics` | `diagrid org usage` (org-wide only) |
 | Logs | none, by design | `diagrid project logs`, `diagrid appid logs <id>` |
 
