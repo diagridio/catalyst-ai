@@ -109,14 +109,15 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` | — |
 | Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <app-id>` |
 | Request rates, error rates, quota consumption | `catalyst_get_metrics` | `diagrid org usage` (org-wide only) |
-| Logs | none, by design | `diagrid project logs`, `diagrid appid logs <id>` |
+| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid project logs`, `diagrid appid logs <id>` |
 
-Two gaps in that table are deliberate, not oversights:
+Two limits in that table are deliberate, not oversights:
 
-- **There is no MCP log tool.** Log lines carry whatever the application chose to print,
-  so the log operations are denied at the default data-sharing level; a tool that refused
-  for every organization on the default posture would read as broken rather than as
-  policy. Logs come from the CLI. Do not go looking for `catalyst_get_logs`.
+- **`catalyst_get_logs` refuses at the default data-sharing level.** Log lines carry
+  whatever the application chose to print, so at `metadata` the tool returns
+  `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
+  policy, not a fault: do not retry it. Fall back to the CLI, and only an org admin
+  raising the level to `full` changes the answer.
 - **The MCP surface reads; it does not manage.** There are no create, update or delete
   tools. Only workflow lifecycle calls write, and this skill does not use them. Anything
   the user wants changed goes through the CLI or the console, with their consent.
