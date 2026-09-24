@@ -9,11 +9,16 @@
 # tool", and improvises. And a tool that ships with no skill mentioning it is
 # invisible: the model never learns it is there. Both are silent.
 #
-# Regenerate from a cloudgrid checkout:
+# Regenerate from a cloudgrid checkout. Read every non-test file in the toolset
+# package, not just tools.go: composed tools (apply, delete, bulk workflow,
+# access) are defined in their own files, and some name themselves through a
+# `...ToolName = "catalyst_..."` constant rather than a `Name:` field.
 #
-#   git -C <cloudgrid> show origin/main:services/catalyst/mcp/internal/toolset/tools.go \
-#     | grep -o 'Name:[[:space:]]*"catalyst_[a-z_]*"' \
-#     | grep -o 'catalyst_[a-z_]*' | sort -u
+#   ref=origin/main
+#   for f in $(git -C <cloudgrid> ls-tree --name-only $ref services/catalyst/mcp/internal/toolset/ \
+#       | grep '\.go$' | grep -v '_test\.go$'); do git -C <cloudgrid> show $ref:$f; done \
+#     | grep -oE 'Name:[[:space:]]*"catalyst_[a-z_]*"|ToolName[[:space:]]*=[[:space:]]*"catalyst_[a-z_]*"' \
+#     | grep -oE 'catalyst_[a-z_]*' | sort -u
 #
 # Last synced: 2026-08-31, against cloudgrid main after PR #10603 (the curated
 # surface Reagent and directly-connected clients both now use).
