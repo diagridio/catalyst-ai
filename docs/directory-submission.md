@@ -30,7 +30,7 @@ has started.
 
 | # | Requirement | Status | Where the evidence is |
 | --- | --- | --- | --- |
-| 1 | Production HTTPS endpoint | ⛔ **blocked** | [§3.1](#31-production-https) |
+| 1 | Production HTTPS endpoint | ✅ **done** — `https://mcp.cloud.r1.diagrid.io/mcp` | [§3.1](#31-production-https) |
 | 2 | Streamable HTTP transport | ✅ **done** | [§3.2](#32-streamable-http) |
 | 3 | OAuth 2.0 with user consent | ⛔ **blocked** | [§3.3](#33-oauth-20-with-user-consent) |
 | 4 | Per-tool `title` | ✅ **done** | [§4](#4-the-annotation-claim-verified) |
@@ -79,28 +79,32 @@ is not mine to take.
 
 ### 3.1 Production HTTPS
 
-⛔ **Blocked, on two independent things, and the second one needs a decision rather than
-work.**
+✅ **Done, and serving.**
 
-The canonical URL is fixed at `https://mcp.r1.diagrid.io/mcp` and must never change, because
-RFC 8707 makes that string the permanent token audience (CAT-1728 item 7).
+The canonical URL is **`https://mcp.cloud.r1.diagrid.io/mcp`**, and it must never change,
+because RFC 8707 makes that string the permanent token audience (CAT-1728 item 7). A
+client pointed at any other host gets a token for the wrong audience, which fails as an
+auth error that reads like a permissions problem.
 
-1. **The route is written and off.** `cloudgrid#10355` adds a `catalyst-mcp`
-   `VirtualHostService` plus an Envoy `local_ratelimit`, switched by
-   `CATALYST_MCP_PUBLIC_DOMAIN`, which is unset everywhere. Empty means no virtual host and
-   no cluster — no xDS at all, rather than a 503. **The PR is OPEN and unmerged** (checked
-   with `gh pr view 10355`), so the code is not on `main` either. The issue brief called
-   this "landed"; it is written, reviewed and not merged.
-2. **🔴 The gateway that has the route cannot serve the name.** From #10355's own findings:
-   the dataplane gateway's NLB advertises only `*.cloud.r1.diagrid.io`, and the dataplane
-   `ClusterIssuer` pins its route53 solver to the delegated `cloud.r1.diagrid.io` zone
-   (`hostedZoneID: Z0834217ZELBYIDKZBC8`) while `_acme-challenge.mcp.r1.diagrid.io` lives in
-   the parent zone (`Z01261651K6HC6PTYF9C`). So the "add a cert SAN" step in the plan **would
-   not issue** — the Certificate would sit `Pending` and the gateway would have no cert for
-   the name. The decision is: serve `mcp.r1.diagrid.io` from the **controlplane Contour**
-   (where the cert and DNS already exist, but which would have to reach `catalyst-mcp` in
-   `cra-agent`), or give the dataplane a DNS record plus a zone/issuer change. Plumbing works
-   either way; only the value of `CATALYST_MCP_PUBLIC_DOMAIN` differs.
+`mcp.r1.diagrid.io`, the name this section used to give, is **not** the URL: it does not
+resolve. Do not copy it from older notes.
+
+- **The route** landed in `cloudgrid#10355` (merged 2026-08-28), off by default.
+  Production turns it on with `mcpPublicDomain: "mcp.cloud.r1.diagrid.io"` in
+  `deploy/config/catalyst-dataplane/production-r1/catalyst-dataplane.yaml`.
+- **The certificate problem is gone** because of the name. The dataplane gateway already
+  serves `*.cloud.r1.diagrid.io` from the delegated `cloud.r1.diagrid.io` zone, so a host
+  under it needs no new zone, issuer or record in the parent zone.
+- **The audience matches everywhere:** the MCP server's `--public-url` and
+  `--edge-auth-audience`, admingrid's protected-resource `resource`, and the production
+  Auth0 audience in `infrastructure/auth0/locals.tf` all say
+  `https://mcp.cloud.r1.diagrid.io/mcp`.
+- **Verified live:** an unauthenticated request gets `401` with
+  `WWW-Authenticate: Bearer resource_metadata=...`; the protected-resource and
+  authorization-server metadata both answer; and a production sign-in from Claude Code
+  completed and returned the user's projects.
+
+Staging is `https://mcp.cloud.staging.diagrid.dev/mcp`, with its own audience.
 
 ### 3.2 Streamable HTTP
 
@@ -124,13 +128,13 @@ Everything downstream is written and unmerged. All four checked with `gh pr view
 
 | PR | What it is | State |
 | --- | --- | --- |
-| `#10349` | Auth0 custom token-exchange profile, staging only | **open** — needs the apply |
-| `#10350` | asymmetric signing keys + JWKS for the AS | **open** |
-| `#10357` | AS request path — PKCE, discovery, refresh rotation | **open** |
-| `#10360` | consent screen, org resolved at consent time | **open** |
-| `#10355` | the public route, off by default | **open** |
+| `#10349` | Auth0 custom token-exchange profile, staging only | merged 2026-08-27 |
+| `#10350` | asymmetric signing keys + JWKS for the AS | merged 2026-08-25 |
+| `#10357` | AS request path — PKCE, discovery, refresh rotation | merged 2026-08-25 |
+| `#10360` | consent screen, org resolved at consent time | merged 2026-08-28 |
+| `#10355` | the public route, off by default | merged 2026-08-28 |
 
-So: **user consent is in review, not shipped.** Anthropic's requirement is "Use OAuth 2.0 for
+So: **user consent is shipped**, and a production sign-in from Claude Code has completed. Anthropic's requirement is "Use OAuth 2.0 for
 authenticated services" and the portal asks which client-registration mode you use (DCR, CIMD,
 or a static client ID held by Anthropic). CAT-1728's 2026-08-22 finding — that Claude Code
 accepts a pre-registered `--client-id` and does *not* require CIMD — makes the third option
@@ -815,7 +819,7 @@ The fallback lever from the issue is unchanged and still an afternoon:
 | Raw surface guard | `internal/config/config.go` + `config_test.go` | present, tested, declaration-level only |
 | Streamable HTTP | `internal/transport/http.go:70` | `mcp.NewStreamableHTTPHandler`, stateless |
 | Filter behaviour | `internal/filter/{filter,level,scrub,policy}.go` | as recorded in [§5.1](#51-where-every-factual-claim-above-comes-from) |
-| AS / route PR states | `gh pr view 10349 10350 10355 10357 10360` | all five **open**, none merged |
+| AS / route PR states | `gh pr view 10349 10350 10355 10357 10360` | all five merged (checked 2026-09-25) |
 | Existing privacy policy | `https://www.diagrid.io/privacy-policy` | effective 3/11/24, no AI/assistant/model-provider disclosure |
 | Support address | `diagrid-docs` grep | `support@diagrid.io` (8), `sales@` (13), `catalyst@` (1) — `grep -rn '<addr>' . --exclude-dir=node_modules --exclude-dir=.git` |
 | Anthropic criteria | submission + pre-submission-checklist pages | read 2026-08-23 |
