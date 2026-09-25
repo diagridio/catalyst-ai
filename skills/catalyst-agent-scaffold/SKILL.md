@@ -116,11 +116,11 @@ different stage in each language, and that difference decides what you can scaff
 
 | Language | Coordinate | State |
 | --- | --- | --- |
-| Python | `diagrid[<framework>]` on PyPI, 0.4.3 | Widest coverage — 11 frameworks — and exercised against live Catalyst |
-| .NET | `Diagrid.AI.Microsoft.AgentFramework` on NuGet, 1.0.10 | Published. Microsoft Agent Framework; targets net8.0, net9.0, net10.0 |
-| Java | `io.diagrid:diagrid-spring-ai-starter` on Maven Central, 0.2.0 | Published, Spring AI. Its own README says the APIs are not yet stable |
-| Go | `github.com/diagridio/go-ai` v0.1.1 | Root module resolves. The `adapters/*` submodules have no release tag, so they pin only as an untagged pseudo-version, and the repo has no CI |
-| TypeScript (Mastra) | `@diagrid/agent-mastra` on npm, 0.1.0 | Published and public, Mastra only — not a general TypeScript adapter. Needs Node >= 22.13.0. First published 2026-08-23, one version so far, so treat it as early |
+| Python | `diagrid[<framework>]` on PyPI, 0.5.0 | Widest coverage — 11 frameworks — and exercised against live Catalyst |
+| .NET | `Diagrid.AI.Microsoft.AgentFramework` on NuGet, 1.2.0 | Published. Microsoft Agent Framework; targets net8.0, net9.0, net10.0 |
+| Java | `io.diagrid:diagrid-spring-ai-starter` on Maven Central, 0.4.0 | Published, Spring AI. Its own README says the APIs are not yet stable |
+| Go | `github.com/diagridio/go-ai` v0.2.0; adapters `github.com/diagridio/go-ai/adapters/langchaingo` v0.1.1 and `github.com/diagridio/go-ai/adapters/eino` v0.1.1 | Published. Each adapter is its own module with its own release tag, built in CI |
+| TypeScript (Mastra) | `@diagrid/agent-mastra` on npm, 0.2.0 | Published and public, with provenance, Mastra only — not a general TypeScript adapter. Needs Node >= 22.13.0. First published 2026-08-23, so treat it as early |
 | TypeScript (anything else) | none | No adapter. The options below are unchanged |
 
 For **TypeScript**, the answer depends on the framework, and getting that wrong sends
@@ -149,9 +149,10 @@ workflows — that loses the framework bridge, not durability. Do **not** offer 
 `managed-agent` as the escape hatch; it is restricted per section 1, so it trades one
 dead end for another.
 
-For **Go**, do not pretend the adapter is a normal dependency. `go get` the root module
-by version, then pin each adapter to the pseudo-version `go get <path>@latest` resolves,
-and tell the user it is untagged and untested by CI so they can decide.
+For **Go**, the adapters are separate modules from the root, so each is fetched and pinned
+by its own tag: `go get` the root module at its version, then the adapter the framework
+needs at the adapter's version. Do not assume the two share a version number — they do
+not.
 
 Never emit a package coordinate you have not watched resolve. A confidently wrong
 package id is worse than no skill at all: it sends the user to debug Catalyst for a

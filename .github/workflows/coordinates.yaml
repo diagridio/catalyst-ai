@@ -1,0 +1,76 @@
+name: coordinates
+
+# Resolves every package coordinate the skills emit against its real registry —
+# PyPI, npm, NuGet, Maven Central and the Go module proxy. The list is
+# contracts/package-coordinates.txt; scripts/check_coordinates.py explains why it
+# exists.
+#
+# Two modes. On a pull request or push it fails on anything that does not
+# resolve. On the daily schedule it ALSO fails when a newer release exists than
+# the version a skill quotes, because that drift happens in other repos with no
+# pull request here to catch it. A scheduled failure opens (or comments on) a
+# `coordinate-drift` issue, since a red run in the Actions tab alone is a result
+# nobody sees.
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'contracts/package-coordinates.txt'
+      - 'scripts/check_coordinates.py'
+      - 'scripts/test_check_coordinates.py'
+      - '.github/workflows/coordinates.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'contracts/package-coordinates.txt'
+      - 'scripts/check_coordinates.py'
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove the checker catches what it claims to
+        run: python3 scripts/test_check_coordinates.py
+
+      - name: Resolve every coordinate
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            python3 scripts/check_coordinates.py --strict-versions
+          else
+            python3 scripts/check_coordinates.py
+          fi
+
+      - name: Raise a scheduled failure as an issue
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create coordinate-drift --color B60205 \
+            --description "A skill emits a package coordinate that no longer matches its registry" 2>/dev/null || true
+          body="The daily coordinate check failed: a skill names a package or version that no longer matches its registry. Details: $RUN_URL"
+          existing=$(gh issue list --label coordinate-drift --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --label coordinate-drift \
+              --title "Package coordinates in the skills have drifted from their registries" --body "$body"
+          fi
