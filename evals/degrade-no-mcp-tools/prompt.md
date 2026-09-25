@@ -1,6 +1,6 @@
 ---
 name: degrade-no-mcp-tools
-description: No catalyst_* tools exist in this rollout. An inventory question must degrade to the diagrid CLI, not to "Catalyst is unreachable" and not to an invented inventory.
+description: No catalyst_* tools are connected in this session. An inventory question must degrade to the diagrid CLI, not to "Catalyst is unreachable" and not to an invented inventory.
 tags: [degradation]
 plugins: ["../.."]
 max_turns: 12

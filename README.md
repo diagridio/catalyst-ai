@@ -11,8 +11,8 @@ question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client).
 
 > **Internal preview.** This is the first internal rollout. Read
-> [What works today](#what-works-today) before you start, because one significant piece
-> is deliberately not in it yet.
+> [What works today](#what-works-today) before you start: the MCP server is new, and
+> building and deploying still need the `diagrid` CLI.
 
 ## Install
 
@@ -34,6 +34,23 @@ claude plugin details catalyst-ai@diagrid    # expect 10 skills
 marketplace is offering, reading the installed copy only when the two agree — so on its
 own it can show you 10 skills while your session loads 9. If either looks wrong, jump to
 [If your install is behind](#if-your-install-is-behind).
+
+#### Then sign in to the Catalyst MCP server
+
+The plugin also registers the Catalyst MCP server, pointed at production. It stays
+empty until you sign in once. In Claude Code, run `/mcp`, pick `plugin:catalyst-ai:catalyst` and complete the
+browser sign-in. There is no API key and no `diagrid login` involved in this step.
+
+If you already added the server yourself with `claude mcp add`, remove that entry
+(`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
+have two copies of every Catalyst tool.
+
+To use staging, start Claude Code with
+`DIAGRID_MCP_URL=https://mcp.cloud.staging.diagrid.dev/mcp` and sign in again. A sign-in
+only works against the environment it was made for.
+
+Other clients (Copilot, Codex and so on) don't read `plugin.json`, so for them add the
+server by hand using that client's own MCP setup.
 
 **This repo is still private**, so the install clones over SSH
 (`git@github.com:diagridio/catalyst-ai.git`). You need an SSH key that can read
@@ -148,21 +165,17 @@ Being explicit, because the gap matters and you'll notice it:
 | | status |
 | --- | --- |
 | Authoring — workflows, agents, the local dev loop | ✅ works now |
-| Operating — inspect, debug, read logs and runs | ✅ works now, via the CLI |
+| Operating — inspect, debug, read logs and runs | ✅ works now, via the MCP server or the CLI |
 | Determinism and idempotency review | ✅ works now |
-| **The Catalyst MCP server** | ❌ **not yet** |
+| **The Catalyst MCP server** | 🆕 **registered by the plugin in Claude Code** — reads and workflow-run actions |
+| Creating, changing, deleting and deploying resources | CLI only for now |
 
-So today the skills drive the **`diagrid` CLI**. They know the commands, the flag names,
-the ordering constraints and the traps — but they're shelling out, not calling a typed API.
+The MCP server covers setup and reading: once you've signed in, the skills can inspect a
+project without the CLI. It can't create, change or delete resources yet, and it can never
+run your app locally. So building, deploying and the local dev loop still go through the
+**`diagrid` CLI**, and the skills say which path they're taking.
 
-The MCP server is close and lands separately. It's not here yet because the OAuth
-authorization server it needs is a multi-week component
-([CAT-1728](https://linear.app/diagrid/issue/CAT-1728)), and rather than block on that
-we're shipping a local stdio path — `diagrid mcp serve`, running in-process with your
-existing CLI credentials, no deployment
-([CAT-1731](https://linear.app/diagrid/issue/CAT-1731)).
-
-**You need a working `diagrid` CLI**, logged in:
+**For those, you need a working `diagrid` CLI**, logged in:
 
 ```bash
 diagrid login

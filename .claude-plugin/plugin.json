@@ -8,5 +8,15 @@
   },
   "homepage": "https://github.com/diagridio/catalyst-ai",
   "license": "Apache-2.0",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "mcpServers": {
+    "catalyst": {
+      "type": "http",
+      "url": "${DIAGRID_MCP_URL:-https://mcp.cloud.r1.diagrid.io/mcp}",
+      "oauth": {
+        "clientId": "claude-code",
+        "scopes": "catalyst:read offline_access"
+      }
+    }
+  }
 }
