@@ -41,6 +41,10 @@ The plugin also registers the Catalyst MCP server, pointed at production. It sta
 empty until you sign in once. In Claude Code, run `/mcp`, pick `plugin:catalyst-ai:catalyst` and complete the
 browser sign-in. There is no API key and no `diagrid login` involved in this step.
 
+If you already added the server yourself with `claude mcp add`, remove that entry
+(`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
+have two copies of every Catalyst tool.
+
 To use staging, start Claude Code with
 `DIAGRID_MCP_URL=https://mcp.cloud.staging.diagrid.dev/mcp` and sign in again. A sign-in
 only works against the environment it was made for.
