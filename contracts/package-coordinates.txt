@@ -1,0 +1,47 @@
+# Every package coordinate the skills tell a model to install, import or avoid.
+#
+# scripts/check_coordinates.py resolves each line against its registry, on every
+# pull request that touches skills/ and on a daily schedule. It exists because a
+# skill that emits a coordinate which does not resolve is worse than no skill:
+# the user goes looking for a Catalyst problem that is really a typo, and
+# lint_skills.py can only ban a wrong coordinate after someone has found it.
+#
+# Columns: <ecosystem> <coordinate> <version>
+#
+#   ecosystem  pypi | npm | nuget | maven | go
+#   version    the version the skills quote, which must exist and must appear on
+#              the same line as the coordinate somewhere under skills/.
+#              The scheduled run also fails when a newer release exists, so a
+#              quoted version cannot silently fall behind.
+#              `-`      the skills name the package without a version
+#              `absent` the skills name it as something that does NOT exist,
+#                       and the check fails if it starts resolving
+#
+# For Go, list the module; an import path under it is covered by its module.
+# The check also fails if a coordinate-shaped string appears in a skill code span
+# without a line here, so this file cannot quietly fall out of step with skills/.
+
+pypi   diagrid                                         0.5.0
+pypi   dapr                                            -
+pypi   dapr-ext-workflow                               -
+
+npm    @diagrid/agent-mastra                           0.2.0
+npm    @diagrid/agent-core                             -
+npm    @dapr/dapr                                      -
+npm    @dapr/durabletask-js                            -
+npm    @mastra/core                                    -
+npm    @dapr/workflow                                  absent
+
+nuget  Diagrid.AI.Microsoft.AgentFramework             1.2.0
+nuget  Dapr.Workflow                                   -
+nuget  Diagrid.Agents.Workflow                         absent
+
+maven  io.diagrid:diagrid-spring-ai-starter            0.4.0
+maven  io.dapr:dapr-sdk-workflows                      -
+maven  io.dapr:dapr-sdk-bom                            -
+
+go     github.com/diagridio/go-ai                      v0.2.0
+go     github.com/diagridio/go-ai/adapters/langchaingo v0.1.1
+go     github.com/diagridio/go-ai/adapters/eino        v0.1.1
+go     github.com/dapr/durabletask-go                  -
+go     github.com/dapr/go-sdk                          -
