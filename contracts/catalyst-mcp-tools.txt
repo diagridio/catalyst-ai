@@ -20,8 +20,11 @@
 #     | grep -oE 'Name:[[:space:]]*"catalyst_[a-z_]*"|ToolName[[:space:]]*=[[:space:]]*"catalyst_[a-z_]*"' \
 #     | grep -oE 'catalyst_[a-z_]*' | sort -u
 #
-# Last synced: 2026-08-31, against cloudgrid main after PR #10603 (the curated
-# surface Reagent and directly-connected clients both now use).
+# Last synced: 2026-09-25, against the cloudgrid MCP parity stack head (#11707,
+# f8cc466779) ahead of its merge; re-verified against cloudgrid main once it lands.
+catalyst_apply
+catalyst_delete_resource
+catalyst_export_workflow_run
 catalyst_get_access_policy
 catalyst_get_agent
 catalyst_get_appid
@@ -31,9 +34,12 @@ catalyst_get_mcp_server
 catalyst_get_metrics
 catalyst_get_project
 catalyst_get_region
+catalyst_get_resource_schema
 catalyst_get_template
+catalyst_get_usage
 catalyst_get_workflow
 catalyst_get_workflow_run
+catalyst_grant_access
 catalyst_list_access_policies
 catalyst_list_agents
 catalyst_list_app_tunnels
@@ -43,12 +49,16 @@ catalyst_list_components
 catalyst_list_mcp_servers
 catalyst_list_projects
 catalyst_list_templates
+catalyst_list_token_budgets
 catalyst_list_workflow_runs
 catalyst_list_workflows
 catalyst_pause_workflow_run
+catalyst_purge_workflow_runs
 catalyst_raise_workflow_event
 catalyst_rerun_workflow_run
+catalyst_rerun_workflow_runs
 catalyst_resume_workflow_run
+catalyst_revoke_access
 catalyst_start_workflow
 catalyst_terminate_workflow_run
 catalyst_whoami
