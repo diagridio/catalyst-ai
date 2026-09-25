@@ -12,8 +12,8 @@ narrower: the four clients we care about now, against the server as it is built.
 
 **No code change, no DCR, no CIMD.** Every client is onboardable through the
 pre-registered public-client path the authorization server already implements.
-The whole production change is one line in one values file
-(cloudgrid#11735, draft).
+The whole change is one values line per environment — onebox, staging and
+production, byte-identical in all three (cloudgrid#11735, draft).
 
 | Client | `client_id` | Redirect URI it presents | Status |
 |---|---|---|---|
@@ -65,6 +65,15 @@ config below does.
 
 The client entries must be live. `cloudgrid#11735` is a draft, because adding
 OAuth clients to production is Casper's call.
+
+Each test below names the production URL. Onebox and staging carry the same
+client list, so the same steps run against
+`https://mcp.cloud.staging.diagrid.dev/mcp` or the local equivalent by swapping
+the URL — with one exception: **`claude-web` cannot work on onebox.** Its
+callback is hosted by Anthropic, so the flow needs Anthropic's servers to reach
+the MCP host, and `api.local.diagrid.io` resolves only on your machine. Codex
+and VS Code are local processes and do work there, subject to onebox's
+self-signed CA.
 
 ```
 curl -s https://api.r1.diagrid.io/mcp-auth/.well-known/oauth-authorization-server | jq .
