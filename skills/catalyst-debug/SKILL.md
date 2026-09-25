@@ -67,10 +67,10 @@ project with different settings turns one unexplained failure into two.
 
   Two more error strings sit outside that structure and are easy to miss: a pub/sub's
   `status.topicError` and a KV store's `status.itemsError`.
-- **Logs are CLI-only.** There is no MCP log tool, deliberately: log lines carry whatever
-  the application chose to print, so the log operations are denied at the default
-  data-sharing level. Do not hunt for `catalyst_get_logs`; run
-  `diagrid project logs` or `diagrid appid logs`.
+- **`catalyst_get_logs` works only at `full` data sharing.** Log lines carry whatever
+  the application chose to print, so at the default `metadata` level the tool returns
+  `DATA_SHARING_RESTRICTED`. That is policy, not a fault: do not retry it. Run
+  `diagrid project logs` or `diagrid appid logs` instead.
 - **`-o json` on every CLI read.** The default table view drops fields, including the
   ones carrying the failure reason. A conclusion drawn from the table view is a
   conclusion drawn from a truncated object. One exception: `diagrid workflow get` has
