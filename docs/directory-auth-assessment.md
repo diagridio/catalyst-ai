@@ -1,12 +1,12 @@
 # What the claude.ai directory actually requires of our auth
 
-Research only. No production, Auth0 or code change is proposed here beyond one
-documentation correction, which is described at the end and is not optional.
+Research only. No production, Auth0 or code change is proposed.
 
-## The headline: DCR is not required, and never was
+## The headline: answer the portal's client-registration question with the static client
 
-CAT-1734 has been carried as "blocked on DCR" all the way through this effort. That
-premise does not survive contact with our own recon.
+CAT-1734 was carried as "blocked on DCR" all the way through this effort. That premise does
+not survive contact with our own recon, and the task is not a build — it is answering one
+portal question. DCR remains available as a fallback and is scoped at the end.
 
 `docs/directory-submission.md` §3.3 records what the portal asks:
 
@@ -102,27 +102,17 @@ cheapest next step is to test them against the *existing* static-client path bef
 concluding anything needs DCR. If Desktop turns out to need DCR, that is a far stronger
 argument for Option B than the directory is.
 
-## The correction that is not optional
+## The URL correction — done, by #26
 
-`docs/directory-submission.md` §3.1 fixes the canonical URL as:
+This assessment originally carried a second finding: `directory-submission.md` §3.1 fixed the
+canonical URL at `https://mcp.r1.diagrid.io/mcp`, a host that does not resolve, while
+production serves `https://mcp.cloud.r1.diagrid.io/mcp`.
 
-```
-https://mcp.r1.diagrid.io/mcp     ← "must never change"
-```
+**That is fixed.** catalyst-ai#26 landed it on `main`: four corrected references, and §3.1 now
+states outright that `mcp.r1.diagrid.io` "is **not** the URL". Verified on `main` rather than
+assumed.
 
-**That host does not resolve.** Production serves:
-
-```
-https://mcp.cloud.r1.diagrid.io/mcp     → HTTP 401 (live, challenge served)
-```
-
-The doc records the reason itself, in the very next paragraph: the dataplane gateway's NLB
-advertises only `*.cloud.r1.diagrid.io`. The `.cloud.` form was the decision; §3.1 predates
-it and was never updated. The string appears nowhere in `docs/`.
-
-This is not cosmetic. RFC 8707 makes that string the **permanent token audience**, and the
-doc says so. A submission carrying the wrong URL would either fail immediately, or — worse
-— fix an audience we cannot serve into a listing that "must never change".
-
-**Recommendation:** correct §3.1 to `https://mcp.cloud.r1.diagrid.io/mcp` before the
-submission is drafted, independently of whatever is decided about DCR.
+It is recorded here only because of why it mattered: RFC 8707 makes that string the permanent
+token audience, and the submission says it must never change. A listing published against a
+host we cannot serve would have fixed an unservable audience permanently. Worth remembering
+the next time a "must never change" value is written down before the thing it names exists.
