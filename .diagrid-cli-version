@@ -62,7 +62,7 @@ darwin_arm64 = "875e085dc8e011c1e7d381941d73a4cccdc3d8b3fac3ebad0c9b78269e6b6b0b
 #
 # Listed here, the gate stops reporting the path as nonexistent and instead
 # reports it as unverifiable in this environment, by name, with the CLI's own
-# error. Where the path DOES resolve — any Diagrid developer's machine — nothing
+# error. Where the path DOES resolve — on a login that can see it — nothing
 # is suppressed and its flags and required flags are checked normally.
 #
 # The list is deliberately narrow and self-policing: an entry that turns out to

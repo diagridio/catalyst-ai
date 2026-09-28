@@ -33,7 +33,6 @@ so a figure from memory is often wrong for the one in front of you.
 | `number_of_appids` | Per region, **summed across every project in the organization** | Splitting a topology across two projects does not buy more |
 | `number_of_connections` | Per region, org-wide | Same. A connection is a component |
 | `number_of_catalyst_subscriptions` | Per region, org-wide | Same |
-| `number_of_durable_agents` | Per region, org-wide | Same |
 | `number_of_projects` | Per region | Low, and easy to spend by accident — see section 7 |
 | `number_of_pubsubs_per_project` | Per project | **1 on every plan** |
 | `number_of_kvstores_per_project` | Per project | **1 on every plan** |
@@ -59,7 +58,7 @@ cannot be built. Note also that creating a managed pub/sub or KV store spends a
 
 Reference figures for the free plan, per cloud region, useful as a sanity check on what
 `org usage` returns rather than as a substitute for reading it — 3 projects, 10 App IDs,
-21 connections, 10 subscriptions, 5 durable agents, 100,000 requests, and 500 requests
+21 connections, 10 subscriptions, 100,000 requests, and 500 requests
 per second per App ID.
 
 Finally, headroom is not the only per-region property. Managed pub/sub, managed KV and

@@ -158,9 +158,9 @@ message.
 ### Agents
 
 An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
-identified by `--endpoint` and the `--archive-*` flags. Never say "the agent" without
-saying which one. The CLI also has a hidden `managed-agent` command that is not available
-to users; do not report on it or suggest it.
+identified by `--endpoint` and the `--archive-*` flags. Say which resource you mean,
+since the CLI also has a hidden `managed-agent` command that is not available to users;
+do not report on it or suggest it.
 
 `diagrid agent registry list` is the second thing, and often the one that answers the
 question: it lists what is actually registered in the project's runtime, including

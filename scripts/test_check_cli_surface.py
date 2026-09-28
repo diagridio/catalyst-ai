@@ -58,7 +58,7 @@ class Spec:
     """One fixture: a SKILL.md body and the verdict it must produce.
 
     `must_not_say` exists for the cases whose *depth* of checking depends on the
-    login running them. `managed-agent` resolves on a Diagrid account and does
+    login running them. `managed-agent` resolves only for some logins and does
     not resolve in CI, so "is this rejected" is not a question with one answer —
     but "is it ever reported as a nonexistent command" is, and that is the
     property worth pinning, because a false "does not exist" is the failure that
