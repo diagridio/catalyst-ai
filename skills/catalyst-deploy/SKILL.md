@@ -14,6 +14,44 @@ Order matters throughout, and not as a matter of taste — several of the constr
 leave a resource *permanently* broken when taken out of order, with no error at the moment
 you got it wrong. Read sections 1 and 3 before creating anything.
 
+## Two routes: `catalyst_apply` or the CLI
+
+If `catalyst_apply` is in your tool list, deploy with it. It is the MCP equivalent of
+`diagrid apply -f`: you send manifests, and it creates what does not exist and replaces
+what does. It is only listed for users whose role can write, so if it is missing, that is
+the user's role, not a broken connection: use the CLI commands in the rest of this skill.
+
+- **Send one application's resources together, with one exception.** Within a call it
+  applies them in a fixed order: project, configurations, components and subscriptions,
+  agents and MCP servers, apps and App IDs, then access policies and token budgets.
+  That puts a subscription *before* the App IDs, but section 3 requires the App IDs a
+  subscription scopes to to exist first. So send subscriptions in a second call, after
+  the call that created their App IDs. Across calls, the order is yours to get right.
+- **Call `catalyst_get_resource_schema` before writing a kind for the first time.** Do
+  not guess field names.
+- **Run it with `dry_run` first** and show the user what will be created or replaced.
+- **Replace means replace.** To change an existing resource, read it with its get tool,
+  change it, and send it back whole: a field left out is dropped.
+- **Settings read back without a value are refused, not erased.** At the default
+  `metadata` data-sharing level a read withholds inline setting values, such as a
+  component's `spec.metadata`. Sent back as they are, the call fails with *"nothing was
+  applied"* and lists each setting. Ask the user for each value, or better, point the
+  setting at a secret with `secretKeyRef` so the value never passes through the
+  conversation. Never delete the entry to get past the check: that removes the stored
+  setting on replace.
+- **The first failure stops the batch.** Everything after it is reported as not
+  attempted. Fix that one and send the rest again; applying the same manifests twice is
+  safe.
+- **Accepted is not ready.** Read each resource back (section 5), exactly as after a CLI
+  create.
+
+Deleting goes through `catalyst_delete_resource`, never as a side effect of a deploy.
+It cannot be undone. **Every kind except a project is deleted on the first call**, so
+ask the user before you call it, and name what goes with the resource. A project is the
+one exception: the first call returns a preview of everything it would remove, plus a
+confirmation token. Show the user that preview, and call again with the token only
+after they agree.
+
 ## 1. Budget the headroom first
 
 Do this before designing a topology, not after building one. Every cap here is enforced
@@ -166,7 +204,7 @@ Four component facts that each cost a rebuild when missed:
 - **A component's type is immutable.** Changing it fails with `component must be deleted
   to be updated as the component type cannot be changed once created`, and converting to
   or from a Diagrid managed type fails the same way with its own wording. Delete and
-  recreate; there is no in-place path.
+  recreate, with the user's agreement first; there is no in-place path.
 - **`actorStateStore` is rejected on a managed state store.** The managed workflow store
   already fills that role.
 - **`agent-registry` is managed by Diagrid.** Do not create or edit it.
