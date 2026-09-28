@@ -57,7 +57,7 @@ after they agree.
 Do this before designing a topology, not after building one. Every cap here is enforced
 at create time, so the cost of discovering one late is a redesign rather than a retry.
 
-- `diagrid org usage` reports `used` and `limit` per key.
+- `catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key.
 - `catalyst_get_metrics` reads request rates, error rates and consumption for a project
   or a single App ID.
 
@@ -192,6 +192,16 @@ diagrid component create <name> --type <type> --metadata key=value --scopes app-
 Managed services have fixed names — `pubsub` for the broker, `kvstore` for the KV store.
 The managed workflow store is wired in implicitly and has **no component name**, so do not
 go looking for one.
+
+Access between applications is a separate control from both, and it is deny-by-default:
+a caller that no policy names is refused. Grant it with `catalyst_grant_access` or
+`diagrid app access grant`, and take it away with `catalyst_revoke_access` or
+`diagrid app access revoke`. Read the current policy first with
+`catalyst_get_access_policy`: the first grant on an App with no policy creates one that
+denies everyone else. Both directions change who can reach the app, so say what will
+change and get the user's agreement before either call: a grant can widen access to
+every caller (`*`), and a revoke breaks the caller's calls as soon as the policy reaches
+the sidecar.
 
 Subscriptions are the pub/sub half:
 
