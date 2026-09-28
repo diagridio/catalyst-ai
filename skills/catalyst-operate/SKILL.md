@@ -249,7 +249,7 @@ headroom number.
 Keys you will be asked about: `number_of_projects`, `number_of_appids`,
 `number_of_connections`, `number_of_catalyst_subscriptions`,
 `number_of_pubsubs_per_project`, `number_of_kvstores_per_project`,
-`number_of_durable_agents`, `number_of_inbound_outbound_requests`,
+`number_of_inbound_outbound_requests`,
 `max_requests_per_second_per_appid`; and at organization scope `number_of_users`,
 `number_of_apikeys`, `number_of_sso_connections`.
 
