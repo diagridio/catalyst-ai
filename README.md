@@ -50,7 +50,10 @@ was made for.
 
 Other clients (Copilot, Codex and so on) don't read `plugin.json`. Add
 `https://mcp.cloud.r1.diagrid.io/mcp` as a remote (streamable HTTP) MCP server in that
-client's own MCP setup; it signs in with OAuth in the browser, with no API key.
+client's own MCP setup; it signs in with OAuth in the browser, with no API key. The plugin
+requests the scopes `catalyst:read offline_access`; if your client lets you set scopes,
+request the same. Without `offline_access` there is no refresh token, so you sign in
+again each time the session expires.
 
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
@@ -162,15 +165,18 @@ Being explicit, because the gap matters and you'll notice it:
 | Authoring — workflows, agents, the local dev loop | ✅ works now |
 | Operating — inspect, debug, read logs and runs | ✅ works now, via the MCP server or the CLI |
 | Determinism and idempotency review | ✅ works now |
-| **The Catalyst MCP server** | 🆕 **registered by the plugin in Claude Code** — reads and workflow-run actions |
-| Creating, changing, deleting and deploying resources | CLI only for now |
+| **The Catalyst MCP server** | 🆕 **registered by the plugin in Claude Code** — reads for everyone; writes for roles that allow them |
+| Creating, changing, deleting and deploying resources | ✅ works now, via the MCP server for a role that can write, or the CLI |
 
-The MCP server covers setup and reading: once you've signed in, the skills can inspect a
-project without the CLI. It can't create, change or delete resources yet, and it can never
-run your app locally. So building, deploying and the local dev loop still go through the
-**`diagrid` CLI**, and the skills say which path they're taking.
+Once you've signed in, the skills can inspect a project without the CLI. If your role in
+the organization allows writes, the MCP server can also create, change and delete
+resources, deploy an application, run workflow-run actions and manage access; a
+read-only role sees only the read tools. It can never run your app locally, so the local
+dev loop still goes through the **`diagrid` CLI**, and the skills say which path
+they're taking.
 
-**For those, you need a working `diagrid` CLI**, logged in:
+**For the local dev loop, and whenever an MCP tool isn't available to you, you need a
+working `diagrid` CLI**, logged in:
 
 ```bash
 diagrid login

@@ -125,9 +125,10 @@ Two limits in that table are deliberate, not oversights:
   `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
   policy, not a fault: do not retry it. Fall back to the CLI, and only an org admin
   raising the level to `full` changes the answer.
-- **The MCP surface reads; it does not manage.** There are no create, update or delete
-  tools. Only workflow lifecycle calls write, and this skill does not use them. Anything
-  the user wants changed goes through the CLI or the console, with their consent.
+- **This skill only reads, even where the MCP server can write.** For a role that allows
+  writes, the server also has create, change and delete tools (see `catalyst-deploy`) and
+  workflow-run actions (see `catalyst-debug`). This skill uses none of them. Anything the
+  user wants changed goes to those skills or the CLI, with their consent.
 
 `-o json` on any CLI read gives you the full object; the default table view drops
 fields. Read the JSON before concluding that a field does not exist. One read runs the other way:
