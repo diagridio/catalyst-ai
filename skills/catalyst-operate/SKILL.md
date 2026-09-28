@@ -113,7 +113,9 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Dev tunnels open on a project | `catalyst_list_app_tunnels` | `diagrid appid get <id> --all` |
 | Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` | — |
 | Who changed what, and when | `catalyst_list_audit_events` | `diagrid audit list` |
-| Request rates, error rates, quota consumption | `catalyst_get_metrics` | `diagrid org usage` (org-wide only) |
+| Request rates, error rates, quota consumption | `catalyst_get_metrics` | — |
+| Plan limits and how much of each is used | `catalyst_get_usage` | `diagrid org usage` |
+| Token budgets and their spend | `catalyst_list_token_budgets` | `diagrid tokenbudget list` |
 | Logs | `catalyst_get_logs` (full data sharing only) | `diagrid project logs`, `diagrid appid logs <id>` |
 
 Two limits in that table are deliberate, not oversights:
@@ -240,7 +242,8 @@ user is already entitled to use is not routing around it; it is using the produc
 a project or to one App ID. Use it before proposing a design that adds resources —
 headroom is cheaper to check than to discover.
 
-`diagrid org usage` reports `used` and `limit` per key across the organization. Limits
+`catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key across
+the organization. Limits
 are scoped, not global: `catalyst.per_cloud_region` and `catalyst.per_private_region` are
 enforced **per region**, so usage arrives as one entry per scope and region. Summing
 across regions, or reading one region's entry as the organization total, produces a wrong

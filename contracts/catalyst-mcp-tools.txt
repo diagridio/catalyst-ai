@@ -1,22 +1,22 @@
 # The curated Catalyst MCP tool surface.
 #
-# This is a VENDORED COPY of the manifest that ships in cloudgrid at
-# services/catalyst/mcp/internal/toolset/tools.go. It exists so this repo can
-# gate its prose without reaching across a repository boundary in CI.
+# A copy of the tool names the Catalyst MCP server returns from `tools/list`, one
+# per line. It exists so this repo can check its prose against the tools that
+# really ship, without calling the server from CI.
 #
-# Why it needs a gate at all: a skill is prose a model acts on. A skill naming a
+# Why it needs a check at all: a skill is prose a model acts on. A skill naming a
 # tool that does not exist does not crash — the model calls it, gets "unknown
 # tool", and improvises. And a tool that ships with no skill mentioning it is
 # invisible: the model never learns it is there. Both are silent.
 #
-# Regenerate from a cloudgrid checkout:
+# Update it whenever the server's tool list changes: the lines below must equal
+# the names `tools/list` returns, sorted. A write tool is absent from `tools/list`
+# for a caller whose role cannot write, so take the list as a caller who can.
 #
-#   git -C <cloudgrid> show origin/main:services/catalyst/mcp/internal/toolset/tools.go \
-#     | grep -o 'Name:[[:space:]]*"catalyst_[a-z_]*"' \
-#     | grep -o 'catalyst_[a-z_]*' | sort -u
-#
-# Last synced: 2026-08-31, against cloudgrid main after PR #10603 (the curated
-# surface Reagent and directly-connected clients both now use).
+# Last synced: 2026-09-28.
+catalyst_apply
+catalyst_delete_resource
+catalyst_export_workflow_run
 catalyst_get_access_policy
 catalyst_get_agent
 catalyst_get_appid
@@ -26,9 +26,12 @@ catalyst_get_mcp_server
 catalyst_get_metrics
 catalyst_get_project
 catalyst_get_region
+catalyst_get_resource_schema
 catalyst_get_template
+catalyst_get_usage
 catalyst_get_workflow
 catalyst_get_workflow_run
+catalyst_grant_access
 catalyst_list_access_policies
 catalyst_list_agents
 catalyst_list_app_tunnels
@@ -38,12 +41,16 @@ catalyst_list_components
 catalyst_list_mcp_servers
 catalyst_list_projects
 catalyst_list_templates
+catalyst_list_token_budgets
 catalyst_list_workflow_runs
 catalyst_list_workflows
 catalyst_pause_workflow_run
+catalyst_purge_workflow_runs
 catalyst_raise_workflow_event
 catalyst_rerun_workflow_run
+catalyst_rerun_workflow_runs
 catalyst_resume_workflow_run
+catalyst_revoke_access
 catalyst_start_workflow
 catalyst_terminate_workflow_run
 catalyst_whoami

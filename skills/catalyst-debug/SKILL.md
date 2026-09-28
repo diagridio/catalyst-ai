@@ -187,8 +187,9 @@ permission because nothing in it suggests otherwise.
 | Hold it | `catalyst_pause_workflow_run` / `catalyst_resume_workflow_run` | `diagrid workflow pause --id <app> --instance-id <run-id>`, and `resume` with the same flags | Reversible; history is kept. |
 | Unblock a waiting run | `catalyst_raise_workflow_event` | `diagrid workflow raise-event --id <app> --instance-id <run-id> --event-name <name> --data '<json>'` | Not idempotent: a run awaiting two events consumes two. |
 | Retry from a point | `catalyst_rerun_workflow_run` | `diagrid workflow rerun --id <app> --instance-id <run-id> --event-id <n> --new-workflow-id <new-run-id>` | Creates a **new** run from the original's input, resuming from a chosen event. Both the event and an id for the new run are required — nothing generates the id. The original is untouched, so any id the user recorded still points at the failure. |
+| Retry many from the same point | `catalyst_rerun_workflow_runs` | none | Starts new runs from several existing ones, all resuming from one event. The new runs execute for real, so side effects run again. Two calls: the first changes nothing and lists every run it would restart; show the user that list, and call again with the returned confirmation value only after they agree. |
 | Stop it | `catalyst_terminate_workflow_run` | `diagrid workflow terminate --id <app> --instance-id <run-id>` | Irreversible: it cannot be resumed. History is kept. Confirm before calling. |
-| Delete history | none — no MCP tool exists | `diagrid workflow purge --id <app> --instance-id <run-id>`, or `--bulk` with `--status`/`--name`/`--older-than` filters | Irreversible, and it destroys the evidence for this diagnosis. Export first if the user may need it: `diagrid workflow archive export`. A single purge takes `-y` and `--bulk` takes `--approve` to skip the confirmation it would otherwise ask for — both are purge-only, neither exists on `terminate`, and neither is yours to reach for on the user's behalf. |
+| Delete history | `catalyst_purge_workflow_runs` | `diagrid workflow purge --id <app> --instance-id <run-id>`, or `--bulk` with `--status`/`--name`/`--older-than` filters | Irreversible, and it destroys the evidence for this diagnosis. Over MCP it is always two calls: the first changes nothing and lists every run it would purge; show the user that list, and call again with the returned confirmation value only after they agree. Export first if the user may need the record: `catalyst_export_workflow_run`, which works only at `full` data sharing, or `diagrid workflow archive export`. A single purge takes `-y` and `--bulk` takes `--approve` to skip the confirmation it would otherwise ask for — both are purge-only, neither exists on `terminate`, and neither is yours to reach for on the user's behalf. |
 
 **The CLI column is the one that works in a session with no `catalyst_*` tools**, which is
 most of them. Do not report a run as unstoppable because the MCP tool is absent.
@@ -253,10 +254,15 @@ What to check:
 - **The endpoint and the app.** The failure is nearly always the endpoint or the
   application behind it. Confirm the endpoint on the resource, confirm the app is up and
   reachable, then `diagrid listen --id <app-id>` to see whether the request even arrives.
+- **Access to the MCP servers it uses.** A tool call the agent is not authorized for is
+  refused, which looks like an agent that stops mid-task. Read the per-tool policy with
+  `catalyst_get_access_policy` or `diagrid mcpserver access get <mcpserver>`, and grant a
+  missing tool with `catalyst_grant_access` only after the user agrees.
 - **Token budgets.** A budget in `enforce` mode **rejects** requests once
   the window's allowance is spent, which looks like an unresponsive agent rather than an
-  error. `diagrid tokenbudget list` — functional, but hidden from help and absent from
-  older CLI versions.
+  error. Read them with `catalyst_list_token_budgets`, which shows the limit, the spend in
+  the current window and whether the cap is reached, or `diagrid tokenbudget list` —
+  functional, but hidden from help and absent from older CLI versions.
 
 ## 6. A component that will not connect
 
