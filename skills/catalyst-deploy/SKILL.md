@@ -198,8 +198,10 @@ no policy names is refused. Grant it with `catalyst_grant_access` or
 `diagrid app access grant`, and take it away with `catalyst_revoke_access` or
 `diagrid app access revoke`. Read the current policy first with
 `catalyst_get_access_policy`: the first grant on an App with no policy creates one that
-denies everyone else. Revoking breaks the caller's calls as soon as the policy reaches the
-sidecar, so confirm with the user before you do it.
+denies everyone else. Both directions change who can reach the app, so say what will
+change and get the user's agreement before either call: a grant can widen access to
+every caller (`*`), and a revoke breaks the caller's calls as soon as the policy reaches
+the sidecar.
 
 Subscriptions are the pub/sub half:
 
