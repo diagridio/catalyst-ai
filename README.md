@@ -10,9 +10,8 @@ is confirmed to put them in front of the model; neither has yet answered a Catal
 question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client).
 
-> **Internal preview.** This is the first internal rollout. Read
-> [What works today](#what-works-today) before you start: the MCP server is new, and
-> building and deploying still need the `diagrid` CLI.
+> **Early release.** Read [What works today](#what-works-today) before you start: the
+> MCP server is new, and building and deploying still need the `diagrid` CLI.
 
 ## Install
 
@@ -37,25 +36,21 @@ own it can show you 10 skills while your session loads 9. If either looks wrong,
 
 #### Then sign in to the Catalyst MCP server
 
-The plugin also registers the Catalyst MCP server, pointed at production. It stays
-empty until you sign in once. In Claude Code, run `/mcp`, pick `plugin:catalyst-ai:catalyst` and complete the
+The plugin also registers the Catalyst MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
+It stays empty until you sign in once. In Claude Code, run `/mcp`, pick `plugin:catalyst-ai:catalyst` and complete the
 browser sign-in. There is no API key and no `diagrid login` involved in this step.
 
 If you already added the server yourself with `claude mcp add`, remove that entry
 (`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
 have two copies of every Catalyst tool.
 
-To use staging, start Claude Code with
-`DIAGRID_MCP_URL=https://mcp.cloud.staging.diagrid.dev/mcp` and sign in again. A sign-in
-only works against the environment it was made for.
+To point the plugin at a different Catalyst environment, set `DIAGRID_MCP_URL` before
+starting Claude Code and sign in again. A sign-in only works against the environment it
+was made for.
 
-Other clients (Copilot, Codex and so on) don't read `plugin.json`, so for them add the
-server by hand using that client's own MCP setup.
-
-**This repo is still private**, so the install clones over SSH
-(`git@github.com:diagridio/catalyst-ai.git`). You need an SSH key that can read
-`diagridio` — if `ssh -T git@github.com` greets you by name, you're set. That requirement
-disappears when the repo goes public.
+Other clients (Copilot, Codex and so on) don't read `plugin.json`. Add
+`https://mcp.cloud.r1.diagrid.io/mcp` as a remote (streamable HTTP) MCP server in that
+client's own MCP setup; it signs in with OAuth in the browser, with no API key.
 
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
@@ -262,8 +257,7 @@ Also worth reporting, in rough order of value:
 2. A skill that fired when a **different** one should have.
 3. Anything a skill told you that turned out to be wrong.
 
-File in Linear against the *AI-Native Catalyst* project, or post in
-`#catalyst-discussions`.
+Open an issue on this repository.
 
 ## Contributing
 

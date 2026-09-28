@@ -55,7 +55,7 @@ MAX_TOTAL_DESCRIPTION_CHARS = 5000
 # end for Codex, whose model-visible prompt ingests all ten of these skills with
 # nothing but name and description. A skill that silently loses its tool
 # restriction on another client is worse than one that never claimed to have it.
-# CAT-1730 originally required `mcp_tools:` and `cli_fallback:` here — dropped
+# The first version required `mcp_tools:` and `cli_fallback:` here — dropped
 # 2026-08-22, expressed in prose instead.
 ALLOWED_FRONTMATTER_KEYS = {"name", "description"}
 
