@@ -193,8 +193,8 @@ Managed services have fixed names — `pubsub` for the broker, `kvstore` for the
 The managed workflow store is wired in implicitly and has **no component name**, so do not
 go looking for one.
 
-Access between applications is the third half, and it is deny-by-default: a caller that
-no policy names is refused. Grant it with `catalyst_grant_access` or
+Access between applications is a separate control from both, and it is deny-by-default:
+a caller that no policy names is refused. Grant it with `catalyst_grant_access` or
 `diagrid app access grant`, and take it away with `catalyst_revoke_access` or
 `diagrid app access revoke`. Read the current policy first with
 `catalyst_get_access_policy`: the first grant on an App with no policy creates one that
