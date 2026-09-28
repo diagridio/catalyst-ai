@@ -1,27 +1,19 @@
 # The curated Catalyst MCP tool surface.
 #
-# This is a VENDORED COPY of the manifest that ships in cloudgrid at
-# services/catalyst/mcp/internal/toolset/tools.go. It exists so this repo can
-# gate its prose without reaching across a repository boundary in CI.
+# A copy of the tool names the Catalyst MCP server returns from `tools/list`, one
+# per line. It exists so this repo can check its prose against the tools that
+# really ship, without calling the server from CI.
 #
-# Why it needs a gate at all: a skill is prose a model acts on. A skill naming a
+# Why it needs a check at all: a skill is prose a model acts on. A skill naming a
 # tool that does not exist does not crash — the model calls it, gets "unknown
 # tool", and improvises. And a tool that ships with no skill mentioning it is
 # invisible: the model never learns it is there. Both are silent.
 #
-# Regenerate from a cloudgrid checkout. Read every non-test file in the toolset
-# package, not just tools.go: composed tools (apply, delete, bulk workflow,
-# access) are defined in their own files, and some name themselves through a
-# `...ToolName = "catalyst_..."` constant rather than a `Name:` field.
+# Update it whenever the server's tool list changes: the lines below must equal
+# the names `tools/list` returns, sorted. A write tool is absent from `tools/list`
+# for a caller whose role cannot write, so take the list as a caller who can.
 #
-#   ref=origin/main
-#   for f in $(git -C <cloudgrid> ls-tree --name-only $ref services/catalyst/mcp/internal/toolset/ \
-#       | grep '\.go$' | grep -v '_test\.go$'); do git -C <cloudgrid> show $ref:$f; done \
-#     | grep -oE 'Name:[[:space:]]*"catalyst_[a-z_]*"|ToolName[[:space:]]*=[[:space:]]*"catalyst_[a-z_]*"' \
-#     | grep -oE 'catalyst_[a-z_]*' | sort -u
-#
-# Last synced: 2026-09-25, against the cloudgrid MCP parity stack head (#11707,
-# f8cc466779) ahead of its merge; re-verified against cloudgrid main once it lands.
+# Last synced: 2026-09-28.
 catalyst_apply
 catalyst_delete_resource
 catalyst_export_workflow_run
