@@ -21,10 +21,12 @@ If `catalyst_apply` is in your tool list, deploy with it. It is the MCP equivale
 what does. It is only listed for users whose role can write, so if it is missing, that is
 the user's role, not a broken connection: use the CLI commands in the rest of this skill.
 
-- **Send everything for one application in a single call.** Within a call it applies in
-  the order section 3 requires: project, configurations, components and subscriptions,
-  agents and MCP servers, apps and App IDs, then access policies and token budgets. Across
-  separate calls the order is yours to get right.
+- **Send one application's resources together, with one exception.** Within a call it
+  applies them in a fixed order: project, configurations, components and subscriptions,
+  agents and MCP servers, apps and App IDs, then access policies and token budgets.
+  That puts a subscription *before* the App IDs, but section 3 requires the App IDs a
+  subscription scopes to to exist first. So send subscriptions in a second call, after
+  the call that created their App IDs. Across calls, the order is yours to get right.
 - **Call `catalyst_get_resource_schema` before writing a kind for the first time.** Do
   not guess field names.
 - **Run it with `dry_run` first** and show the user what will be created or replaced.
