@@ -52,12 +52,12 @@ darwin_arm64 = "875e085dc8e011c1e7d381941d73a4cccdc3d8b3fac3ebad0c9b78269e6b6b0b
 # the gate probes them and checks them fully. `managed-agent` is different:
 # measured on the same pinned binary, same commit,
 #
-#   logged in as @diagrid.io   `diagrid managed-agent --help` prints its help
+#   some logins                `diagrid managed-agent --help` prints its help
 #   no login at all (CI)       cobra does not resolve it as a command
 #
 # So a gate that treated "cobra will not resolve it" as "does not exist" would
-# report `diagrid managed-agent runs list` — which catalyst-debug documents and
-# which works — as a nonexistent command on every pull request, while passing on
+# report any `diagrid managed-agent ...` invocation — which works where it
+# resolves — as a nonexistent command on every pull request, while passing on
 # the author's laptop. Someone would then "fix" a correct skill to get green.
 #
 # Listed here, the gate stops reporting the path as nonexistent and instead
@@ -74,4 +74,4 @@ darwin_arm64 = "875e085dc8e011c1e7d381941d73a4cccdc3d8b3fac3ebad0c9b78269e6b6b0b
 # Do not add to this to silence a failure. A command that does not resolve for
 # anyone is a defect in the skill, which is the whole point of the gate.
 [identity_gated]
-managed-agent = "hidden unconditionally and gated on a @diagrid.io login; catalyst-agent-scaffold documents it precisely so a model recognises it rather than offering it"
+managed-agent = "hidden, and resolves only for some logins; the skills name it only to say it is not available"

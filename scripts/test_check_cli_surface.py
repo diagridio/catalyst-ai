@@ -219,9 +219,9 @@ SPECS: list[Spec] = [
         must_say='required flag(s) "instance-id" not set',
     ),
     # This one and the next assert `must_not_say` rather than a verdict, because
-    # `managed-agent` is identity-gated: it resolves on a @diagrid.io login and
+    # `managed-agent` is identity-gated: it resolves only for some logins and
     # does not resolve at all in CI. What must hold in BOTH is that a command
-    # catalyst-debug documents, and which works, is never called nonexistent.
+    # a skill might document, and which works where it resolves, is never called nonexistent.
     # The group rule itself is asserted below on `call invoke`, which everyone
     # can see.
     Spec(
@@ -251,7 +251,7 @@ SPECS: list[Spec] = [
         "```\ndiagrid workflow start my-wf --app-id my-app --instance-id run-1\n```\n",
         must_say="absent from `--help`",
     ),
-    # The real invocation from catalyst-debug:219. It works, and CI cannot see it.
+    # An identity-gated invocation. It works where it resolves, and CI cannot see it.
     # Where it resolves the missing `--agent` is reported; where it does not, the
     # gate must say so rather than call it nonexistent. Detection of the
     # `[Required]` annotation this relies on is pinned by test_parsers() below,

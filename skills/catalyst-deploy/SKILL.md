@@ -101,16 +101,11 @@ An endpoint is optional on both. Created without one you get an identity that Ca
 route *from* but not *to*, which is exactly what an app running behind a local connection
 wants.
 
-### `agent` and `managed-agent` are different resources
+### The agent resource is `diagrid agent`
 
-Never write "create an agent" unqualified — both commands parse.
-
-| | `diagrid agent` | `diagrid managed-agent` |
-| --- | --- | --- |
-| What it is | A Catalyst front for an agent **you** run | A Durable Agent that Catalyst hosts |
-| Create flags | `--project`, `--endpoint`, `--wait`, `--ignore-if-exists`, `--archive-binding-name`, `--archive-binding-type`, `--archive-completed/-failed/-terminated` | The `--llm-*` family, `--sandbox`, and the git and GitHub flags |
-| Where the code runs | Your application | Catalyst |
-| Availability | Generally available | Hidden from help and restricted to Diagrid accounts |
+It fronts an agent your application runs, and takes `--project`, `--endpoint`, `--wait`,
+`--ignore-if-exists` and the `--archive-*` flags. The CLI also has a hidden
+`managed-agent` command; it is not available to users, so do not create it or offer it.
 
 An application that runs itself — under `diagrid dev run`, in a container, anywhere — uses
 **`agent`**. There are no model flags on it, and looking for one is the signal that you
@@ -293,8 +288,9 @@ empty project and then reports that nothing is in it.
   with many key prefixes.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
-- **Say `app`, `agent` or `managed-agent`, never just "agent".** They are different
-  resources with different flags, different creation paths and different console routes.
+- **Say `app` or `agent`, never just "agent".** They are different resources with
+  different flags, creation paths and console routes. Do not create or offer
+  `managed-agent`; it is not available to users.
 - **Create the Agent or MCP server before any App ID of that name.** A bare App ID created
   first cannot be adopted, and the Agent is then permanently in error.
 - **Verify by reading the resource back, with `-o json`.** A create that returned is not a

@@ -82,9 +82,8 @@ project with different settings turns one unexplained failure into two.
   from `--help`, so nobody can confirm it from the CLI. Write `--id`. (`diagrid call
   workflow ...`, a different subtree, does take `--app-id` as its real flag.)
 - **Confirm a command before you quote it: `diagrid <noun> --help`.** The CLI moves.
-  `agent` referred to the Catalyst-hosted Durable Agent in older versions and refers to a
-  front for your own application in newer ones; `managed-agent` and `tokenbudget` are
-  absent from older ones entirely. A flag quoted from the wrong version reads to the user
+  `agent` named a different resource in older versions and refers to a front for your
+  own application in newer ones; `tokenbudget` is absent from older ones entirely. A flag quoted from the wrong version reads to the user
   as your mistake, and they stop trusting the rest of your answer.
 - **One change at a time, and only with consent.** Everything in section 3 that is not a
   read mutates a live run.
@@ -238,40 +237,23 @@ tunnel means no local `diagrid dev` or `diagrid listen` session is attached.
 
 ## 5. An agent that is not responding
 
-Establish which resource you are looking at before reading anything. They fail for
-entirely different reasons and their names are one word apart.
-
-| | `diagrid agent` | `diagrid managed-agent` |
-| --- | --- | --- |
-| What it is | A Catalyst front for an agent **you** run | A Catalyst-hosted Durable Agent |
-| Identifying flags | `--endpoint`, `--archive-binding-name`, `--archive-completed/-failed/-terminated` | `--llm-provider`, `--llm-model`, `--sandbox`, `--github-app-id`, `--git-repo` |
-| It stops answering when | Your application is down, or `--endpoint` points somewhere unreachable | Its conversation component, sandbox, tools or token budget stop it |
-| Availability | Generally available | Restricted; hidden from help and gated at execution |
-
-Never write "create an agent" or "the agent is broken" without qualifying which.
-`catalyst_list_agents` returns both kinds — read the type on the record rather than
-guessing from the name.
+The agent resource is `diagrid agent`: a Catalyst front for an agent **your** app runs,
+identified by `--endpoint` and the `--archive-*` flags. It stops answering when your
+application is down or `--endpoint` points somewhere unreachable. The CLI also has a
+hidden `managed-agent` command that is not available to users; do not diagnose toward it
+or suggest it.
 
 Then check `diagrid agent registry list`. The registry is the project's runtime view and
 includes externally deployed OSS Dapr agents, so it separates the two failures you cannot
 otherwise tell apart: a declared agent with no running workload, versus a running
 workload nobody declared.
 
-By resource:
+What to check:
 
-- **`agent`** — the failure is nearly always the endpoint or the application behind it.
-  Confirm the endpoint on the resource, confirm the app is up and reachable, then
-  `diagrid listen --id <app-id>` to see whether the request even arrives.
-- **`managed-agent`** — check, in order: the conversation component named by
-  `--llm-component` or created by `--llm-provider`, because a rejected or expired provider
-  key presents as an agent that silently stops answering; whether `--sandbox` is set on an
-  agent whose tools need it, and whether the region supports sandboxing at all; the
-  per-tool authorization on any MCP server it uses, via `diagrid mcpserver access`; then
-  the run history, `diagrid managed-agent runs list --agent <name> --thread <id>`.
-  `runs` is a command group, not a command — `list`, `show`, `cancel` and `tail` sit
-  under it, and each requires both `--agent` and `--thread`. All of it is restricted to
-  Diagrid accounts, per the availability row above.
-- **Token budgets** apply to either. A budget in `enforce` mode **rejects** requests once
+- **The endpoint and the app.** The failure is nearly always the endpoint or the
+  application behind it. Confirm the endpoint on the resource, confirm the app is up and
+  reachable, then `diagrid listen --id <app-id>` to see whether the request even arrives.
+- **Token budgets.** A budget in `enforce` mode **rejects** requests once
   the window's allowance is spent, which looks like an unresponsive agent rather than an
   error. `diagrid tokenbudget list` — functional, but hidden from help and absent from
   older CLI versions.

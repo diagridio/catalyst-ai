@@ -141,7 +141,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-setup` | Connect this session to Catalyst and confirm it works |
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
-| `catalyst-agent-scaffold` | Stand up a Durable Agent, Catalyst-hosted or your own app |
+| `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app behind an App ID |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
 | `catalyst-operate` | Inspect a running project, read-only |
@@ -196,14 +196,13 @@ hours, and they all fail *silently* or with an unhelpful error.
   signup, with managed pub/sub, KV, workflow store and agent infrastructure. Free plans
   allow **3 projects per region**, and `dev run` will **create one if you typo
   `--project`** — spending a slot without asking.
-- **One pub/sub and one KV store per project, on every plan.** `cra:free`,
-  `cra:enterprise` and `cra:internal` alike, so no plan upgrade buys a second one. A
+- **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
+  no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid
   per organization rather than constants in the code, so the skills read the live quota
   instead of asserting the 1.
-- **`diagrid agent` and `diagrid managed-agent` are different resources.** `agent` fronts
-  *your* app; `managed-agent` is Catalyst-hosted and takes the LLM flags. "Create an
-  agent" unqualified picks the wrong one.
+- **`diagrid agent` fronts *your* app.** It takes `--endpoint` and the `--archive-*`
+  flags, not model flags — looking for an LLM flag means you have the wrong resource.
 - **Enable the managed workflow store *before* the App ID exists.** The sidecar reads
   workflow config at boot, so enabling it later leaves `FAILED_PRECONDITION` on a sidecar
   that never gets retrofitted.
@@ -297,11 +296,11 @@ cannot see, and prints that list on every run: MCP tool names, console routes, p
 coordinates and quota numbers are not in the CLI.
 
 One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
-and `managed-agent` is not merely hidden — the CLI will not resolve it as a command at all
-without a `@diagrid.io` identity, while `appid` and `tokenbudget` are hidden and resolve for
-anyone. So `managed-agent` is declared in `[identity_gated]` in `.diagrid-cli-version`, and
-the gate names those invocations as **unverifiable** instead of reporting them absent. Run
-the gate locally on a Diagrid account and they are checked in full, flags and required flags
+and a few hidden command paths resolve only for some logins, while `appid` and
+`tokenbudget` are hidden and resolve for anyone. Those paths are declared in
+`[identity_gated]` in `.diagrid-cli-version`, and the gate names their invocations as
+**unverifiable** instead of reporting them absent. Run
+the gate locally on a login that can see them and they are checked in full, flags and required flags
 included; the pass/fail verdict is the same either way. Reporting a working command as
 nonexistent would be the worst outcome available here — the fix it invites is deleting
 correct content from a skill.

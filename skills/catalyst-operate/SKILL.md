@@ -143,7 +143,7 @@ The App ID goes in `--id` throughout. `--app-id` lingers as a hidden deprecated 
 
 Projects, App IDs, MCP servers and every component kind report one of `ready`,
 `pending`, `processing`, `provisioning`, `updating`, `deleting`, `deleted`, `error`,
-`unknown`. Agents and managed agents use a narrower set — `ready`, `error`, `pending`, or
+`unknown`. Agents use a narrower set — `ready`, `error`, `pending`, or
 empty before their first reconcile.
 
 The set is not closed: an unmapped state passes through as whatever the platform called
@@ -155,21 +155,14 @@ message saying it is disabled and loaded by no App ID. Disabled is a fully recon
 state, so `ready` is correct — but "ready" is not the answer to "is it serving". Read the
 message.
 
-### `agent` and `managed-agent` are different resources
+### Agents
 
-Never say "the agent" without saying which.
+An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
+identified by `--endpoint` and the `--archive-*` flags. Never say "the agent" without
+saying which one. The CLI also has a hidden `managed-agent` command that is not available
+to users; do not report on it or suggest it.
 
-| | `diagrid agent` | `diagrid managed-agent` |
-| --- | --- | --- |
-| What it is | A Catalyst front for an agent **you** run | A Catalyst-hosted Durable Agent |
-| Identifying flags | `--endpoint`, `--archive-binding-name`, `--archive-completed/-failed/-terminated` | `--llm-provider`, `--llm-model`, `--sandbox`, `--github-app-id`, `--git-repo` |
-| Where the code runs | Your application | Catalyst |
-| Availability | Generally available | Restricted; hidden from help, gated at execution |
-
-`catalyst_list_agents` returns both kinds, so read the type on each record rather than
-inferring it from the name.
-
-`diagrid agent registry list` is the third thing, and often the one that answers the
+`diagrid agent registry list` is the second thing, and often the one that answers the
 question: it lists what is actually registered in the project's runtime, including
 externally deployed OSS Dapr agents. A name in the registry but not in `agent list` is an
 agent nobody declared to Catalyst; the reverse is a declaration whose workload is not
