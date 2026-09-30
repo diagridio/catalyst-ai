@@ -145,7 +145,9 @@ as a required peer, so following the README leaves an unmet peer dependency.
 On **any other TypeScript framework** there is still no adapter, and the honest options
 are unchanged: write the agent in a language whose framework has a published adapter,
 or drive Dapr Workflows directly with `@dapr/dapr`, which is published and does support
-workflows — that loses the framework bridge, not durability. Do **not** offer the hosted
+workflows — that loses the framework bridge, not durability. `catalyst-agent-harness`
+covers that route, for any language: it maps a hand-written loop onto a workflow, one
+activity per model call and per tool call. Do **not** offer the hosted
 `managed-agent` as the escape hatch; it is restricted per section 1, so it trades one
 dead end for another.
 
