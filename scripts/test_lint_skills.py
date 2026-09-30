@@ -112,7 +112,7 @@ def main() -> int:
     # when a client tries to load the skill.
     cases.append(case(
         "frontmatter that is not valid YAML (colon-space in a plain scalar)",
-        lambda s: write(s, "bad-yaml", "---\nname: bad-yaml\ndescription: covers project: App IDs and more\n---\n\nBody.\n"),
+        lambda s: write(s, "bad-yaml", "---\nname: bad-yaml\ndescription: covers project: apps and more\n---\n\nBody.\n"),
     ))
 
     cases.append(case(
@@ -143,10 +143,6 @@ def main() -> int:
         lambda s: write(s, "dangling", "---\nname: dangling\ndescription: Fine.\n---\n\nSee [ref](references/missing.md).\n"),
     ))
 
-    cases.append(case(
-        "a CLI flag removed in v1.63.0",
-        lambda s: write(s, "dead-flag", "---\nname: dead-flag\ndescription: Fine.\n---\n\nRun `diagrid project create x --enable-agent-infrastructure`.\n"),
-    ))
 
     # The gate's first real run rejected three legitimate counter-examples. Both
     # directions are now pinned: an unacknowledged banned string still fails, and
@@ -162,12 +158,6 @@ def main() -> int:
         lambda s: write(s, "bad-pkg", "---\nname: bad-pkg\ndescription: Fine.\n---\n\nAdd `Diagrid.Agents.Workflow`.\n"),
     ))
 
-    # The flag that shipped. It reads like a plural of `appid`, which is exactly
-    # why review missed it twice.
-    cases.append(case(
-        "a flag that does not exist on any command",
-        lambda s: write(s, "bad-flag", "---\nname: bad-flag\ndescription: Fine.\n---\n\nRun `diagrid project logs --appids x --type dapr`.\n"),
-    ))
 
     cases.append(case(
         "no description at all",
@@ -233,7 +223,7 @@ def main() -> int:
     OPERATE_D = ("Inspect a running project read-only — what is deployed, what "
                  "state it sits in, which quota is close.")
     DEBUG_D = ("Diagnose why a resource is stuck, then stop, kill or rerun a run. "
-               "Covers a failed run, an unready App ID, a silent agent.")
+               "Covers a failed run, an unready app, a silent agent.")
 
     def scope_rule_dropped(s: Path) -> None:
         write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))

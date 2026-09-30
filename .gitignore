@@ -8,3 +8,6 @@ __pycache__/
 
 # Agent worktrees are ephemeral scratch, not source.
 .claude/worktrees/
+
+# `claude plugin eval` writes its run output here
+evals/results/

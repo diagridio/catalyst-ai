@@ -5,7 +5,7 @@ nothing is orphaned. What is left is a graph, and the job is to turn it into an
 orchestrator that a reader can hold against the diagram.
 
 > The per-language sections are adapted from `prompts/languages/*.md` in
-> [diagridio/dapr-skills](https://github.com/diagridio/dapr-skills) (MIT). Their
+> [diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills) (MIT). Their
 > serialization findings are the load-bearing part and are kept. The record-to-construct
 > mapping and the connectivity pass are new — upstream had no language-neutral layer,
 > which is how the same rule came to be stated five times and differently.

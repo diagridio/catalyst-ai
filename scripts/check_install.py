@@ -62,7 +62,7 @@ from skill_links import link_path, local_link_targets
 
 REPO = Path(__file__).resolve().parent.parent
 
-# Pinned, for the same reason the Diagrid CLI is pinned in .diagrid-cli-version:
+# Pinned, for a reason that applies to any tool a gate shells out to:
 # every behaviour asserted below was verified against this exact version, and an
 # unpinned installer would make a red run ambiguous between "the skills broke"
 # and "the installer changed". Bumping this is a deliberate act — re-verify the
@@ -119,7 +119,7 @@ _NPM_FAILURE = re.compile(r"^npm (?:error|ERR!)", re.MULTILINE)
 UNVERIFIABLE = [
     "Skill content. Whether a command exists, a flag is spelled right or a "
     "description will trigger is scripts/lint_skills.py and "
-    "scripts/check_cli_surface.py — this gate only asks whether what the "
+    "scripts/check_mcp_surface.py — this gate only asks whether what the "
     "installer wrote is complete and internally resolvable.",
     "Global installs (`npx skills add -g`), which write into the user's home "
     "directory. Everything here happens inside a throwaway directory on "

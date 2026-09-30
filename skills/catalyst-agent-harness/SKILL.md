@@ -160,24 +160,27 @@ patterns are in `catalyst-activity-idempotency`.
 
 For a tool that needs a human, the workflow waits, not the tool:
 
-1. Announce what is pending — custom status, which `diagrid workflow get` shows, and a
-   notification sent from an activity. Never publish from the workflow body.
+1. Announce what is pending from an activity — a message on a topic, a row the approval
+   UI reads — carrying the run id and the tool-call id. Never publish from the workflow
+   body. Custom status can mirror it, but over MCP it is withheld at the default
+   `metadata` data-sharing level, so it cannot be the only notice.
 2. Wait for an event named after the call, `approval:<tool-call-id>`, so concurrent
    approvals never collide. Race it against a timer, or use the SDK's own timeout where
    it has one.
 3. On approval, run the tool. On denial or timeout, return an error `tool_result` saying
    so, and let the model respond to it.
 
-Send the decision with `diagrid workflow raise-event --project default --id <app> --instance-id <run-id> --event-name approval:<tool-call-id> --data '{"approved": true}'`,
-with `catalyst_raise_workflow_event`, or from the SDK's workflow client.
+The decision comes back through `catalyst_raise_workflow_event` — the run, the event name
+`approval:<tool-call-id>` and `{"approved": true}` — or through the SDK's workflow client
+inside the approval service. `catalyst_raise_workflow_event` is a write tool, absent for a
+role that cannot write.
 
 Two measured facts, both against a local Dapr 1.18.1 sidecar rather than Catalyst. The
-wait survives a worker kill: after a restart
-the run was still waiting with the same custom status, and the model was not asked again.
-But **raising the event while no worker is connected fails** with `FAILED_PRECONDITION`
-(`did not find address for actor`) — the event is refused, not buffered — so the
-approver's side must retry until a worker is back. Terminating a run failed the same way
-with no worker connected.
+wait survives a worker kill: after a restart the run was still waiting with the same
+custom status, and the model was not asked again. But **raising the event while no worker
+is connected fails** with `FAILED_PRECONDITION` (`did not find address for actor`) — the
+event is refused, not buffered — so the approver's side must retry until a worker is
+back. Terminating a run failed the same way with no worker connected.
 
 ## 9. Long conversations: bound the history
 
@@ -212,8 +215,9 @@ and can exceed state-store limits.
   every event with its turn and let the UI drop a restarted one. Coarse progress fits in
   custom status.
 - **Never put a secret in a workflow or activity input.** Inputs and outputs are persisted
-  in the run's history, and `diagrid workflow get` prints them. The model API key belongs
-  in the activity's environment. Prompts and tool outputs are persisted too, so consider
+  in the run's history, readable in the console and over MCP at `full` data sharing. The
+  model API key belongs in the activity's environment, handled like the connection token
+  in `catalyst-develop` section 3. Prompts and tool outputs are persisted too, so consider
   what they contain before the first real run.
 
 ## 11. Names and shapes are a wire contract
@@ -228,7 +232,7 @@ results stop parsing.
 - **Prefer one `run_tool` activity with the tool name in its input** over one activity per
   tool. Adding or removing a tool then never changes an activity name. Per-tool
   activities buy per-tool names in history, at the cost of a registration per tool.
-- **Two workers on one App ID must agree on every shape.** Work is dispatched to whichever
+- **Two workers for one app must agree on every shape.** Work is dispatched to whichever
   worker is connected. Measured by accident: a stale worker in another language, still
   connected, answered `load_agent` with a differently-cased field, and the new worker's
   runs all stopped at turn zero.
@@ -241,52 +245,60 @@ so keep tool signatures backward compatible or version the tool name.
 
 ## 12. Run it on Catalyst, then kill it
 
+Everything here goes through the `catalyst_*` tools; if they are missing or refuse with
+`NOT_AUTHENTICATED`, `catalyst-setup` covers it.
+
 **Do not create a project.** Every organization has one named `default` with the managed
-workflow store already attached, and that store is where run history lives. Confirm it with
-`diagrid project list`; if it is gone, ask which project to use rather than creating one.
+workflow store already attached, and that store is where run history lives. Confirm it
+with `catalyst_list_projects` and pass the project on every call; if it is gone, ask which
+project to use rather than creating one.
 
 The loop needs the Dapr Workflow SDK for its language and no Diagrid package:
 `dapr-ext-workflow`, `@dapr/dapr`, `github.com/dapr/durabletask-go`, `Dapr.Workflow` or
 `io.dapr:dapr-sdk-workflows`. Section 2 of `catalyst-workflow-scaffold` has the versions
 and the coordinate traps.
 
-- `diagrid dev run --project default --id <app> -- <run command>` — with no `--app-port`.
-  A worker dials Catalyst and polls for work; it has nothing to listen on. Add a port only
-  if the same process also serves HTTP that Catalyst calls into.
-- `diagrid workflow start agent_loop --project default --id <app> --instance-id <run-id> -d '{"task": "<prompt>"}'` —
-  `--instance-id` is required, and the workflow name and run id are yours to choose.
-- `diagrid workflow get <run-id> --project default --id <app>` — the history lists
-  `load_agent`, then `call_llm`, one `run_tool` per call, `call_llm` again, with every
-  input and output.
-
-`catalyst-develop` documents the full loop, including the environment a worker needs when
-it runs outside `dev run`.
+1. **Make sure the app exists** — `catalyst_get_app`, else `catalyst_apply` an `App`, as
+   `catalyst-develop` section 2 describes. A worker needs no endpoint: it dials Catalyst
+   and polls for work, so it has nothing to listen on.
+2. **Start the worker** with the connection values from `catalyst_get_app_connection` in
+   its environment, exactly as `catalyst-develop` section 3 says, including how to keep
+   the token out of chat, files and history. If the tool is missing or refused, say it is
+   not available to this role or server, and stop.
+3. **Start a run** with `catalyst_start_workflow`: the project, the app's identity, the
+   workflow name `agent_loop` and `{"task": "<prompt>"}`. It assigns the run id and
+   returns it — keep it. It is a write tool, absent for a role that cannot write.
+4. **Read it** with `catalyst_get_workflow_run`. The execution graph lists `load_agent`,
+   then `call_llm`, one `run_tool` per call, then `call_llm` again — every step's name
+   and status, even where its payload is withheld.
 
 **The kill test is the acceptance test.** Give the agent a slow tool, start a run, kill
-the worker while that tool runs, start it again, and read the history. Pass means: the
-run completes; each turn's `call_llm` completed once; the tools that finished before the
-kill did not run again; the interrupted one ran again with the same idempotency key. If
-the model is called again for a turn it already answered, the loop is not durable and
-the work is not finished — look for a boundary coarser than section 3 allows.
+the worker while that tool runs, start it again with the same environment, and read the
+run back. Pass means: the run completes; each turn's `call_llm` completed once; the tools
+that finished before the kill did not run again; the interrupted one ran again with the
+same idempotency key. The graph shows each step completing once; the worker's own output
+shows which tool bodies actually ran, and with which key, because at the default
+data-sharing level the run's payloads are withheld. If the model is called again for a
+turn it already answered, the loop is not durable and the work is not finished — look for
+a boundary coarser than section 3 allows.
 
 ## 13. Read it back honestly
 
-**An absent field is not an empty one.** Over MCP tools such as
-`catalyst_get_workflow_run`, workflow and activity `input`, `output` and `customStatus`
-are withheld at the default `metadata` data-sharing level — removed, not returned empty.
-So a pending approval's custom status and every model reply are invisible there. The CLI
-does not go through that filter: `diagrid workflow get <run-id> --project default --id <app>`
-returns them all, for the run and for every activity. Confirm the CLI is logged into the
-same organization as the MCP connection — they are separate identities — and say which
-surface a value came from. Never report a withheld reply as "the model returned nothing",
-never forge a data-sharing header, and never ask an administrator to raise the
-organization's level so you can finish an answer.
+**An absent field is not an empty one.** At the default `metadata` data-sharing level,
+`catalyst_get_workflow_run` removes `input`, `output` and `customStatus` from the run and
+from every step — removed, not returned empty. Every model reply, every tool result and a
+pending approval's custom status are invisible there, while the graph of step names and
+statuses is not. Say that a payload was not shared at this organization's data-sharing
+level (`metadata`); never report a withheld reply as "the model returned nothing". Only an
+organization administrator can raise the level to `full`, and you cannot do it from here.
+Never forge a data-sharing header, and never ask an administrator to raise the level so
+you can finish an answer.
 
-Hand back a link rather than a claim: a run lives at `/workflows/<appId>/<runId>` on the
-console host. Put a name-like project in `?project=` and a numeric uid in `?projectId=` —
-a uid in `?project=` silently lands on the wrong project — and do not hardcode the host;
-`diagrid web` opens the console for the environment the session is logged into. If you
-cannot build a link you trust, print the App ID and run id as plain text.
+Hand back a link rather than a claim: a run lives at
+`https://catalyst.diagrid.io/workflows/<appId>/<runId>`, where `<appId>` is the app's
+identity name from its `status.appIds`. Put a name-like project in `?project=` and a
+numeric uid in `?projectId=` — a uid in `?project=` silently lands on the wrong project.
+If you cannot build a link you trust, print the app and run id as plain text.
 
 ## Language files
 
@@ -325,7 +337,9 @@ other four take the harness's existing model client behind a one-method interfac
 - **Key side effects on `<instance-id>:<tool-call-id>`**, passed in the input.
 - **No secrets in inputs.** Every input and output is persisted and printable.
 - **Do not create a project.** Use `default`.
-- **Do not stop at a run that completes.** Kill one mid-tool and read the history back.
+- **Do not stop at a run that completes.** Kill one mid-tool and read the run back.
+- **Use only the `catalyst_*` tools.** Where a capability has no tool, say it is not
+  available over MCP yet, and stop.
 - **Never report a withheld field as an empty result.**
 - For determinism in general use `catalyst-workflow-determinism`; for the write side of a
   tool, `catalyst-activity-idempotency`; for a framework with an adapter,

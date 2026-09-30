@@ -237,8 +237,9 @@ def run_tools(ctx, agent, calls):
 
 
 def wait_for_approval(ctx, call):
-    # Announce what is pending. `diagrid workflow get` shows custom status; a real
-    # deployment would also notify someone - from an activity, never from here.
+    # Custom status mirrors what is pending, but over MCP it is withheld at the default
+    # data-sharing level, so a real deployment also notifies someone - from an activity,
+    # never from here.
     ctx.set_custom_status(json.dumps({"awaiting_approval": call["id"], "tool": call["name"]}))
     decision = ctx.wait_for_external_event(f"approval:{call['id']}")
     timeout = ctx.create_timer(APPROVAL_TIMEOUT)
@@ -278,8 +279,9 @@ if __name__ == "__main__":
     main()
 ```
 
-Run it with `diagrid dev run` as in section 12 of the skill, and start a run with the
-workflow name `agent_loop` and a `{"task": "..."}` input. For a conversation, start
+Run it as section 12 of the skill says, with the app's connection values from
+`catalyst_get_app_connection` in the worker's environment, and start a run of `agent_loop`
+with a `{"task": "..."}` input. For a conversation, start
 `agent_session` once with `{}` and raise one `user_message` event, carrying
 `{"text": "..."}`, per message.
 
@@ -340,7 +342,7 @@ as `wait_for_approval` does.
 
 An MCP tool is a tool: call your MCP client inside `run_tool`, like any other. On Dapr
 1.18, `dapr-ext-workflow` 1.18.3 also ships `DaprMCPClient`, which lists the tools of an
-MCP server the App ID loads and names a built-in workflow per tool,
+MCP server the app loads and names a built-in workflow per tool,
 `dapr.internal.mcp.<server>.CallTool.<tool>`. The Dapr Agents framework calls that as a
 child workflow with the input `{"arguments": {...}}`, which makes every MCP call its own
 durable step. That shape is read from the SDK and framework source; it was not run here,

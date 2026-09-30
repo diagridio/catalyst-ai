@@ -10,12 +10,13 @@ is confirmed to put them in front of the model; neither has yet answered a Catal
 question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client). Those client
 checks were made at 0.3.2, with ten skills. The eleventh, `catalyst-agent-harness`, arrived
-in 0.4.0: CI installs it with the real installer, but no client has been re-measured with
+in 0.5.0: CI installs it with the real installer, but no client has been re-measured with
 it yet.
 
-> **Internal preview.** This is the first internal rollout. Read
-> [What works today](#what-works-today) before you start: the MCP server is new, and
-> building and deploying still need the `diagrid` CLI.
+> **Early release.** The skills drive Catalyst only through the remote Catalyst MCP
+> server. There is no CLI to install and no separate login: you add the server and sign
+> in once. Read [What works today](#what-works-today) for what is and is not available
+> over MCP yet.
 
 ## Install
 
@@ -29,7 +30,7 @@ claude plugin install catalyst-ai@diagrid
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.4.0 or later
+claude plugin list                           # expect Version: 0.5.0 or later
 claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
@@ -40,25 +41,78 @@ own it can show you 11 skills while your session loads 10. If either looks wrong
 
 #### Then sign in to the Catalyst MCP server
 
-The plugin also registers the Catalyst MCP server, pointed at production. It stays
-empty until you sign in once. In Claude Code, run `/mcp`, pick `plugin:catalyst-ai:catalyst` and complete the
-browser sign-in. There is no API key and no `diagrid login` involved in this step.
+The plugin also registers the Catalyst MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
+It stays empty until you sign in once. In Claude Code, run `/mcp`, pick
+`plugin:catalyst-ai:catalyst` and complete the browser sign-in. There is no API key.
 
 If you already added the server yourself with `claude mcp add`, remove that entry
 (`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
 have two copies of every Catalyst tool.
 
-To use staging, start Claude Code with
-`DIAGRID_MCP_URL=https://mcp.cloud.staging.diagrid.dev/mcp` and sign in again. A sign-in
-only works against the environment it was made for.
+The plugin requests the scopes `catalyst:read catalyst:write offline_access`. Without
+`offline_access` there is no refresh token, so you sign in again each time the session
+expires. Write tools, such as `catalyst_apply`, are left out of the tool list entirely
+when your role is read-only or the sign-in did not grant write scope. If they are
+missing, sign in again and approve write access; if they are still missing, your role is
+read-only.
 
-Other clients (Copilot, Codex and so on) don't read `plugin.json`, so for them add the
-server by hand using that client's own MCP setup.
+Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
+`catalyst_whoami`.
 
-**This repo is still private**, so the install clones over SSH
-(`git@github.com:diagridio/catalyst-ai.git`). You need an SSH key that can read
-`diagridio` — if `ssh -T git@github.com` greets you by name, you're set. That requirement
-disappears when the repo goes public.
+### Connect other clients to the remote MCP server
+
+Every client connects to the same remote server, `https://mcp.cloud.r1.diagrid.io/mcp`
+(the `r1` is required), and signs in with OAuth in the browser. The authorization server
+has no dynamic registration, so each client uses its registered client ID: `codex`,
+`copilot-cli`, `vscode` or `claude-code`. Install the skills for
+the client first (below), then:
+
+**Codex**
+
+```bash
+codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex
+codex mcp login catalyst
+```
+
+**GitHub Copilot CLI**
+
+`copilot mcp add` has no client-ID flag, so add the server and then set `oauthClientId` in
+`~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "catalyst": {
+      "type": "http",
+      "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "oauthClientId": "copilot-cli",
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the browser.
+
+**VS Code** (Copilot Chat), in `.vscode/mcp.json` or your user MCP configuration:
+
+```json
+{
+  "servers": {
+    "catalyst": {
+      "type": "http",
+      "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "oauth": { "clientId": "vscode" }
+    }
+  }
+}
+```
+
+VS Code opens a browser for authorization on the first connection. See the
+[VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+**Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
+(streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
@@ -102,18 +156,13 @@ for byte.
 Codex's own guidance text says automatic skill selection is allowed by default, so you
 shouldn't have to name a skill — though nobody has yet confirmed that from a real session.
 
-Earlier versions of this README warned that Codex might not work, on the strength of
-`npx skills list` omitting Codex. That turned out to mean only that Codex wasn't installed
-on the machine doing the checking. Details in
-[docs/cold-start-measurement.md](docs/cold-start-measurement.md).
-
 ### What is and is not verified, per client
 
 | | skills install | skills register | a question answered |
 | --- | --- | --- | --- |
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
-| Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | ⛔ needs a ChatGPT/OpenAI credential we don't have |
-| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | ⛔ `copilot -p` gets HTTP 403 *not authorized to use this Copilot feature* on the account we tried — nothing to do with the skills |
+| Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
+| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
 
 Measured at 0.3.2, when there were ten skills.
 
@@ -147,7 +196,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-setup` | Connect this session to Catalyst and confirm it works |
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
-| `catalyst-agent-scaffold` | Stand up a Durable Agent, Catalyst-hosted or your own app |
+| `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
 | `catalyst-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
@@ -172,28 +221,18 @@ Being explicit, because the gap matters and you'll notice it:
 
 | | status |
 | --- | --- |
-| Authoring — workflows, agents, the local dev loop | ✅ works now |
-| Operating — inspect, debug, read logs and runs | ✅ works now, via the MCP server or the CLI |
+| Authoring — workflows, agents | ✅ works now |
+| Operating — inspect, debug, read runs | ✅ works now, through the MCP server |
 | Determinism and idempotency review | ✅ works now |
-| **The Catalyst MCP server** | 🆕 **registered by the plugin in Claude Code** — reads and workflow-run actions |
-| Creating, changing, deleting and deploying resources | CLI only for now |
+| Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
+| Workflow-run actions and access control | ✅ for a role that can write |
+| Running your app locally against Catalyst | 🆕 through `catalyst_get_app_connection`, which is not served yet |
+| Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
+| Invoking an app, publishing, reading or writing state, streaming requests, cluster diagnostics | ⛔ not available over MCP yet |
 
-The MCP server covers setup and reading: once you've signed in, the skills can inspect a
-project without the CLI. It can't create, change or delete resources yet, and it can never
-run your app locally. So building, deploying and the local dev loop still go through the
-**`diagrid` CLI**, and the skills say which path they're taking.
-
-**For those, you need a working `diagrid` CLI**, logged in:
-
-```bash
-diagrid login
-diagrid project list
-```
-
-If the second command works, you're ready. Every command in these skills is verified in CI
-against the CLI release pinned in `.diagrid-cli-version`, currently **v1.66.0** — so that's
-the version to be on. Several flags moved between 1.51 and 1.66, and nothing here is
-checked against anything older.
+If something is not available over MCP yet, the skills say so in one line rather than
+improvising a route. If a write tool is missing, your role is read-only, not the
+connection broken.
 
 ## Things the skills know that you might not
 
@@ -201,29 +240,28 @@ These are in the skills already; listed here because they're the ones that cost 
 hours, and they all fail *silently* or with an unhelpful error.
 
 - **Don't create a project.** Your org already has a `default` project, provisioned at
-  signup, with managed pub/sub, KV, workflow store and agent infrastructure. Free plans
-  allow **3 projects per region**, and `dev run` will **create one if you typo
-  `--project`** — spending a slot without asking.
-- **One pub/sub and one KV store per project, on every plan.** `cra:free`,
-  `cra:enterprise` and `cra:internal` alike, so no plan upgrade buys a second one. A
+  signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
+  manifest in a batch creates the project it names, and projects count against a
+  per-region limit you can read with `catalyst_get_usage`.
+- **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
+  no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid
   per organization rather than constants in the code, so the skills read the live quota
   instead of asserting the 1.
-- **`diagrid agent` and `diagrid managed-agent` are different resources.** `agent` fronts
-  *your* app; `managed-agent` is Catalyst-hosted and takes the LLM flags. "Create an
-  agent" unqualified picks the wrong one.
-- **Enable the managed workflow store *before* the App ID exists.** The sidecar reads
+- **An `Agent` fronts *your* app.** It takes an endpoint and archive settings, not model
+  settings — looking for an LLM setting means you have the wrong resource.
+- **Enable the managed workflow store *before* the app exists.** The sidecar reads
   workflow config at boot, so enabling it later leaves `FAILED_PRECONDITION` on a sidecar
   that never gets retrofitted.
-- **An Agent or MCP server must precede any bare App ID of its name.** The Agent
-  controller won't adopt a name it doesn't own, and the Agent stays in error permanently.
-- **App IDs are counted org-wide per region**, and Apps, Agents and MCP servers all
-  consume the same allowance — so splitting a topology across projects buys nothing.
+- **An Agent or MCP server must be created before anything else of its name.** It won't
+  adopt an identity it doesn't own, and then stays in error permanently.
+- **Identities are counted org-wide per region** — one per app, agent and MCP server, all
+  from the same allowance — so splitting a topology across projects buys nothing.
 - **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
-- **The scaffolded dev file holds a live API token per App ID.** Gitignore it before you
-  run anything.
+- **The app's API token is kept out of files, `.env`, commits, logs and chat.** The
+  connection values go only into the environment of the process that runs your app.
 
 ## If your install is behind
 
@@ -238,7 +276,7 @@ installed" and changes nothing:
 ```bash
 claude plugin marketplace update diagrid
 claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.4.0 or later
+claude plugin list                           # expect Version: 0.5.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -265,25 +303,26 @@ diagnosis.
 
 Also worth reporting, in rough order of value:
 
-1. A command or flag a skill emitted that **didn't work**. Every one is checked in CI
-   against the CLI release pinned in `.diagrid-cli-version`, so a mismatch means either
-   you are on a different version or the check has a hole. Both are worth catching.
+1. A tool a skill named that **didn't exist or didn't work**. Every `catalyst_*` name is
+   checked in CI against `contracts/catalyst-mcp-tools.txt`, so a mismatch means the
+   server changed or the check has a hole. Both are worth catching.
 2. A skill that fired when a **different** one should have.
 3. Anything a skill told you that turned out to be wrong.
 
-File in Linear against the *AI-Native Catalyst* project, or post in
-`#catalyst-discussions`.
+Open an issue on this repository.
+
+For a security problem, don't open an issue. See [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Three gates run on every PR, each with its own test suite, and each exists because
-something got past review or past `claude plugin validate --strict` in practice:
+Gates run on every PR, each with its own test suite, and each exists because something
+got past review or past `claude plugin validate --strict` in practice:
 
 ```bash
 python3 scripts/lint_skills.py            # the real gate
 python3 scripts/test_lint_skills.py       # proves the gate still catches what it claims
-python3 scripts/check_cli_surface.py      # every diagrid command, against the pinned CLI
-python3 scripts/test_check_cli_surface.py
+python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills, evals and README
+python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
 ```
@@ -294,35 +333,21 @@ link resolving when the skill is installed *alone*, and a **0.20 similarity cap 
 two descriptions** so skills don't compete for the same trigger. It also bans a list of
 substrings that each shipped somewhere and broke.
 
-`check_cli_surface.py` downloads the CLI release pinned in `.diagrid-cli-version`, verifies
-it by sha256, and checks every `diagrid …` command in every skill against it: the command
-path exists, every long flag and shorthand exists, and no invocation omits a flag the CLI
-marks **required**. That last one is the reason it exists. A banned-substring list cannot
-express "this flag is spelled correctly and is required" — `--help` does not render
-required-ness at all, so `-i, --instance-id string   Instance ID of the workflow` reads as
-optional on the page and fails at parse time in a terminal. It is also honest about what it
-cannot see, and prints that list on every run: MCP tool names, console routes, package
-coordinates and quota numbers are not in the CLI.
+`check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
+surface. Every `catalyst_*` name must appear in `contracts/catalyst-mcp-tools.txt`, which
+is a copy of what the server's `tools/list` returns; update it when the server's tool list
+changes. The gate also fails on any invocation of the old command-line tool, on anything
+that points at a server other than the remote one, and on any host under Diagrid's
+domains that is not on its allowlist (the MCP server, the console, the docs and downloads
+hosts, and the main site).
+Tool names are matched case-insensitively. The skills drive Catalyst only through the
+remote MCP server, so where a capability has no tool, the skill says it is not available
+over MCP yet instead of reaching for something else.
 
-One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
-and `managed-agent` is not merely hidden — the CLI will not resolve it as a command at all
-without a `@diagrid.io` identity, while `appid` and `tokenbudget` are hidden and resolve for
-anyone. So `managed-agent` is declared in `[identity_gated]` in `.diagrid-cli-version`, and
-the gate names those invocations as **unverifiable** instead of reporting them absent. Run
-the gate locally on a Diagrid account and they are checked in full, flags and required flags
-included; the pass/fail verdict is the same either way. Reporting a working command as
-nonexistent would be the worst outcome available here — the fix it invites is deleting
-correct content from a skill.
+If you add a skill, or change any skill's content, bump `version` in
+`.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
+otherwise, and nothing tells them.
 
-The same environment split runs the other way for required flags, so **a green run on your
-machine does not guarantee a green run in CI**. Some requirements are applied from local
-config: `dev stop` requires `--project` when no default project is configured and does not
-when one is, from the same binary. CI is unconfigured, so it sees the strictest set — which
-is also the set a brand-new user meets. Treat CI as authoritative and write the flag in.
+## License
 
-Bumping the pinned CLI is a deliberate edit to `.diagrid-cli-version` — version and all
-four checksums. Expect the gate to fail on whatever the new release moved; that failure is
-the point, so fix the skill rather than the gate.
-
-If you add a skill, bump `version` in `.claude-plugin/plugin.json`. Everyone who already
-installed keeps the old content otherwise, and nothing tells them.
+Apache-2.0. See [LICENSE](LICENSE).

@@ -31,7 +31,7 @@ export interface CatalystAIButtonProps {
   org?: string | null;
   /** Project name — defaults to the auto-provisioned `default` when omitted. */
   project?: string | null;
-  /** Override while the repo is private, or to pin a fork. */
+  /** Override to pin a fork or a different marketplace. */
   marketplace?: string;
   /** Follow the console's theme rather than the OS preference. */
   theme?: 'light' | 'dark';

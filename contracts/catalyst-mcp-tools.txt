@@ -13,13 +13,15 @@
 # the names `tools/list` returns, sorted. A write tool is absent from `tools/list`
 # for a caller whose role cannot write, so take the list as a caller who can.
 #
-# Last synced: 2026-09-28.
+# Last synced: 2026-09-30.
 catalyst_apply
 catalyst_delete_resource
 catalyst_export_workflow_run
 catalyst_get_access_policy
 catalyst_get_agent
-catalyst_get_appid
+catalyst_get_app
+# pending: not yet served
+catalyst_get_app_connection
 catalyst_get_component
 catalyst_get_logs
 catalyst_get_mcp_server
@@ -35,7 +37,7 @@ catalyst_grant_access
 catalyst_list_access_policies
 catalyst_list_agents
 catalyst_list_app_tunnels
-catalyst_list_appids
+catalyst_list_apps
 catalyst_list_audit_events
 catalyst_list_components
 catalyst_list_mcp_servers

@@ -1,4 +1,0 @@
-# Pinned to the versions skills/catalyst-workflow-scaffold documents as newest verified
-# stable. Not installed or resolved here — the seed worker has not been run.
-dapr==1.18.3
-dapr-ext-workflow==1.18.3
