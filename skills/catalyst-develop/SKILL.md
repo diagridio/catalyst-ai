@@ -60,15 +60,16 @@ The app runs as the user's own process with three values in its environment. Cat
 hands them out through one tool.
 
 1. Make sure the App ID exists (section 2).
-2. Call `catalyst_get_connection` for that project and App ID. For an agent or an MCP server, pass the App ID behind it: one tool serves all three. It returns
+2. Call `catalyst_get_connection` for that project and App ID. For an agent or an MCP
+   server, pass the App ID behind it: one tool serves all three. It returns
    `DAPR_API_TOKEN`, `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT`. It is a
    write-consent tool and its calls are audited, so the client may ask the user to
    approve it.
-3. Start the app process with those three values set **only in that process's
+3. Start the process (the app, agent or MCP server) with those three values set **only in that process's
    environment**, for example, run in the background:
 
    ```
-   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app> uv run main.py
+   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
    ```
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port

@@ -246,7 +246,7 @@ has served or sent anything. Invoking the app directly, publishing a test messag
 reading state back are not available over MCP yet; say so rather than claiming you
 checked them.
 
-An `App`'s API token is the credential for that identity. No read tool returns it; only
+The API token of an app, agent or MCP server is the credential for that identity. No read tool returns it; only
 `catalyst_get_connection` does (see `catalyst-develop` section 3). Do not ask the user
 to paste one, and do not write one into a summary, a file or a commit.
 
