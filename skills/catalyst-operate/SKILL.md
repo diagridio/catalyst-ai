@@ -1,6 +1,6 @@
 ---
 name: catalyst-operate
-description: Inspect a running Diagrid Catalyst project, read-only. Covers projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use when asked what is deployed, what state it is in, or whether a limit is being hit.
+description: Inspect a running Diagrid Catalyst project, read-only — projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use for what is deployed and its state, a limit being hit, or a pasted run or log response and whether it is clean.
 ---
 
 # Inspect a running Catalyst project
@@ -219,7 +219,9 @@ that error from your answer, and it sends them looking for a bug in code that wo
 The same trap applies twice more:
 
 - `customStatus` absent is not "the workflow never set one", and a `--custom-status`
-  filter matching nothing does not prove no run carries that key.
+  filter matching nothing does not prove no run carries that key. Even once fetched, an
+  empty `customStatus` proves a clean run only if the workflow is documented to set one
+  on failure and the `output` agrees. Do not certify a run clean on a missing field.
 - Credentials are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app
