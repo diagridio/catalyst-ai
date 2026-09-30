@@ -20,6 +20,8 @@ catalyst_export_workflow_run
 catalyst_get_access_policy
 catalyst_get_agent
 catalyst_get_app
+# pending: cloudgrid is adding this tool (not yet on main)
+catalyst_get_app_connection
 catalyst_get_component
 catalyst_get_logs
 catalyst_get_mcp_server

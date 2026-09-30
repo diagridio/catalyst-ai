@@ -61,24 +61,19 @@ attached. Workflow history lives in that managed store, so a hand-rolled project
 most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Confirm it with `diagrid project list` rather than
-assuming; if it is gone, ask which project to use instead of creating one.
+recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
+assuming; if it is gone, ask which project to use instead of creating one. There is no
+current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
 KV store. The managed workflow store is wired in implicitly and has no component name.
-
-Two related facts, so you do not go looking for a flag that is gone:
-
-- Agent infrastructure arrives with the managed KV store. `project create` has no
-  `--enable-agent-infrastructure` flag — it was removed and is not coming back.
-- `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for any
-  app it creates. You get them by running, not by configuring.
+Agent infrastructure arrives with the managed KV store.
 
 A project holds **one managed pub/sub and one managed KV store** on every plan, and no plan upgrade raises it, so never offer one as the
 fix. Fan work out across topics on the one broker. These are plan values overlaid per
-organization, not constants in the code, so read the live quota rather than asserting
-the 1 — and do not promise a user it can be raised for them, which is a commercial
-question rather than one you can answer.
+organization, not constants in the code, so read the live quota with `catalyst_get_usage`
+rather than asserting the 1 — and do not promise a user it can be raised for them, which
+is a commercial question rather than one you can answer.
 
 ## 4. Write the workflow so replay cannot change its mind
 
@@ -105,51 +100,30 @@ instead and let the old instances drain. Workflow versioning is not solved for y
 
 ## 5. Run it against Catalyst
 
-Scaffold the dev config, then run. Both commands default to the current project, so pass
-`--project default` explicitly the first time to make the target visible in the log.
+1. **Make sure the app exists.** `catalyst_get_app` for the project and the app name; if
+   it is absent, `catalyst_apply` an `App` (read `catalyst_get_resource_schema` first, run
+   with `dry_run`, show the user, then apply). A write role is needed: if
+   `catalyst_apply` is not in the tool list, say so and stop.
+2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
+   start the process with the connection values from `catalyst_get_app_connection` in its
+   environment, and how to keep the token out of chat, files and history. Follow it
+   rather than improvising.
 
-- `diagrid dev scaffold` writes a dev config for the project.
-- `diagrid dev run --project default --id <app> -- <your run command>`
-- Add `--app-port <port>` **only** if Catalyst must call *into* your application.
+**A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
+items, so there is no inbound endpoint to expose and nothing should be listening. An app
+with no registered endpoint is the correct shape for a worker.
 
-`--id` names the identity the worker runs as, and on `dev run` the short `-p` means
-`--app-port`, not `--project`.
+Do not invent an HTTP server to satisfy a port you do not need. It is a common first-run
+failure and it fails confusingly — the worker registers the workflow and every activity
+successfully, then dies at bind because something else already holds the port, so the logs
+show a healthy startup followed by an error that has nothing to do with workflows. Give
+the app an endpoint only when Catalyst calls in: service invocation, pub/sub delivery, or
+an agent endpoint.
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
 Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
 resource's `status.appIds` (the get tools include it). For an agent registered from your
 own code, it's the `appId` on its registry record.
-
-**A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
-items, so there is no inbound endpoint to expose and nothing should be listening. The CLI
-documents this shape itself: its own `dev run` example with no `--app-port` is the one
-labelled *"without a local app connection"*. An app with no registered endpoint is the
-correct shape for a worker.
-
-Do not invent an HTTP server to satisfy a port you do not need. It is a common first-run
-failure and it fails confusingly — the worker registers the workflow and every activity
-successfully, then dies at bind because something else already holds the port, so the logs
-show a healthy startup followed by an error that has nothing to do with workflows. Reach
-for `--app-port` only when Catalyst calls in: service invocation, pub/sub delivery, or an
-agent endpoint. Use `diagrid app`; `app create` takes `--endpoint` and
-`--endpoint-token`.
-
-**Confirm every command against `--help` before relying on it**, including the ones
-written here. This CLI renames nouns and moves flags between minor versions — in the agent
-commands a single name changed which resource it creates.
-Run `diagrid version` and the relevant `--help`, then match what you actually see rather
-than what you remember.
-
-**`dev run` has a much larger flag surface than the line above.** The three worked around
-most often, because this section does not quote them: **`-e, --env`** passes environment
-variables through to your process, **`--app-id-env-server-enabled`** serves the app's
-connection details to it, and **`--app-log-destination`** redirects its logs. Those names
-are here so you do not need another skill to find them; `catalyst-develop` documents the
-full surface, and `diagrid dev run --help` lists it too.
-
-Check one of those before building a workaround. Hand-building an environment file to route
-around a flag that already exists is the expensive mistake here, and it is easy to make
-from this section alone.
 
 Budget the identities. A region allows **10, where every app, agent and MCP server counts
 as one**, and 3 projects. Scaffold one app for the workflow and add more only when the
@@ -159,62 +133,36 @@ user asks. Workflows themselves are not quotaed — instances are free, apps are
 
 Start one instance and inspect it:
 
-- `diagrid workflow start <workflow-name> --project default --id <app> --instance-id <run-id> -d '<json>'`
-- `diagrid workflow list --project default`
-- `diagrid workflow get <run-id> --project default --id <app>`
+- `catalyst_start_workflow` with the project, the app identity and the workflow name, and
+  the input if it takes one. It assigns the run id and returns it; keep it.
+- `catalyst_list_workflow_runs` for the project, if you lost the id.
+- `catalyst_get_workflow_run` for the run: the execution graph, and which step it is on
+  or failed at.
 
-The workflow name and the run id are **positional**, not flags, and the two commands are
-shaped differently in three ways worth checking rather than inferring:
-
-- `start` **requires `--instance-id`** — you name the run, nothing generates it, and
-  omitting it fails with `required flag(s) "instance-id" not set`.
-- `get` takes the run id positionally and has no `--instance-id` at all.
-- `get` also has no `--output` flag. It always prints YAML, so `-o json` on it is an
-  unknown flag rather than a format choice — the one place `-o json` does not apply.
-
-The identity goes in `--id`. `--app-id` still parses as a hidden deprecated alias and
-prints a notice, but it is absent from `--help`, so write `--id`.
+`catalyst_start_workflow` is a write tool and is absent for a role that cannot write.
 
 Workflow exploration is only available for the managed workflow store — another reason
 to stay in `default`.
 
 **An absent field is not an empty one.** A withheld payload is withheld by deleting the
-key, not by returning an empty value. But withholding is a property of *one* surface, not
-of Catalyst, so which surface you are on decides whether it happens at all:
+key, not by returning an empty value. At the default `metadata` data-sharing level
+`input`, `output` and `customStatus` are all removed from the run. Only an organization
+administrator can raise the level to `full`, and you cannot do it from here. Never forge
+a data-sharing header, and never ask an administrator to raise the level so you can
+finish an answer.
 
-| Surface | `input` / `output` / `customStatus` | What it takes |
-| --- | --- | --- |
-| MCP tools | all three removed at the default `metadata` data-sharing level | Only an organization administrator can raise the org to `full`. You cannot do it from here. |
-| CLI — `diagrid workflow get` | all three returned, **plus `input` and `output` for every activity in the history** | Nothing. There is no flag because none is needed. |
-| Management API — single read | all three returned | Nothing. `getWorkflowExecution` takes no data parameter. |
-| Management API — list endpoints | payloads withheld | `includeData=true`, which exists only on the two list operations |
+When a payload really is missing, say so and name the level: "`output` was not shared at
+this organization's data-sharing level (`metadata`)". Never say "the workflow produced no
+output" — that sends the user to debug working code. Hand over the console link from
+section 7 so the user can read it themselves.
 
-The data-sharing level is read from the `x-diagrid-data-sharing` header by the MCP server
-alone. The CLI and the management API never traverse that filter, so they cannot be
-narrowed by it.
-
-**So when an MCP response has withheld a payload, the CLI is the fallback that can still
-show it.** Reach for `diagrid workflow get <workflow-id> --project <project> --id <app>`
-before telling the user the data is unreachable. Its output is also richer than the tools':
-the same activity name appears once per attempt, with its input each time, which is how you
-see that an activity was retried and what it was retried with.
-
-Two conditions: confirm the CLI is logged into the same organization — the CLI session
-and the MCP connection are separate identities and can sit in different ones — and say
-which surface the value came from. Never forge a data-sharing header, and never ask an
-administrator to raise the organization's level so you can finish an answer.
-
-When a payload really is missing, say so and name the surface that withheld it. Never
-say "the workflow produced no output" — that sends the user to debug working code, and on
-the MCP path the remedy is an org-level setting they may not know exists.
-
-A tool that refuses is likewise not a workflow that failed. Report the refusal, then fall
-back to the CLI.
+A tool that refuses is likewise not a workflow that failed. Report the refusal.
 
 ## 7. Hand back a link, not a claim
 
 Once the app exists and a run has started, give the user a console link so they can
-see it for themselves. Only these routes exist:
+see it for themselves. The console is `https://catalyst.diagrid.io`. Only these routes
+exist:
 
 | To show | Route |
 | --- | --- |
@@ -237,12 +185,8 @@ after that number, finds nothing, and **silently falls back to the user's defaul
 project** — no error, just the wrong data. Name goes in `project`, number goes in
 `projectId`, and if you cannot tell which you are holding, leave the parameter off.
 
-Do not hardcode or hand-derive the host. Prod, staging, dev and local are different hosts,
-so a hardcoded one will be wrong for someone. Prefer `diagrid web`, which opens the console
-for the environment the session is logged in to; `catalyst-setup` section 3 carries the
-mapping when you need the URL itself. If the host is not determinable, print the app and
-run id as plain text — **a link that 404s or lands on the wrong project is worse than no
-link.**
+If you cannot build a link you trust, print the app and run id as plain text — **a link
+that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
@@ -253,8 +197,8 @@ link.**
 - **Do not scaffold per-language variants of this skill.** One skill detects the
   language; five near-identical skills would compete for the same request and lose.
 - **Do not put a side effect in the workflow body.** Activities exist for that.
-- **Check every CLI command against `--help` before running it.** Nouns and flags move
-  between minor versions, so quote what you verified, not what you recall.
+- **Use only the `catalyst_*` tools.** Where a capability has no tool, say it is not
+  available over MCP yet and stop.
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
@@ -264,5 +208,4 @@ link.**
      is a real defect; naming them in order to warn against them is the opposite.
      lint-allow-banned: go-sdk/workflow — taught as an import path removed in go-sdk v1.14.0
      lint-allow-banned: Diagrid.Agents.Workflow — taught as a package id that 404s
-     lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
 -->

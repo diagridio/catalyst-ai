@@ -6,20 +6,24 @@ description: Move an application from a laptop into Diagrid Catalyst. Covers bud
 # Get an application running in Catalyst
 
 Goal: end this skill with a named resource the user can open in the console, whose
-readiness you confirmed by reading it back rather than by watching a create command
-succeed. A create that returns is a create that was accepted; it is not a thing that
-works.
+readiness you confirmed by reading it back rather than by watching an apply succeed. An
+apply that returns is an apply that was accepted; it is not a thing that works.
 
 Order matters throughout, and not as a matter of taste — several of the constraints below
 leave a resource *permanently* broken when taken out of order, with no error at the moment
 you got it wrong. Read sections 1 and 3 before creating anything.
 
-## Two routes: `catalyst_apply` or the CLI
+## How to deploy: `catalyst_apply`
 
-If `catalyst_apply` is in your tool list, deploy with it. It is the MCP equivalent of
-`diagrid apply -f`: you send manifests, and it creates what does not exist and replaces
-what does. It is only listed for users whose role can write, so if it is missing, that is
-the user's role, not a broken connection: use the CLI commands in the rest of this skill.
+Every create and change goes through `catalyst_apply`. You send manifests, and it
+creates what does not exist and replaces what does. It accepts these kinds: `Project`,
+`Configuration`, `Component`, `Pubsub`, `KVStore`, `Resiliency`, `HTTPEndpoint`,
+`Subscription`, `Agent`, `MCPServer`, `App`, `WorkflowAccessPolicy`,
+`MCPServerAccessPolicy` and `TokenBudget`.
+
+It is listed only for users whose role can write. If it is missing, that is the user's
+role, not a broken connection: tell the user a write role is needed and stop. There is
+no other route to create a resource.
 
 - **Send one application's resources together, with one exception.** Within a call it
   applies them in a fixed order: project, configurations, components and subscriptions,
@@ -28,7 +32,8 @@ the user's role, not a broken connection: use the CLI commands in the rest of th
   scopes to to exist first. So send subscriptions in a second call, after the call that
   created their apps, agents or MCP servers. Across calls, the order is yours to get right.
 - **Call `catalyst_get_resource_schema` before writing a kind for the first time.** Do
-  not guess field names.
+  not guess field names: the platform rejects unknown fields, and a guessed name that
+  happens to be accepted can mean something else.
 - **Run it with `dry_run` first** and show the user what will be created or replaced.
 - **Replace means replace.** To change an existing resource, read it with its get tool,
   change it, and send it back whole: a field left out is dropped.
@@ -42,8 +47,7 @@ the user's role, not a broken connection: use the CLI commands in the rest of th
 - **The first failure stops the batch.** Everything after it is reported as not
   attempted. Fix that one and send the rest again; applying the same manifests twice is
   safe.
-- **Accepted is not ready.** Read each resource back (section 5), exactly as after a CLI
-  create.
+- **Accepted is not ready.** Read each resource back (section 5).
 
 Deleting goes through `catalyst_delete_resource`, never as a side effect of a deploy.
 It cannot be undone. **Every kind except a project is deleted on the first call**, so
@@ -57,7 +61,7 @@ after they agree.
 Do this before designing a topology, not after building one. Every cap here is enforced
 at create time, so the cost of discovering one late is a redesign rather than a retry.
 
-- `catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key.
+- `catalyst_get_usage` reports `used` and `limit` per key.
 - `catalyst_get_metrics` reads request rates, error rates and consumption for a project
   or a single app, agent or MCP server.
 
@@ -94,14 +98,15 @@ cannot be built. Note also that creating a managed pub/sub or KV store spends a
 *connection* slot as well as its per-project slot.
 
 Reference figures for the free plan, per cloud region, useful as a sanity check on what
-`org usage` returns rather than as a substitute for reading it — 3 projects, 10
+`catalyst_get_usage` returns rather than as a substitute for reading it — 3 projects, 10
 identities, 21 connections, 10 subscriptions, 100,000 requests, and 500 requests
 per second per identity.
 
 Finally, headroom is not the only per-region property. Managed pub/sub, managed KV and
 the Workflows API are **regional capabilities**, and a region that lacks one gives you a
-project where that API simply is not available. If workflow calls must work, confirm the
-region supports them before you build on them.
+project where that API simply is not available. `catalyst_get_region` says what the region
+supports. If workflow calls must work, confirm the region supports them before you build
+on them.
 
 There is **no quota page in the console.** Do not link to one; report the numbers.
 
@@ -121,30 +126,28 @@ from it.
 **Names are unique across three resource types in a project.** Creating an agent whose
 name is taken by an app fails with *"the name ... is already in use in project ...; App,
 Agent and MCP server names must be unique within a project"*. Pick the name once, for the
-right resource type, and check `diagrid app list` and `diagrid agent list` before you do.
+right resource type, and check `catalyst_list_apps` and `catalyst_list_agents` before you
+do.
 
-### Which noun to create
+### Which kind to apply
 
-| Deploying | Create | Who owns the identity |
+| Deploying | Kind | Who owns the identity |
 | --- | --- | --- |
-| Your own application | `diagrid app create <name>` | The app you just made |
-| An agent whose code you run yourself | `diagrid agent create <name>` | The agent provisions and manages its own |
-| An MCP server | `diagrid mcpserver create <name>` | The MCP server, likewise |
+| Your own application | `App` | The app you just made |
+| An agent whose code you run yourself | `Agent` | The agent provisions and manages its own |
+| An MCP server | `MCPServer` | The MCP server, likewise |
 
-Check `--help` for the flags; `app create` takes `--endpoint` and `--endpoint-token`.
+Read `catalyst_get_resource_schema` for the fields each takes. An `App` takes an
+endpoint and an endpoint token; an `Agent` takes an endpoint and archive settings.
 
 An endpoint is optional. Created without one you get an identity that Catalyst can
-route *from* but not *to*, which is exactly what an app running behind a local connection
-wants.
+route *from* but not *to*, which is exactly what an app running as a pure worker wants.
 
-### The agent resource is `diagrid agent`
+### The agent resource
 
-It fronts an agent your application runs, and takes `--project`, `--endpoint`, `--wait`,
-`--ignore-if-exists` and the `--archive-*` flags.
-
-An application that runs itself — under `diagrid dev run`, in a container, anywhere — uses
-**`agent`**. There are no model flags on it, and looking for one is the signal that you
-have the wrong resource.
+`Agent` fronts an agent your application runs. An application that runs itself — locally,
+in a container, anywhere — uses **`Agent`** for that. There are no model settings on it,
+and looking for one is the signal that you have the wrong resource.
 
 ## 3. Ordering constraints, and the mechanism behind each
 
@@ -159,54 +162,44 @@ recoverable.
 | The **Agent** or **MCP server** | Anything else of that name | **This one does not self-heal.** An Agent or MCP server will not adopt a same-named identity it does not own, so anything else created first under that name leaves it permanently in an error state. There is no repair short of deleting what took the name |
 | The apps, agents or MCP servers a subscription scopes to | The subscription | Scopes must already exist in the project and already have access to the broker |
 
-`diagrid dev run` honours all of these — it enables the workflow store before creating
-identities, creates resources before identities, and detects an Agent or MCP server that
-owns a name and skips provisioning rather than colliding with it. Doing the same work by hand in the
-wrong order gets none of that protection.
+`catalyst_apply` orders one call for you as described above, but it cannot order two
+calls, and it cannot fix a workflow store enabled after the app.
 
 ## 4. Attach the connections
 
 A component exists in the project; it reaches an application by being **scoped** to that
-application's identity.
+application's identity. Apply a `Component` with its `spec.scopes` set:
 
-```
-diagrid component create <name> --type <type> --metadata key=value --scopes app-a,app-b
-```
-
-- `--scopes` is the attachment. **Leaving it empty grants every app, agent and MCP server
+- `scopes` is the attachment. **Leaving it empty grants every app, agent and MCP server
   in the project access**, which is convenient and is also how a component ends up loaded by a sidecar
   nobody intended.
 - Types are `pubsub.*`, `state.*`, `bindings.*`, `secretstores.*` and `conversation.*`.
-- `--interactive` is the path the CLI's own help recommends. Prefer it when you do not
-  already know the metadata keys a type expects, rather than guessing them.
-- `--wait` blocks until the component reconciles. Use it, then still read it back.
+- When you do not already know the metadata keys a type expects, read
+  `catalyst_get_resource_schema` and `catalyst_list_templates` rather than guessing them.
 
 Managed services have fixed names — `pubsub` for the broker, `kvstore` for the KV store.
 The managed workflow store is wired in implicitly and has **no component name**, so do not
 go looking for one.
 
 Access between applications is a separate control from both, and it is deny-by-default:
-a caller that no policy names is refused. Grant it with `catalyst_grant_access` or
-`diagrid app access grant`, and take it away with `catalyst_revoke_access` or
-`diagrid app access revoke`. Read the current policy first with
+a caller that no policy names is refused. Grant it with `catalyst_grant_access`, and take
+it away with `catalyst_revoke_access`. Read the current policy first with
 `catalyst_get_access_policy`: the first grant on an App with no policy creates one that
 denies everyone else. Both directions change who can reach the app, so say what will
 change and get the user's agreement before either call: a grant can widen access to
 every caller (`*`), and a revoke breaks the caller's calls as soon as the policy reaches
 the sidecar.
 
-Subscriptions are the pub/sub half:
-
-```
-diagrid subscription create <name> --component pubsub --topic <topic> --route /<path> --scopes <identity>
-```
+Subscriptions are the pub/sub half: apply a `Subscription` naming the `pubsub` component,
+the topic, the route, and the identities it is scoped to.
 
 Four component facts that each cost a rebuild when missed:
 
 - **A component's type is immutable.** Changing it fails with `component must be deleted
   to be updated as the component type cannot be changed once created`, and converting to
-  or from a Diagrid managed type fails the same way with its own wording. Delete and
-  recreate, with the user's agreement first; there is no in-place path.
+  or from a Diagrid managed type fails the same way with its own wording. Delete it with
+  `catalyst_delete_resource` and apply it again, with the user's agreement first; there is
+  no in-place path.
 - **`actorStateStore` is rejected on a managed state store.** The managed workflow store
   already fills that role.
 - **`agent-registry` is managed by Diagrid.** Do not create or edit it.
@@ -216,23 +209,20 @@ Four component facts that each cost a rebuild when missed:
 
 ## 5. Verify readiness, do not infer it
 
-`--wait` on a create is the beginning of the check, not the end of it. Read the resource
+An apply returning is the beginning of the check, not the end of it. Read the resource
 back:
 
-- `catalyst_get_app`, `catalyst_get_agent`, `catalyst_get_mcp_server`,
-  `catalyst_get_component` over MCP. The first three include the backing identity under
-  `status.appIds`, which is where its readiness and token live.
-- `diagrid app get <name> -o json`, `diagrid agent get`, `diagrid mcpserver get`. For the
-  components and subscriptions attached to it, `diagrid component list --scope <identity>`
-  and `diagrid subscription list -o json` (read each one's `scopes`).
-
-Always `-o json`. The default table view drops fields, including the ones carrying the
-reason a thing is not ready.
+- `catalyst_get_app`, `catalyst_get_agent`, `catalyst_get_mcp_server` and
+  `catalyst_get_component`. The first three include the backing identity under
+  `status.appIds`, which is where its readiness lives.
+- For the components and subscriptions attached to it, `catalyst_list_components`; read
+  each one's `scopes`.
 
 **Ready is not one field.** Catalyst's own readiness check requires the identity's status to
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
-nothing works".
+nothing works". The token itself is never returned over MCP, so you can see that a
+resource is ready but not its credential.
 
 The status vocabulary is `ready`, `pending`, `processing`, `provisioning`, `updating`,
 `deleting`, `deleted`, `error`, `unknown` — but the set is not closed and the API declares
@@ -253,33 +243,27 @@ Four readings that mislead if taken alone:
 - **`updating` right after a local connection attaches is normal.** Attaching one makes
   the sidecar reconfigure, so the identity goes `ready` → `updating` → `ready`.
 - **A missing local connection is not an error.** It means nobody is running that app
-  from a machine right now.
+  from a machine right now. `catalyst_list_app_tunnels` lists the ones that are.
 
-Then prove the path rather than trusting the status. These exercise one API each and
-separate the platform from the application:
+Then prove the path rather than trusting the status. For a workflow app, start a run with
+`catalyst_start_workflow` and read it back with `catalyst_get_workflow_run`; that
+separates the platform from the application. `catalyst_get_metrics` shows whether the app
+has served or sent anything. Invoking the app directly, publishing a test message and
+reading state back are not available over MCP yet; say so rather than claiming you
+checked them.
 
-- `diagrid call invoke`, `call publish`, `call state`, `call bindings`, `call conversation`.
-  The identity goes in `--id` on all five; `--app-id` is only a hidden deprecated alias.
-- `diagrid listen --id <identity> --invoke <method>` streams inbound requests to your
-  terminal with no application code deployed. Nothing arriving means the problem is
-  upstream of the app; requests arriving and still failing means it is not.
-
-Creating an app, agent or MCP server prints its API token to your terminal. **Do not paste it into a
-summary, a file or a commit** — it is the credential for that identity.
+An `App`'s API token is the credential for that identity and is never returned over MCP.
+Do not ask the user to paste one, and do not write one into a summary, a file or a commit.
 
 ## 6. Hand back a link so the user can see it
 
 Once something exists, give the user a way to look at it. Naming a resource you cannot
 link to is a weaker answer than naming it with a link.
 
-Do not hardcode or hand-derive the console host — production, staging, development and
-local are different hosts, so a hardcoded one is wrong for someone. **Run `diagrid web`,**
-which opens the console for the environment the session is logged in to. When you need the
-URL itself, `catalyst-setup` section 3 carries the full API-host → console-host mapping,
-including the loopback form a hand-rolled mapping usually misses. If you cannot establish
-the host confidently, print the identifiers as plain text.
+The console is `https://catalyst.diagrid.io`. If you cannot build a link you trust, print
+the identifiers as plain text.
 
-Use only these routes:
+Use only these routes, appended to that host:
 
 | Resource | Route |
 | --- | --- |
@@ -316,20 +300,20 @@ Every organization gets one named `default`, with managed pub/sub, a managed KV 
 workflow store and agent infrastructure already attached. Deploy into it.
 
 It is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Confirm with `diagrid project list`; if it is genuinely
+recreated if someone deletes it. Confirm with `catalyst_list_projects`; if it is genuinely
 gone, ask which project to use rather than inventing one. A hand-made project that behaves
 differently is indistinguishable from a broken one to the person asking for help, and it
 spends one of three per-region slots to get there.
 
-Be careful with `--project` on any command that writes: `diagrid dev run` **creates the
-project when the name does not exist** rather than rejecting it, so a typo provisions an
-empty project and then reports that nothing is in it.
+Be careful with the project you pass to `catalyst_apply`: a `Project` manifest in the
+batch creates it, and a typo in the name provisions an empty project rather than failing.
+Send a `Project` manifest only when the user has explicitly asked for a new project.
 
 ## Rules
 
-- **Check headroom before designing, not after building.** `diagrid org usage`. Identities,
-  connections and subscriptions are capped per region across the whole organization, so a
-  second project adds no headroom for them.
+- **Check headroom before designing, not after building.** `catalyst_get_usage`.
+  Identities, connections and subscriptions are capped per region across the whole
+  organization, so a second project adds no headroom for them.
 - **Never offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
   every plan, so no plan change buys a second one. Read the live quota rather than
   asserting the 1. Describe the shape that works — one broker with many topics, one store
@@ -341,17 +325,17 @@ empty project and then reports that nothing is in it.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
 - **Say `app` or `agent`, never just "agent".** They are different resources with
-  different flags, creation paths and console routes.
+  different settings, creation paths and console routes.
 - **Create the Agent or MCP server before anything else of that name.** It will not adopt
   an identity it does not own, and is then permanently in error.
-- **Verify by reading the resource back, with `-o json`.** A create that returned is not a
-  resource that works, and `ready` without an API token is not ready.
+- **Dry-run first, and verify by reading the resource back.** An apply that returned is
+  not a resource that works, and `ready` without an API token is not ready.
 - **Report a status verbatim.** The vocabulary is not closed, and paraphrasing a platform
   error loses the detail that mattered.
-- **Do not create a project.** Use `default`, and watch for a typo in `--project` creating
-  one on your behalf.
-- **Do not print secrets.** Create prints the API token; `--show-sensitive-values` exists
-  on `component get` and `mcpserver get`. Leave it off unless asked, and never paste the
-  result into anything that outlives the answer.
+- **Do not create a project.** Use `default`, and watch for a typo in the project name
+  creating one on your behalf.
+- **Ask before any delete.** `catalyst_delete_resource` cannot be undone.
+- **Do not print secrets.** Never paste a secret value, or an API token if you are ever
+  given one, into anything that outlives the answer.
 - **Link only what you can link correctly**, with a route from section 6 and a project
   parameter whose form you are sure of.
