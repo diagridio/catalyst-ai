@@ -9,7 +9,7 @@ Recognise it by extension (`.bpmn`, `.bpmn20.xml`) or by the namespace
 `http://www.omg.org/spec/BPMN/20100524/MODEL` on an `.xml` file.
 
 > Adapted from `prompts/bpmn-to-ir.md` in
-> [diagridio/dapr-skills](https://github.com/diagridio/dapr-skills) (MIT). The element
+> [diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills) (MIT). The element
 > mapping is theirs. It has been re-expressed in the `__type` vocabulary of
 > [ir-schema.md](ir-schema.md) — see [Where this differs from upstream](#where-this-differs-from-upstream),
 > because the upstream table and the upstream schema disagreed, and a generator can
