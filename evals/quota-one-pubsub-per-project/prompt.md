@@ -8,7 +8,7 @@ allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
   Says the limit is one managed pub/sub per project and that no plan change raises
   it, so a second broker is not the shape to design for — separate the analytics
-  traffic by topic on the one broker instead. Points at `diagrid org usage` for the
+  traffic by topic on the one broker instead. Points at `catalyst_get_usage` for the
   live number rather than asserting the 1 from memory.
 ---
 
