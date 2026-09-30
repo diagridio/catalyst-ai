@@ -70,8 +70,8 @@ project with different settings turns one unexplained failure into two.
 - **`catalyst_get_logs` works only at `full` data sharing.** Log lines carry whatever
   the application chose to print, so at the default `metadata` level the tool returns
   `DATA_SHARING_RESTRICTED`. That is policy, not a fault: do not retry it. Run
-  `diagrid app logs <name>` (or `agent logs`, `mcpserver logs`) instead, or
-  `diagrid project logs` for the whole project.
+  `diagrid project logs --ids <name>` instead, or `diagrid project logs` for the whole
+  project.
 - **`-o json` on every CLI read.** The default table view drops fields, including the
   ones carrying the failure reason. A conclusion drawn from the table view is a
   conclusion drawn from a truncated object. One exception: `diagrid workflow get` has
@@ -231,12 +231,9 @@ it.
 3. **The sidecar's own output.** `diagrid project logs --ids <identity> --type dapr`
    carries component initialisation and connection errors; `--type app` carries your
    application's output. They fail differently and the distinction is usually the answer.
-4. **Recent activity.** `diagrid app get <name> --include-activity -o json` (and the same
-   flag on `agent get` and `mcpserver get`) sets `status.appIds[].status.isActive`: `true`
-   means the identity served or sent a request in the last 5 minutes, `false` means it
-   did not. **A missing `isActive` means unknown, not idle** — an older control plane does
-   not report it. `catalyst_get_metrics` for that app shows the same thing as request
-   rates. Then the recent logs: `diagrid app logs <name> --tail 50`.
+4. **Recent activity.** `catalyst_get_metrics` for that app shows, as request rates,
+   whether it has served or sent anything recently. Then the recent logs:
+   `diagrid project logs --ids <identity> --limit 50`.
 5. **Whether requests reach it at all.** `diagrid listen --id <identity> --invoke <method>`
    streams inbound requests to your terminal without deploying application code. If
    nothing arrives the problem is upstream of the app; if requests arrive and it still

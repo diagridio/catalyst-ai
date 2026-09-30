@@ -116,7 +116,7 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Request rates, error rates, quota consumption | `catalyst_get_metrics` | — |
 | Plan limits and how much of each is used | `catalyst_get_usage` | `diagrid org usage` |
 | Token budgets and their spend | `catalyst_list_token_budgets` | `diagrid tokenbudget list` |
-| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid app logs <name>` (and `agent logs`, `mcpserver logs`), or `diagrid project logs --ids <a>,<b>` for several at once |
+| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid project logs --ids <a>,<b>` (one identity or several) |
 
 Two limits in that table are deliberate, not oversights:
 

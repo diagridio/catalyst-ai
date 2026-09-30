@@ -161,7 +161,7 @@ Three different streams, and picking the wrong one is why bugs look invisible.
 | --- | --- | --- |
 | Your process | Inline in `dev run`, or written to file with `--app-log-destination` | Whatever your code prints |
 | The API log | `--enable-api-logging`, or `enableApiLogging` per app in the file | One JSON line per Dapr API call, prefixed `== API - <identity> ==`, with method, status, protocol, execution time, component name and the trace and span ids |
-| The platform | `diagrid app logs <name> --follow --tail 50` | The sidecar and the app as Catalyst saw them |
+| The platform | `diagrid project logs --ids <identity> --limit 50` | The sidecar and the app as Catalyst saw them |
 
 Reach for the API log the moment a call "does nothing": it shows whether the call left
 your process at all, which is the fork between an application bug and a wiring bug. The
@@ -191,8 +191,7 @@ type is the whole point:
 
 Note the flag is `--ids`, not `--appids`, and the project name is a positional argument
 rather than a flag. `project logs` does not follow — it paginates with `--limit` and
-`--page`, and defaults to JSON output. `app logs`, `agent logs` and `mcpserver logs` are
-the ones that take `--follow`.
+`--page`, and defaults to JSON output; rerun it to see newer lines.
 
 **Confirm a command against `diagrid <noun> --help` before you rely on it.** This CLI
 moves nouns and flags between minor versions, and `--app-id` has already become a

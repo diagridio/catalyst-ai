@@ -105,8 +105,8 @@ BANNED_SUBSTRINGS: dict[str, str] = {
     "diagrid appid": (
         "hidden in the CLI in favour of `app`, `agent` and `mcpserver`, and the "
         "skills speak the same vocabulary as the CLI and the console. Use "
-        "`diagrid app|agent|mcpserver list|get|logs`, and `diagrid project logs "
-        "--ids` for several identities at once."
+        "`diagrid app|agent|mcpserver list|get`, and `diagrid project logs "
+        "--ids` for logs."
     ),
     "on every surface": (
         "payloads are withheld over MCP tools, not on every surface. The CLI and "
