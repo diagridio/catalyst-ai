@@ -96,11 +96,6 @@ appear in its `<skills_instructions>` block with their descriptions intact, byte
 Codex's own guidance text says automatic skill selection is allowed by default, so you
 shouldn't have to name a skill — though nobody has yet confirmed that from a real session.
 
-Earlier versions of this README warned that Codex might not work, on the strength of
-`npx skills list` omitting Codex. That turned out to mean only that Codex wasn't installed
-on the machine doing the checking. Details in
-[docs/cold-start-measurement.md](docs/cold-start-measurement.md).
-
 ### What is and is not verified, per client
 
 | | skills install | skills register | a question answered |
@@ -265,6 +260,8 @@ Also worth reporting, in rough order of value:
 
 Open an issue on this repository.
 
+For a security problem, don't open an issue. See [SECURITY.md](SECURITY.md).
+
 ## Contributing
 
 Three gates run on every PR, each with its own test suite, and each exists because
@@ -317,3 +314,7 @@ the point, so fix the skill rather than the gate.
 
 If you add a skill, bump `version` in `.claude-plugin/plugin.json`. Everyone who already
 installed keeps the old content otherwise, and nothing tells them.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
