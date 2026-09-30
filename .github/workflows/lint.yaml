@@ -11,11 +11,9 @@ name: lint
 # So scripts/lint_skills.py is the real gate, and scripts/test_lint_skills.py
 # proves it still catches each thing it claims to. Both run here.
 #
-# lint_skills.py catches banned *substrings*, which is the wrong shape for the
-# defect that has now shipped twice: `--appids` only became a banned substring
-# after it went out, and `--instance-id` is spelled correctly, exists, and is
-# REQUIRED — invisible in `--help`, which does not render required-ness at all.
-# The `cli` job below closes that by downloading the pinned CLI and asking it.
+# lint_skills.py catches banned *substrings*, which is the wrong shape for a skill
+# that names a tool the server does not ship. The `mcp` job below closes that
+# across skills, evals and the README, and fails on any CLI invocation.
 #
 # And lint_skills.py only ever SIMULATES an install, with `shutil.copytree`. The
 # `install` job runs the real `npx skills add` in both of its modes, because the
@@ -106,8 +104,7 @@ jobs:
     # the comparison. It earned that on the first run: macos went red and ubuntu
     # green, and the difference was the finding.
     #
-    # No package cache here, unlike the `cli` job's 34MB pinned binary, and that
-    # is a decision rather than an omission. The whole job runs in under 20s, so
+    # No package cache here, and that is a decision rather than an omission. The whole job runs in under 20s, so
     # there is little to win — and restoring `~/.npm/_npx` from a cache is the
     # closest thing to the failure this job already hit once, where concurrent
     # npx invocations racing on that directory produced `ENOTEMPTY` on macos and
@@ -140,34 +137,14 @@ jobs:
       - name: Install with the real installer and check what landed
         run: python3 scripts/check_install.py
 
-  cli:
-    # Every `diagrid` command and flag in the skills, checked against the CLI
-    # release pinned in .diagrid-cli-version. This is the only gate here that
-    # can catch the two defects that shipped in a week:
-    #
-    #   `diagrid project logs --appids <id>`   no such flag on any command
-    #   `diagrid workflow start` with no --instance-id   the flag is REQUIRED
-    #
-    # Neither was catchable by review or by a substring list. The second is the
-    # instructive one: `MarkFlagRequired` sets a cobra annotation that the help
-    # renderer ignores, so the page a reviewer reads shows `-i, --instance-id
-    # string   Instance ID of the workflow` and looks optional. The annotation
-    # survives only in the generated bash completion script, which is where the
-    # checker reads it from.
-    #
-    # The CLI is a checksummed download, not a piped install script.
-    # downloads.diagrid.io/cli/install.sh is public and honours RELEASE_VERSION,
-    # but piping it would be unpinned remote code on every pull request, so this
-    # reads the same public GCS objects and verifies them against the pin.
-    #
-    # There is deliberately no `diagrid login` here, and no credential. The gate
-    # only ever runs `--help`, which cobra answers before any pre-run hook, so it
-    # needs none. The one consequence is that a few hidden paths — unlike the
-    # merely-hidden `tokenbudget` — do not resolve without a login
-    # and cannot be inspected here. They are declared in `[login_required]` in
-    # .diagrid-cli-version and reported as unverifiable rather than as absent,
-    # so the verdict does not depend on whether anyone is logged in. Giving this job a credential to close that gap would trade a
-    # named blind spot for a secret in CI, which is a bad trade.
+  mcp:
+    # The skills drive Catalyst only through the remote MCP server, so three things
+    # are checked across skills/, evals/ and README.md: every `catalyst_*` name is in
+    # contracts/catalyst-mcp-tools.txt, no `diagrid <subcommand>` CLI invocation
+    # remains, and nothing names a local MCP server or a non-production host.
+    # lint_skills.py checks tool names inside skills/ only; this job also covers the
+    # evals and the README, and owns the CLI and host rules. Stdlib Python, so there
+    # is nothing to install and no secret.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -175,31 +152,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Cache the pinned CLI
-        # Keyed on the pin file, so a version bump misses the cache and a rerun
-        # of the same commit does not re-download 34MB. The checksum is verified
-        # on a cache hit too — a cache is not a trust boundary.
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.cache/diagrid-cli-pin
-          key: diagrid-cli-${{ hashFiles('.diagrid-cli-version') }}
+      - name: Test the MCP surface gate
+        # Runs first: a gate nobody has pointed at a broken fixture is not a gate.
+        # The controls must pass, or the rejections prove only that it rejects.
+        run: python3 scripts/test_check_mcp_surface.py
 
-      - name: Download the pinned CLI
-        # A named step so a checksum mismatch or a 404 on a bumped version reads
-        # as a download failure rather than as a skills failure.
-        run: python3 scripts/diagrid_cli_pin.py
-
-      - name: Test the CLI gate
-        # Runs first, same reason as the linter's own tests: a gate nobody has
-        # pointed at a broken fixture is not a gate. Every case here is built
-        # against the real pinned binary, and the suite includes controls that
-        # must PASS — including one with no commands in it at all, because a
-        # checker whose extractor silently matches nothing would otherwise be
-        # green on everything.
-        run: python3 scripts/test_check_cli_surface.py
-
-      - name: Check every documented command and flag
-        run: python3 scripts/check_cli_surface.py
+      - name: Check the MCP surface
+        run: python3 scripts/check_mcp_surface.py
 
   version:
     # A change to plugin content that does not move `version` ships to nobody.

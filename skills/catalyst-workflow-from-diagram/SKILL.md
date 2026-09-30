@@ -188,7 +188,7 @@ write it.
 with the managed pub/sub, the managed KV store, the workflow store and agent
 infrastructure already attached. Workflow history lives in that managed store, so a
 hand-rolled project is the most common reason a freshly generated workflow starts and
-then cannot be found. Confirm `default` exists with `diagrid project list` rather than
+then cannot be found. Confirm `default` exists with `catalyst_list_projects` rather than
 assuming it; if it is absent, ask which project to use rather than making one.
 
 The generated project needs **no local state-store component and no Docker**. The
@@ -208,54 +208,51 @@ the fact it is.
 
 The consequence for generated setup steps is concrete. In `default` the managed
 `pubsub` and `kvstore` already exist and already consume the one slot, so
-`diagrid pubsub create` and `diagrid kv create` are **rejected on quota** —
-`current 1, max 1` — and `--ignore-if-exists` does not rescue it, because that flag
-swallows a name conflict and this is not one. Reference the existing components by
+applying a second `Pubsub` or `KVStore` is **rejected on quota** —
+`current 1, max 1` — and re-applying does not rescue it. Reference the existing components by
 name. Emit a create only for a project made without the managed ones, which is not the
 project you should be in.
 
-Then run it:
+Then run it against Catalyst:
 
-- `diagrid dev scaffold` writes the dev config for the project.
-- `diagrid dev run --project default --id <app> -- <run command>`
+- Make sure the app exists: `catalyst_get_app`, else `catalyst_apply` an `App` (read
+  `catalyst_get_resource_schema` first and run with `dry_run`). A write role is needed.
+- Start the worker with the connection values in its environment. `catalyst-develop`
+  section 3 is the one place that says how, using `catalyst_get_app_connection`, and how
+  to keep the token out of chat, files and history.
 
-`--id` names the identity the worker runs as. On `dev run` the short `-p` means `--app-port`, not `--project`.
-
-**Omit `--app-port`.** What a diagram translates into is a workflow worker: it dials
-Catalyst outbound and polls for work items, so there is no inbound endpoint to expose. Add
-`--app-port` only if Catalyst must call *into* the application — service invocation,
-pub/sub delivery, an agent endpoint. Building an HTTP server just to answer a port you do
-not need is a common first-run failure, and it fails confusingly: the worker registers
-every workflow and activity, then dies at bind because something else holds the port.
-Check any command against `--help` before you rely on it, including these:
-this CLI moves nouns and flags between minor versions.
+**Give the app no endpoint and no port.** What a diagram translates into is a workflow
+worker: it dials Catalyst outbound and polls for work items, so there is no inbound
+endpoint to expose. Give it an endpoint only if Catalyst must call *into* the
+application — service invocation, pub/sub delivery, an agent endpoint. Building an HTTP
+server just to answer a port you do not need is a common first-run failure, and it fails
+confusingly: the worker registers every workflow and activity, then dies at bind because
+something else holds the port.
 
 ## 8. Start one run, then read it back
 
 A generated workflow that has never run is not a result.
 
-- `diagrid workflow start <workflow-name> --project default --id <app> --instance-id <run-id> -d '<json>'`
-- `diagrid workflow list --project default`
-- `diagrid workflow get <run-id> --project default --id <app>`
+- `catalyst_start_workflow` with the project, the app identity and the workflow name, and
+  the input. It assigns the run id and returns it; keep it.
+- `catalyst_list_workflow_runs` for the project, if you lost the id.
+- `catalyst_get_workflow_run` for the run.
 
-`start` **requires `--instance-id`.** Nothing generates a run id for you and omitting
-it fails with `required flag(s) "instance-id" not set`. Name the run after the diagram
-so the first run is findable later.
+`catalyst_start_workflow` is a write tool, absent for a role that cannot write. Name the
+input after the diagram's happy path so the first run is recognisable later.
 
 Pick the input for that first run off the diagram's own happy path, and check the
-result against the boxes it should have visited. `workflow get` prints the history;
+result against the boxes it should have visited. `catalyst_get_workflow_run` returns the graph;
 comparing that list to the picture is the only end-to-end proof the translation was
 faithful, and it is cheaper than reading the generated code again.
 
-Payloads are withheld by default **over MCP tools**, and by deleting the key rather than
-returning an empty value. An absent `output` is not a workflow that produced nothing —
-report that it was withheld, or you will send someone to debug working code. The CLI does
-not go through that filter: `diagrid workflow get <workflow-id> --project <project> --id
-<app>` returns `input` and `output` for the run and for every activity in its history.
-Two conditions: confirm the CLI is logged into the same organization — the CLI session
-and the MCP connection are separate identities and can sit in different ones — and say
-which surface the value came from. Never forge a data-sharing header, and never ask an
-administrator to raise the organization's level so you can finish an answer.
+Payloads are withheld by default, and by deleting the key rather than returning an empty
+value. An absent `output` is not a workflow that produced nothing — report that it was not
+shared at this organization's data-sharing level, or you will send someone to debug
+working code. Only an organization administrator can raise the level to `full`. Never
+forge a data-sharing header, and never ask an administrator to raise the level so you can
+finish an answer. The console shows the run under the user's own access:
+`https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
 
 ## 9. Hand back the diagram you implemented
 
@@ -295,7 +292,7 @@ Alongside it, state plainly:
 
 The pipeline, the IR contract and the BPMN element mapping are adapted from the
 `create-workflow-from-diagram` skill in
-[diagridio/dapr-skills](https://github.com/diagridio/dapr-skills), which is MIT
+[diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills), which is MIT
 licensed. The record shapes, field names and `check_id` values are kept as they are
 upstream, because they are a contract and a renamed field is a broken generator.
 

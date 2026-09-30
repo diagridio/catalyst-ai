@@ -202,29 +202,19 @@ data-sharing level.* Then reason from what is available:
 - `failure_details_error_message`, `failure_details_stack_trace`,
   `failure_details_is_non_retriable`
 
-When the diagnosis turns on a payload you cannot see, **try the CLI first**: withholding
-is applied by the MCP server to MCP responses, and `diagrid workflow get <workflow-id>
---project <project> --id <app>` does not go through it. It returns `input` and `output` for
-the run and for every activity in the history — which is the whole point here, because a
-divergence is read from the sequence of activity inputs. Two conditions: confirm the CLI
-is logged into the same organization — the CLI session and the MCP connection are
-separate identities and can sit in different ones — and say which surface the value came
-from. Never forge a data-sharing header, and never ask an administrator to raise the
-organization's level so you can finish an answer.
-
-Only if the CLI is unavailable too, say the payload was withheld **and hand the user a link
-to the run** so they can read it themselves: `/workflows/<appId>/<runId>` on
-the console host. The project is a query parameter with two spellings and **no
-cross-fallback between them** — `?project=` is matched against the name-like project id
-(`default`), `?projectId=` against the numeric uid (the `prj-` prefix is optional). A
-numeric uid passed as `?project=` matches no project name, so the console does not switch
-project at all: it stays on whatever project is already selected, where the run id does
-not resolve. Name goes in `?project=`, number in `?projectId=`, and if you cannot tell
-which you are holding, omit the parameter. Do not hardcode or hand-derive the host:
-prefer `diagrid web`, which opens the console for the environment the session is logged in
-to, and see `catalyst-setup` section 3 for the API-host mapping when you need the URL
-itself. A link that 404s or lands on the wrong project is worse than no link: if you
-cannot build one confidently, give the run id and app id as plain text.
+When the diagnosis turns on a payload you cannot see, say the payload was not shared at
+this organization's data-sharing level, name the level, and **hand the user a link to the
+run** so they can read it themselves: `https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
+Only an organization administrator can raise the level, and that is their decision: never
+forge a data-sharing header, and never ask for it so you can finish an answer. The project
+is a query parameter with two spellings and **no cross-fallback between them** —
+`?project=` is matched against the name-like project id (`default`), `?projectId=` against
+the numeric uid (the `prj-` prefix is optional). A numeric uid passed as `?project=`
+matches no project name, so the console does not switch project at all: it stays on
+whatever project is already selected, where the run id does not resolve. Name goes in
+`?project=`, number in `?projectId=`, and if you cannot tell which you are holding, omit
+the parameter. A link that 404s or lands on the wrong project is worse than no link: if
+you cannot build one confidently, give the run id and app id as plain text.
 
 That is enough to locate a divergence: compare the recorded sequence of scheduled names
 against the sequence the current code would emit. The workflow archive export is refused

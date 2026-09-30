@@ -1,359 +1,203 @@
 ---
 name: catalyst-develop
-description: Iterate on code locally while it runs against live Diagrid Catalyst infrastructure — the edit, rerun, observe loop. Covers `diagrid dev run`, the scaffolded dev file, the local app connection, output streams, and a tunnel or sidecar that never comes up.
+description: Iterate on code locally while it runs against live Diagrid Catalyst infrastructure — the edit, rerun, observe loop. Covers the app identity, the local app connection, the environment a worker needs, triggering runs, and a worker that never connects.
 ---
 
 # The local development loop
 
 Goal: end this skill with the user's own process running on their machine, talking to a
-real Catalyst sidecar, and able to see three things — their app's output, the API traffic,
-and the platform's own logs. A loop that requires a redeploy per edit is not this loop;
-if you find yourself recreating resources to test a code change, something above is wrong.
+real Catalyst sidecar, and able to see what it did. A loop that requires a redeploy per
+edit is not this loop; if you find yourself recreating resources to test a code change,
+something above is wrong.
+
+Everything here goes through the Catalyst MCP server, the `catalyst_*` tools. If they are
+missing or refuse with `NOT_AUTHENTICATED`, the `catalyst-setup` skill covers it.
 
 ## 1. The shape of the loop
 
-Two commands, run at different frequencies. Confusing them is the most common way this
-gets slow.
-
-| Frequency | Command | What it does |
+| Frequency | Step | How |
 | --- | --- | --- |
-| Once per project, then on change | `diagrid dev scaffold` | Writes a dev config file describing every app, agent and MCP server in the project, and exports the project's own resources next to it |
-| Every iteration | `diagrid dev run` | Reconciles the resources, attaches a local app connection, and launches your process |
+| Once per app | Make sure the App ID exists, with its components | `catalyst_get_app`, else `catalyst_apply` (section 2) |
+| Every run of the process | Get the connection values and start the process with them | `catalyst_get_app_connection` (section 3) |
+| Every iteration | Trigger a run and read what happened | `catalyst_start_workflow`, `catalyst_get_workflow_run` (section 4) |
 
-What survives an iteration: the app and its identity, its API token, the components, the subscriptions,
-the managed pub/sub and KV store. What you redo: your process. Nothing in a code change
-requires touching the platform, and the section on what *does* force a change is below —
-read it before you delete anything.
+What survives an iteration: the app and its identity, its API token, the components, the
+subscriptions, the managed pub/sub and KV store. What you redo: your process. Nothing in a
+code change requires touching the platform, and section 6 lists what *does* force a
+change. Read it before you delete anything.
 
 **Never create a project to develop in.** Every organization gets one named `default`
-with managed pub/sub, KV, workflow store and agent infrastructure already attached, and
-`dev run` needs all of them. Confirm with `diagrid project list`.
+with managed pub/sub, KV, workflow store and agent infrastructure already attached.
+Confirm with `catalyst_list_projects`, and pass the project on every call; there is no
+current project. A `Project` manifest creates the project it names, so if one is in a
+batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
+`Project` manifest only when the user explicitly asked for a new project.
 
-This matters more here than elsewhere, because `dev run` **creates the project when the
-name does not exist.** A typo in `--project` does not error; it provisions a fresh empty
-project, spends one of the three per-region slots, and then reports that nothing is in it.
-Read the `Using existing project: ...` line it prints before you trust the run.
-
-## 2. Scaffold the dev file, then own it
-
-`diagrid dev scaffold` writes `<project>.yaml` into the current directory unless `-f`
-says otherwise, and it writes more than that one file. Every non-managed component,
-subscription and resiliency policy in the project is exported alongside it as
-`<project>-component-<name>.yaml`, `<project>-subscription-<name>.yaml` and
-`<project>-resiliency-<name>.yaml`, and listed under `common.resourcesPaths`. Managed
-components are skipped with a `skipping managed component` line — that is correct, not a
-failure, because a managed component is not yours to declare.
-
-Scaffold refuses to run against a project that is not settled. It polls the project for
-readiness, then polls each app's identity, and gives up with `App ID "x" must be in ready status
-in order to scaffold dev session configuration`. That is a wait, not an error to work
-around — see the readiness row in section 7.
-
-If the project has no apps it writes an empty file and says so, pointing you at
-creating one first. An empty dev file is not runnable.
-
-### What it fills in, and what it leaves for you
-
-Per app it writes `appID`, `appDirPath`, `appChannelAddress` (`127.0.0.1`), `appProtocol`
-(`http`), the health-check block, and four environment variables:
-
-| Variable | Why your code needs it |
-| --- | --- |
-| `DAPR_APP_ID` | The identity the sidecar answers as — see the note below the table |
-| `DAPR_HTTP_ENDPOINT` | Where the Dapr HTTP API lives, on the project's host, not localhost |
-| `DAPR_GRPC_ENDPOINT` | The same for gRPC |
-| `DAPR_API_TOKEN` | The identity's credential |
+## 2. Make sure the App ID exists
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
 Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
 resource's `status.appIds` (the get tools include it). For an agent registered from your
-own code, it's the `appId` on its registry record. The dev file's `appID` field and the
-CLI's `--id` flag take the same name.
+own code, it's the `appId` on its registry record.
 
-It leaves `appPort` at `0` and `command` empty. Those two are yours to fill in — a
-scaffolded file with neither will refuse to start with `port and command cannot both be
-empty`.
+1. `catalyst_get_app` for the project and the app name. If it exists and is `ready`, go
+   on.
+2. If it does not exist, create it with `catalyst_apply`: read
+   `catalyst_get_resource_schema` for the `App` kind first, run with `dry_run` and show
+   the user, then apply. Apply the project's components first, then the app, then the
+   subscriptions scoped to it in a second call (see `catalyst-deploy` for the full
+   ordering), so the components exist when its sidecar boots. An app with no endpoint is the correct shape for a pure
+   workflow worker, which dials Catalyst outbound.
+3. Read it back and wait for `ready`. `updating` right after a local connection attaches
+   is normal; give it time before calling it broken.
 
-**That file contains a live API token per app.** It is a credential, in your working
-directory, in a file named after your project. Add it to `.gitignore` before you run
-anything, and never paste its contents into an answer, an issue or a commit.
+`catalyst_apply` is a write tool. If it is absent, the user's role cannot write: say so
+and stop.
 
-Re-running scaffold on an existing file **updates rather than replaces**: an app entry
-that is already there is carried over untouched, so the port and command you filled in
-survive. That is what makes re-scaffolding the right response to a stale file rather than
-a lossy one.
+## 3. Running the app locally
 
-## 3. Run it
+The app runs as the user's own process with three values in its environment. Catalyst
+hands them out through one tool.
 
-Two mutually exclusive forms. Passing both a file and an `--id` is rejected.
+1. Make sure the App ID exists (section 2).
+2. Call `catalyst_get_app_connection` for that project and App ID. It returns
+   `DAPR_API_TOKEN`, `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT`. It is a
+   write-consent tool and its calls are audited, so the client may ask the user to
+   approve it.
+3. Start the app process with those three values set **only in that process's
+   environment**, for example, run in the background:
 
-```
-diagrid dev run --project default --file default.yaml
-diagrid dev run --project default --id <app> --app-port <port> -- <your run command>
-```
+   ```
+   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app> uv run main.py
+   ```
 
-Everything after `--` is your process. Omit the command and `dev run` only attaches the
-connection, which is how you launch from a debugger.
+   Use the user's own run command in place of `uv run main.py`, and the app's own port
+   or server flags if it has any (a web app started with `uv run uvicorn main:app
+   --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
+   no inbound port. Alternatively, export the values only in the shell that runs the
+   app.
+4. **Handle the token as a secret, and be honest about where it goes.** It passes through
+   the tool result and through the launch command you run, so this session can see it.
+   Keep it out of files, `.env`, commits, logs and your own chat prose, and never repeat
+   it back to the user. When you describe the command, show the placeholders, as above.
+   If the user objects to the value passing through the session, offer to give them the
+   launch command with placeholders to run in their own terminal, and stop there.
+5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
+   call the tool again.
+6. If `catalyst_get_app_connection` is missing or refused, say that it is unavailable to
+   this role or server, and stop. There is no other route to these values.
 
-Flags worth knowing, all present on v1.66.0:
+Two things about the worker process itself:
 
-| Flag | Note |
-| --- | --- |
-| `--id`, `-a` | The identity to run as. `--app-id` still works but is a hidden, deprecated alias |
-| `--app-port`, `-p` | **`-p` is the port here, not the project** |
-| `--project` | No shorthand on `run`. On `scaffold`, `stop`, `status` and `cleanup`, `-p` *is* `--project` |
-| `--file`, `-f` | The dev config file |
-| `--dry-run` | Shows what would be created. **Only valid with `--file`** |
-| `--env`, `-e` | Extra environment variables for your process |
-| `--app-dir-path` | Working directory for the command, default `.` |
-| `--enable-api-logging` | Streams the API log, see section 5 |
-| `--app-log-destination` | `file`, `console` or `all` |
-| `--app-id-env-server-enabled` | Serves each app's environment over HTTP, see section 6 |
-| `--rm-appids` | Deletes the apps this run created, on exit |
-| `--skip-managed-pubsub`, `--skip-managed-kv`, `--skip-managed-workflow`, `--skip-default-resiliency` | Opt out of the automatic provisioning below |
+- **A worker needs only those values.** A process that registers workflows and activities
+  and polls for work items dials Catalyst outbound. It needs no tunnel and no inbound
+  port. Do not add an HTTP server just so that a port has something to answer: the worker
+  then registers the workflow and every activity successfully and dies at bind because
+  something else holds the port, and the startup log reads as healthy right up to the
+  error.
+- **An app that Catalyst must call into** (service invocation, pub/sub delivery, an agent
+  endpoint) needs an inbound port and a registered endpoint. `catalyst_list_app_tunnels`
+  lists local connections open on the project, so you can see whether Catalyst currently
+  reaches a local process.
 
-The `-p` collision is worth spelling out, because only one half of it announces itself.
-`dev run -p default` is rejected at parse time, since `--app-port` takes an integer — that
-one is loud. `dev run -p 8080` when you meant the project is silent: it sets a port, falls
-back to whatever project the CLI context holds, and runs against it.
+If the process cannot connect, read the app back (`catalyst_get_app`) before changing
+code. Status and the per-identity messages under `status.appIds` say whether the platform
+side is ready. Sidecar log reading is at `full` data sharing only (section 5).
 
-## 4. What happens before your code starts
-
-`dev run` reconciles in a fixed order, and the order is load-bearing rather than
-cosmetic. Knowing it tells you which line a failure belongs to.
-
-1. **Project.** Used if it exists, created if not, waited for if it is mid-deletion.
-2. **The managed workflow store, before any app exists.** The sidecar reads workflow
-   configuration at boot, so an app created before the store is enabled comes up
-   without workflow support and the Workflow API answers `FAILED_PRECONDITION` until it is
-   redeployed. This is why enabling the store afterwards does not fix a broken run.
-3. **Configuration resources**, so an app can reference one by `appConfig`.
-4. **Components and subscriptions**, so they exist when the sidecars boot.
-5. **Apps**, in parallel. Names are lowercased for you.
-6. **Readiness** — the project, then every component, then every app.
-7. **The local app connections.** Attaching one makes the app reconfigure, so its
-   status goes `ready` → `updating` → `ready`.
-8. **Readiness again**, because of step 7, so the sidecar's gRPC endpoint is actually
-   there before your process gets a chance to call it.
-9. **Your process.**
-
-Three side effects of step 4 that surprise people:
-
-- **A component pointing at a local address is rewritten to a managed one.** A
-  `state.*` component whose host resolves to loopback or an RFC 1918 address becomes
-  `state.diagrid` against the managed `kvstore`; a `pubsub.*` becomes `pubsub.diagrid`
-  against the managed `pubsub`. Only a small allow-list of metadata survives the
-  translation — `keyPrefix` and the outbox settings for state, `consumerID` for pub/sub.
-  Everything else is dropped silently, so do not tune a local component and expect the
-  settings to arrive. Any other local component type cannot be translated at all and
-  fails with `Cannot transform local component ... to a Catalyst managed type`.
-- **A default resiliency policy is created** — `managed-service-invocation-policy`, a 30
-  second app timeout and five constant 3 second retries on HTTP 500-504. Declaring your
-  own Resiliency in the run file suppresses it, as does `--skip-default-resiliency`.
-- **Declaring your own pub/sub or state component suppresses the managed one.** The
-  automatic `pubsub` and `kvstore` are only created when the run file asks for neither.
-
-## 5. Read the output while you develop
-
-Three different streams, and picking the wrong one is why bugs look invisible.
-
-| Stream | How | What it carries |
-| --- | --- | --- |
-| Your process | Inline in `dev run`, or written to file with `--app-log-destination` | Whatever your code prints |
-| The API log | `--enable-api-logging`, or `enableApiLogging` per app in the file | One JSON line per Dapr API call, prefixed `== API - <identity> ==`, with method, status, protocol, execution time, component name and the trace and span ids |
-| The platform | `diagrid project logs --ids <identity> --limit 50` | The sidecar and the app as Catalyst saw them |
-
-Reach for the API log the moment a call "does nothing": it shows whether the call left
-your process at all, which is the fork between an application bug and a wiring bug. The
-trace id in it is what joins a request across apps.
-
-For the platform logs of several apps at once, or split by type, use `project logs` — the
-type is the whole point:
-
-- `diagrid project logs --ids <a>,<b> --type dapr` — the sidecar. Component
-  initialisation and connection errors land here.
-- `diagrid project logs --ids <a>,<b> --type app` — your application's output as
-  Catalyst captured it.
-
-<!-- lint-allow-banned: --appids — named here only to steer away from it, which is the guidance the ban exists to produce -->
-
-<!-- The CLI's own exit message is quoted verbatim above, and it omits `--project`,
-     which `dev stop` requires when no default project is configured. Editing the
-     quote would misrepresent what the CLI prints, so the incomplete command stays
-     and the paragraph under it says why not to copy it.
-
-     This marker is file-scoped, so it also stops the CLI gate flagging any OTHER
-     bare `dev stop` in this file. Both real instructions here — the bullet below
-     the quote and the rule in the last section — carry `--project default`, and a
-     new one must too.
-     cli-allow: dev stop --project — a verbatim quote of the CLI's own incomplete suggestion
--->
-
-Note the flag is `--ids`, not `--appids`, and the project name is a positional argument
-rather than a flag. `project logs` does not follow — it paginates with `--limit` and
-`--page`, and defaults to JSON output; rerun it to see newer lines.
-
-**Confirm a command against `diagrid <noun> --help` before you rely on it.** This CLI
-moves nouns and flags between minor versions, and `--app-id` has already become a
-deprecated alias for `--id`. Run `diagrid version`
-first and match what you see, including against the commands written here.
-
-### Trigger a run, so there is output to read
+## 4. Trigger a run, so there is something to read
 
 Nothing above produces anything until a workflow actually runs. Starting one is a write,
 so `catalyst_start_workflow` is absent from the tool list for a role that cannot write —
-if it is not there, that is why, and the CLI still works.
+if it is not there, that is why.
 
-| | |
-| --- | --- |
-| MCP | `catalyst_start_workflow` — needs `projectId`, `appId` and `name` |
-| CLI | `diagrid workflow start <workflow-name> --id <identity> --instance-id <run-id> -p <project> --data '<json>'` |
+`catalyst_start_workflow` takes the project, the app identity and the workflow name, plus
+the input if the workflow wants one. It assigns the instance id and hands it back.
 
 **Capture the instance id.** It is how every later call refers to that run — reading its
 status, its history, or stopping it. Losing it means listing runs and guessing which one
 was yours, which is ambiguous the moment two runs start in the same second.
 
-The two interfaces differ here in a way that changes what you type. **On the CLI
-`--instance-id` is required**, so you supply the handle and a command without it fails
-with `required flag(s) "instance-id" not set` before anything starts. That is convenient
-once you know it — a predictable handle across a rebuild — and a wasted iteration if you
-do not. The MCP tool is the opposite: it assigns an id and hands it back.
+Read the result with `catalyst_get_workflow_run`: it returns the execution graph, so you
+see which step the run is on or failed at. `catalyst_list_workflow_runs` finds runs when
+you lost the id.
 
 Stopping a run is a separate matter and is deliberately not in this skill — it is
-irreversible and belongs with diagnosis rather than iteration.
+irreversible and belongs with diagnosis rather than iteration (`catalyst-debug`).
+
+## 5. Read the output while you develop
+
+Three different sources, and picking the wrong one is why bugs look invisible.
+
+| Source | How | What it carries |
+| --- | --- | --- |
+| Your process | Its own terminal or log file, where you started it | Whatever your code prints. Catalyst never sees it |
+| The run | `catalyst_get_workflow_run` | Status, the execution graph, step errors. `input`, `output` and `customStatus` are withheld at the default data-sharing level |
+| The sidecar's API log | `catalyst_get_logs`, at `full` data sharing only | One entry per Dapr API call the app made, with status, method and error |
+
+`catalyst_get_logs` returns `DATA_SHARING_RESTRICTED` at the default `metadata` level.
+That is policy, not a fault: do not retry it, say the logs were not shared at this
+organization's data-sharing level, and use the other two sources. `catalyst_get_metrics`
+shows request and error rates for the app when the question is "is anything arriving at
+all".
+
+**An absent field is not an empty one.** Never report a missing `output` as "the workflow
+produced no output". Say it was not shared at this level.
 
 ## 6. Iterating without touching the platform
 
-A code change needs nothing but your process restarted. Stop `dev run`, start it again,
-and the app, components and subscriptions are found rather than made — the run prints
-`Using existing dapr app id ...` for each, which is your confirmation that the loop is
-tight.
+A code change needs nothing but your process restarted: stop it, start it again with the
+same environment, and the app, components and subscriptions are found rather than made.
 
 What genuinely does require a platform change:
 
 | Change | Why |
 | --- | --- |
 | A new component or subscription | It has to exist before the sidecar that loads it boots |
-| A component's **type** | Immutable. It must be deleted and recreated, and that includes converting to or from a Diagrid managed type |
+| A component's **type** | Immutable. It must be deleted (`catalyst_delete_resource`, with the user's agreement) and applied again, and that includes converting to or from a Diagrid managed type |
 | A new app | Nothing can reference an app that does not exist yet |
-| Health-check or protocol settings | An app's identity spec is not updatable in place; the health check is re-applied when the connection attaches, and `appConfig` is the one field `dev run` will patch |
+| The app's health-check or protocol settings | An app's identity spec is not updated in place; read it, change it and apply it whole |
 
-### The connection outlives your process
+A component pointing at a local address is not translated for you: Catalyst components
+are applied as written, so point state and pub/sub at the project's managed `kvstore`
+and `pubsub` rather than at a local broker.
 
-This is the trap that produces "it worked yesterday". Killing `dev run` stops your
-process but leaves the local app connection registered, and the CLI says so on exit:
-`Your dev session will remain active until you stop it by running: diagrid dev stop --id <id>`.
+## 7. When the worker does not come up
 
-**Do not paste that suggestion back verbatim.** It omits `--project`, which `dev stop`
-requires whenever no default project is configured — a fresh login, a CI shell, a new
-machine — and the command then dies on `required flag(s) "project" not set`. Add
-`--project` and it works everywhere.
+Route by what you actually saw. Guessing here wastes a whole iteration.
 
-- `diagrid dev status` lists every connection in the project, with its status and whether
-  its credentials have **expired**.
-- `diagrid dev stop --id <app> --project default` removes one.
-- An expired or orphaned connection is a normal thing to find and a normal thing to stop.
-  A missing connection is also normal — it means nobody is running locally.
-
-### Running your app from a debugger
-
-Attach the connection without launching anything, then start the process yourself:
-
-```
-diagrid dev run --project default --id <app> --app-port <port> --app-id-env-server-enabled
-```
-
-The environment server then serves each app's `DAPR_HTTP_ENDPOINT`,
-`DAPR_GRPC_ENDPOINT` and `DAPR_API_TOKEN` as JSON at `http://localhost:8001/<identity>`
-(`--app-id-env-server-port` moves it). Your debug configuration reads them from there
-instead of you copying a token into a launch profile where it will rot.
-
-Leave `--app-port` out of that command if nothing calls *into* your process. A pure
-workflow worker has no inbound endpoint to attach.
-
-### A worker needs two variables and no `dev run` at all
-
-A process that only registers workflows and activities and polls for work items dials
-Catalyst outbound. It needs no local app connection, no tunnel and no port. The smallest
-thing that works is your own process with two variables set:
-
-| Variable | Where the value comes from |
-| --- | --- |
-| `DAPR_GRPC_ENDPOINT` | `diagrid project get <project> -o json` → `.status.endpoints.grpc.url` |
-| `DAPR_API_TOKEN` | `diagrid app get <app> --project <project> -o json` → `.status.apiToken` |
-
-Then start the process directly — `python app.py`, `go run .`, whatever it is.
-
-Prefer `dev run --app-id-env-server-enabled` when you can: it serves the same two values,
-keeps the token out of your shell history, and refreshes it. Reach for the variables
-directly when you cannot — a container, a CI job, a run configuration that will not shell
-out. **The app's API token is a credential.** Do not echo it, do not write it into a file that
-gets committed, and do not paste it into a launch profile; read it at start-up from the
-environment or a secret store, the same as a database password.
-
-## 7. When the sidecar or the connection does not come up
-
-Route by the message you actually saw. Guessing here wastes a whole iteration.
-
-| Message | Cause | Do |
+| Symptom | Cause | Do |
 | --- | --- | --- |
-| `project <name> not found` | The dev file names a project that is gone, or `--project` is a typo | Check `diagrid project list`. Do not let `dev run` create the typo |
-| `App ID <name> not found` | The dev file names an app the project does not have | Re-scaffold rather than hand-editing |
-| `App ID x does not match provided env var DAPR_APP_ID y` | A hand-edited or copied dev file | Re-scaffold. This check exists because the mismatch otherwise surfaces as a silent auth failure |
-| `API token org ID / project ID / App ID does not match` | A token pasted from another project or organization | Re-scaffold. Never hand-write a token into the file |
-| `App ID "x" must be in ready status in order to scaffold` | The app is still provisioning | Wait. Scaffold already retries at 4 second intervals; a tighter loop of your own does not help |
-| `error connecting to tunnel for app "x"` | The connection could not be established | `diagrid dev status`, then `dev stop` a stale one. Then check whether the project was created with app tunnels disabled — that is a project setting, and no local connection will ever attach while it is set |
-| `tunnel for app "x" did not start` | It connected but never came up | Same as above |
-| `App IDs did not become ready after tunnel connection` | The reconfigure at step 7 of section 4 did not settle | Expected transient, then a real failure. `updating` immediately after attach is normal; give it the poll window before calling it broken, then read `--type dapr` logs |
-| `component <name> not ready` | A component, not your app | `diagrid project logs --ids <id> --type dapr` carries the broker or store error |
-| `Directory "x" for app "y" does not exist` | `appDirPath` is resolved from where you ran the command | Fix the path or run from the directory the file assumes |
-| `this run references agent components but no Agent resource exists for ...` | The run declares `agent-*` components but no matching Agent | Create the Agent for that name first. Every app in an agent run needs one |
-| `component must be deleted to be updated ...` | You changed a component's type | Delete and recreate it. Nothing else works |
-| `The selected region does not support the Workflows API` | Informational | Not a failure of this run, but workflow calls in that region will not work |
-| `port and command cannot both be empty` | A scaffolded app entry never got filled in | Set `appPort`, a `command`, or both |
+| `catalyst_get_app_connection` missing or refused | Not available to this role or server | Say so and stop |
+| `catalyst_get_app` says the app does not exist | Wrong name or project | Check the name with `catalyst_list_apps` |
+| The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `catalyst_list_components` and then `catalyst-debug` |
+| The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `catalyst_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
+| The worker is connected but a run fails | An application error | `catalyst_get_workflow_run` for the failing step |
+| Bind error on startup in a worker that never needed a port | An HTTP server was added unnecessarily | Remove it; see section 3 |
+| A component is not ready | A component, not your app | `catalyst_get_component`, then `status.appIdStatus[]` |
+| `component must be deleted to be updated ...` | You changed a component's type | Delete it and apply it again |
+| `agent-*` components rejected | No matching Agent resource exists | Apply the `Agent` first; `agent-registry` is managed by Diagrid, do not create it |
 
-Two quieter failure modes with no error to grep for:
+Two quieter failure modes with no error to search for:
 
-- **A run-file field that does nothing.** The dev file is a Dapr multi-app run file
-  dialect, and Catalyst ignores a long list of the standard fields — container images,
-  `daprHTTPPort` and the other port overrides, `placementHostAddress`,
-  `schedulerHostAddress`, `appSSL`, `unixDomainSocket`, profiling, `runtimePath`, and the
-  health-check fields at `common` level rather than per app. Each one prints an
-  `Ignoring unsupported ...` warning at startup. If a setting appears to have no effect,
-  read the startup warnings before debugging your code.
-- **`agent-registry` is managed by Diagrid.** It is skipped if your resources declare it.
-  Do not try to create or edit it.
-- **A port conflict in a worker that never needed a port.** If an HTTP server was added so
-  that `--app-port` had something to answer, that server is now its own failure mode: the
-  worker registers the workflow and every activity successfully, then dies at bind because
-  something else — commonly a container — already holds the port. The startup log reads as
-  healthy right up to the error, which sends people looking at the workflow registration.
-  A workflow worker needs no port at all; see section 6.
-
-If you get past all of that and requests still are not arriving, stop guessing at the app
-and check the path: `diagrid listen --id <identity> --invoke <method>` streams inbound
-requests straight to your terminal with no application code involved. Nothing arriving
-means the problem is upstream of your process.
+- **A setting that does nothing.** Catalyst applies components as written and ignores
+  Dapr settings that belong to a self-hosted sidecar. If a setting appears to have no
+  effect, read the resource back before debugging your code.
+- **The app is ready and requests still do not arrive.** Reading inbound requests as they
+  arrive is not available over MCP yet. Check `catalyst_get_metrics` for the app and the
+  endpoint registered on the resource.
 
 ## Rules
 
-- **Do not create a project.** Use `default`, and remember `dev run` will create a typo
-  rather than reject it. Check the project name before every first run of a session.
-- **Treat the dev file as a secret.** It holds a live API token per app. Gitignore it,
-  and never print its contents.
-- **Do not hand-edit the generated app entries.** Re-scaffold; it preserves the port and
-  command you added and fixes the identity fields that go stale.
-- **Say which stream a line came from.** Your process, the API log and the platform logs
-  fail differently, and a conclusion drawn from the wrong one sends the user to the wrong
-  file.
-- **Confirm every command against `diagrid version` and `--help`.** `-p` means different
-  things on different `dev` subcommands, and `--app-id` is deprecated in favour of `--id`. Quote what you verified.
-- **Wait for readiness rather than retrying past it.** The CLI already polls the project,
-  the components and the apps. Restarting the run resets those timers and makes a slow
-  provision look like a hang.
-- **Stop what you started.** A dev session left running holds a local app connection on
-  the app. `diagrid dev status` shows it, `diagrid dev stop --id <app> --project default`
-  releases it.
+- **Do not create a project.** Use `default`, and check the project name before the first
+  call of a session.
+- **Keep the token out of files, `.env`, commits, logs and chat prose**, and never repeat
+  it to the user. Show placeholders when describing the command; if the user objects to
+  the value passing through the session, hand them a placeholder command to run themselves.
+- **Do not fall back to anything else when a tool is missing or refused.** Say it is
+  unavailable to this role or server, and stop.
+- **Say which source a line came from.** Your process, the run and the sidecar log fail
+  differently, and a conclusion drawn from the wrong one sends the user to the wrong place.
+- **Wait for readiness rather than retrying past it.** Re-creating a resource resets its
+  timers and makes a slow provision look like a hang.
 - **Do not delete resources to test a code change.** Nothing in an edit-run-observe cycle
-  needs a component or app recreated, and `--rm-appids` on a shared project deletes
-  what this run created out from under whoever else is using it.
+  needs a component or app recreated.

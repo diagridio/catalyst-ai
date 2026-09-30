@@ -62,12 +62,6 @@ ALLOWED_FRONTMATTER_KEYS = {"name", "description"}
 # Things that must never appear in a skill, each because it shipped somewhere and
 # broke. The value is why, so a failure explains itself.
 BANNED_SUBSTRINGS: dict[str, str] = {
-    "--enable-agent-infrastructure": (
-        "removed from `diagrid project create` in CLI v1.63.0 (verified by "
-        "downloading the binary). Agent infrastructure now comes with the "
-        "managed KV store. This flag shipped in 7 places in typescript-ai, "
-        "including executable code that printed it to users as setup guidance."
-    ),
     "Diagrid.Agents.Workflow": (
         "NuGet package that does not exist and returns 404. The published id is "
         "`Diagrid.AI.Microsoft.AgentFramework`. A skill that emits a coordinate "
@@ -77,41 +71,15 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "not the PyPI distribution name. It is `diagrid` (0.4.3), with framework "
         "extras rather than per-framework distributions."
     ),
-    "--appids": (
-        "not a flag on any command at CLI v1.63.0 — `diagrid project logs` takes "
-        "`--ids` and its project is positional. Shipped in catalyst-debug in two "
-        "places, where it emitted a command that does not parse. Nothing catches "
-        "this at review time because it reads exactly like a plural of `appid`."
-    ),
     "go-sdk/workflow": (
         "existed in go-sdk v1.10.0 through v1.13.0 and was removed in v1.14.0, so "
         "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
-    "CLI cannot show": (
-        "false. `diagrid workflow get` returns `input`, `output` and "
-        "`customStatus` with no flag, for the run and for every activity in its "
-        "history. Withholding is applied by the MCP server to MCP responses only "
-        "(`internal/filter` is imported by `services/catalyst/mcp/*` alone), so "
-        "the CLI is the fallback that can still show a withheld payload. This "
-        "shipped in catalyst-workflow-scaffold, inside the very section about not "
-        "misreporting field availability."
-    ),
     "managed-agent": (
-        "a hidden CLI command for a feature that is not released to customers. The "
-        "skills used to name it to warn against it, which only advertised it. The "
-        "agent path is the user's own app fronted by `diagrid agent`."
-    ),
-    "diagrid appid": (
-        "hidden in the CLI in favour of `app`, `agent` and `mcpserver`, and the "
-        "skills speak the same vocabulary as the CLI and the console. Use "
-        "`diagrid app|agent|mcpserver list|get`, and `diagrid project logs "
-        "--ids` for logs."
-    ),
-    "on every surface": (
-        "payloads are withheld over MCP tools, not on every surface. The CLI and "
-        "the single-execution management read both return them. Saying otherwise "
-        "sends the model to the console when a working command was available."
+        "a hidden command for a feature that is not released to customers. Naming "
+        "it, even to warn against it, only advertises it. The agent path is the "
+        "user's own app fronted by an `Agent` resource."
     ),
 }
 

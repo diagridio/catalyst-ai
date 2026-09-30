@@ -9,21 +9,22 @@ Goal: end this skill able to say what exists, what state each thing is in, and w
 call told you. A value you cannot attribute to a call you made is a guess, and to the
 person reading your answer a guess is indistinguishable from a fact.
 
+Everything here goes through the Catalyst MCP server, the `catalyst_*` tools. If they are
+missing or refuse with `NOT_AUTHENTICATED`, this is a connection problem rather than an
+inspection problem: the `catalyst-setup` skill covers it, and there is nothing useful to
+read until the user has signed in. Do not guess a project's state to fill the gap.
+
 ## 1. Start at the project, not at the resource
 
 Call `catalyst_whoami` first. It reports the organization, its projects and its regions,
-so you do not have to ask the user for something the platform already knows. Fall back
-to the `diagrid` CLI when the MCP tools are absent or refuse. If neither works this is a
-connection problem rather than an inspection problem — the `catalyst-setup` skill covers
-it, and there is nothing useful to read without a credential.
+so you do not have to ask the user for something the platform already knows.
 
 ### Answer about one project
 
 An unqualified question — "my project", "is anything broken", "what is deployed" — is
-about **one** project: the one the session is pointed at. Resolve it, name it in your
-answer, and stay inside it.
+about **one** project. Resolve it, name it in your answer, and stay inside it.
 
-`catalyst_whoami` and `diagrid project list` both return every project in the
+`catalyst_whoami` and `catalyst_list_projects` both return every project in the
 organization. That is an inventory, not an instruction to read all of them. An
 organization holds other people's projects, and each one you add multiplies every read in
 section 3. Measured on an organization with ten projects, answering "is anything broken
@@ -31,124 +32,105 @@ in my project" by sweeping all of them spent well over half its calls on project
 had asked about — and every one of those is a round trip whose result the answer then has
 to carry.
 
-**Which project is the current one.** The CLI has one, set by `diagrid project use
-<project>`, and `diagrid project list` marks it with a leading `*`. That is the single
-read where the table carries something `-o json` does not: the marker is absent from the
-JSON, so take it from the table and read the JSON for everything else.
+**There is no current project.** Every project-scoped tool takes the project as an
+explicit argument, so pass it on every call. Take the argument's *name* from the tool's
+own schema rather than assuming it: the two OpenAPI specs behind the surface disagree on
+capitalisation, so it is `projectId` on the management operations and `ProjectId` on the
+controlplane ones, and no operation names it plain `project`. That is the console's URL
+parameter, a different system — section 6 covers it, and the two are easy to confuse.
 
-The MCP surface has no current project — every project-scoped tool takes the project as
-an explicit argument. Take the argument's *name* from the tool's own schema rather than
-assuming it: the two OpenAPI specs behind the surface disagree on capitalisation, so it
-is `projectId` on the management operations and `ProjectId` on the controlplane ones, and
-no operation names it plain `project`. That is the console's URL parameter, a different
-system — section 6 covers it, and the two are easy to confuse.
-
-An unqualified question means `default` on the MCP path. Say which project you chose and
-why, in one line, so a wrong assumption is visible immediately rather than buried under
-the reads that follow it.
+An unqualified question means `default`. Say which project you chose and why, in one
+line, so a wrong assumption is visible immediately rather than buried under the reads
+that follow it.
 
 **Widening the scope is a decision you state, not a rule you have broken.** "Anything
 broken anywhere", "across the organization", a named second project — and any plural or
 comparing question, which needs more than one project by its nature. "Which of my
 projects uses the most quota" has no single call behind it: metrics are per project or
-per app, agent or MCP server, and `diagrid org usage` reports per scope and region, so ranking projects
-means reading each one, and that is the correct answer rather than a violation. All of
-these are worth one sentence first saying how many projects you are about to read.
+per app, agent or MCP server, and `catalyst_get_usage` reports per scope and region, so
+ranking projects means reading each one, and that is the correct answer rather than a
+violation. All of these are worth one sentence first saying how many projects you are
+about to read.
 
-`staging` and `prod` are usually Catalyst **environments**, not projects — separate host,
-issuer and credentials, one login at a time, covered by `catalyst-setup`. "Compare
-staging and prod" is that axis, not a second project name. Do not go looking for a
-project called `prod`. If you cannot resolve the current
-project, ask which one. Enumerating an organization to avoid asking a question costs the
-user more than the question would have.
+"Compare staging and prod" is not a comparison of two projects in one organization, so
+do not go looking for a project called `prod`. If you cannot resolve which project is
+meant, ask. Enumerating an organization to avoid asking a question costs the user more
+than the question would have.
 
-Then read the project, even when the question is about one app. The project is the
-only object that names the managed infrastructure everything else sits on, and a large
-share of "X is missing" turns out to be "X's backing store was never enabled here".
+Then read the project with `catalyst_get_project`, even when the question is about one
+app. The project is the only object that names the managed infrastructure everything else
+sits on, and a large share of "X is missing" turns out to be "X's backing store was never
+enabled here".
 
 Every organization has a project named `default` with managed pub/sub, KV, workflow
-store and agent infrastructure already attached. Use it. **Never create a project** —
-a hand-made project that behaves differently is indistinguishable from a broken one to
-the person asking for help.
+store and agent infrastructure already attached. Use it. **Never create a project** — a
+hand-made project that behaves differently is indistinguishable from a broken one to the
+person asking for help.
 
-Two project-scoped limits are fixed and never worth investigating:
+Two project-scoped limits matter for designs:
 
-| Limit | Value | What it means for a design |
+| Limit | Default | What it means for a design |
 | --- | --- | --- |
 | `number_of_pubsubs_per_project` | 1 | Every topic shares one broker |
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
-Both are 1 on every plan. A multi-agent topology
-separates traffic by topic and by key prefix, not by broker or store. State it as a
-platform default. Never present it as a free-tier limit or a reason to upgrade: no plan
-upgrade raises it, and a user who upgrades on your advice has been misled.
-
-These are plan limits with a per-organization override, not constants in the code. If a
-live quota read shows a higher number, that organization has a negotiated limit and the
-live value wins over this document. Read the budget rather than asserting the 1.
+The default is 1 on every plan, and confirming it is one call to `catalyst_get_usage`. A
+multi-agent topology separates traffic by topic and by key prefix, not by broker or
+store. State it as a platform default. Never present it as a free-tier limit or a reason
+to upgrade: no plan upgrade raises it, and a user who upgrades on your advice has been
+misled. The limits carry a per-organization override, so if the live read shows a higher
+number, the live value wins over this document.
 
 ## 2. Attribute every value
 
-Name the source of each answer — the MCP tool, or the CLI command.
-
-The CLI session and the MCP connection are separate identities. They can be logged into
-different organizations, and when they are, both return internally consistent answers
-that disagree with each other. Attribution is the only thing that surfaces that.
+Name the tool that produced each answer. A value you cannot attribute to a call you made
+is a guess.
 
 ## 3. The inventory
 
-| To read | MCP tool | CLI |
-| --- | --- | --- |
-| Org, projects, regions | `catalyst_whoami` | `diagrid org current`, `diagrid org list` |
-| Projects | `catalyst_list_projects`, `catalyst_get_project` | `diagrid project list`, `diagrid project get <name>` |
-| Apps, and any tunnel on them | `catalyst_list_apps`, `catalyst_get_app` | `diagrid app list`, `diagrid app get <name>`; tunnels with `diagrid dev status` |
-| Agents, declared and runtime-registered | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
-| The runtime agent registry | `catalyst_get_agent`, also naming the app the agent runs in (the `appId` on its registry record) | `diagrid agent registry list` |
-| MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` | `diagrid mcpserver list`, `diagrid mcpserver get <name> --tools` |
-| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list` (`--scope <identity>` for one app's), `diagrid subscription list` (read `scopes` in `-o json`), `diagrid pubsub list`, `diagrid kv list` |
-| Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` | — |
-| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <identity>` |
-| One region in detail | `catalyst_get_region` | `diagrid region get <region-id>` |
-| Access policies — why a workflow or MCP call was refused | `catalyst_list_access_policies`, `catalyst_get_access_policy` | `diagrid workflow access-policy list`, `diagrid mcpserver access get <mcpserver>` |
-| Dev tunnels open on a project | `catalyst_list_app_tunnels` | `diagrid dev status` |
-| Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` | — |
-| Who changed what, and when | `catalyst_list_audit_events` | `diagrid audit list` |
-| Request rates, error rates, quota consumption | `catalyst_get_metrics` | — |
-| Plan limits and how much of each is used | `catalyst_get_usage` | `diagrid org usage` |
-| Token budgets and their spend | `catalyst_list_token_budgets` | `diagrid tokenbudget list` |
-| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid project logs --ids <a>,<b>` (one identity or several) |
+| To read | Tool |
+| --- | --- |
+| Org, projects, regions | `catalyst_whoami` |
+| Projects | `catalyst_list_projects`, `catalyst_get_project` |
+| Apps, and any tunnel on them | `catalyst_list_apps`, `catalyst_get_app` |
+| Agents, declared and runtime-registered | `catalyst_list_agents`, `catalyst_get_agent` |
+| The runtime agent registry | `catalyst_get_agent`, with `appId` also passed, for the registry record |
+| MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` |
+| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` |
+| Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` |
+| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` |
+| One region in detail | `catalyst_get_region` |
+| Access policies — why a workflow or MCP call was refused | `catalyst_list_access_policies`, `catalyst_get_access_policy` |
+| Dev tunnels open on a project | `catalyst_list_app_tunnels` |
+| Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` |
+| Who changed what, and when | `catalyst_list_audit_events` |
+| Request rates, error rates, quota consumption | `catalyst_get_metrics` |
+| Plan limits and how much of each is used | `catalyst_get_usage` |
+| Token budgets and their spend | `catalyst_list_token_budgets` |
+| Logs | `catalyst_get_logs` (full data sharing only) |
 
-Two limits in that table are deliberate, not oversights:
+Three limits in that table are deliberate, not oversights:
 
 - **`catalyst_get_logs` refuses at the default data-sharing level.** Log lines carry
-  whatever the application chose to print, so at `metadata` the tool returns
+  whatever the application chose to send, so at `metadata` the tool returns
   `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
-  policy, not a fault: do not retry it. Fall back to the CLI, and only an org admin
-  raising the level to `full` changes the answer.
+  policy, not a fault: do not retry it. Say so, name the level, and stop. Only an org
+  admin raising the level to `full` changes the answer. The tool reads the sidecar's API
+  request log, which is each Dapr call with its status and error, not the application's
+  own standard output. Reading the application's own output is not available over MCP
+  yet.
 - **This skill only reads, even where the MCP server can write.** For a role that allows
-  writes, the server also has create, change and delete tools (see `catalyst-deploy`) and
-  workflow-run actions (see `catalyst-debug`). This skill uses none of them. Anything the
-  user wants changed goes to those skills or the CLI, with their consent.
-
-`-o json` on any CLI read gives you the full object; the default table view drops
-fields. Read the JSON before concluding that a field does not exist. One read runs the other way:
-`diagrid project list` marks the current project with a leading `*` in the table and not
-at all in the JSON, so take that marker from the table and every other field from the
-JSON. See section 1. `diagrid workflow
-get` is the exception — it has no `--output` flag and always prints YAML, so `-o json`
-there is an unknown flag rather than a formatting choice.
+  writes, the server also has `catalyst_apply`, `catalyst_delete_resource` and workflow-run
+  actions (see `catalyst-deploy` and `catalyst-debug`). This skill uses none of them.
+  Anything the user wants changed goes to those skills, with their consent.
+- **Some reads have no tool.** Invoking an app, publishing to a topic, reading or writing
+  state, and streaming inbound requests are not available over MCP yet. Say that in one
+  line; do not substitute a guess.
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
 Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
 resource's `status.appIds` (the get tools include it). For an agent registered from your
 own code, it's the `appId` on its registry record.
-
-On the CLI, the `app`, `agent` and `mcpserver` verbs take the resource's name and resolve
-the identity themselves. The flags that take the identity directly are `--id`, and `--ids`
-on `project logs`.
-`--app-id` lingers as a hidden deprecated alias on `workflow`, `listen`, `dev` and the
-`call` verbs: it works, warns, and does not appear in `--help`, so write `--id` and nobody
-has to take your word for it.
 
 ### Readiness
 
@@ -168,30 +150,27 @@ message.
 
 ### Agents
 
-An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
-identified by `--endpoint` and the `--archive-*` flags. Say `agent` or `app`, never leave
+An agent is an `Agent` resource: a Catalyst front for an agent **your** app runs,
+identified by its endpoint and its archive settings. Say `agent` or `app`, never leave
 it ambiguous: they are different resources.
 
-`diagrid agent registry list` is the second thing, and often the one that answers the
-question: it lists what is actually registered in the project's runtime, including
-externally deployed OSS Dapr agents. A name in the registry but not in `agent list` is an
-agent nobody declared to Catalyst; the reverse is a declaration whose workload is not
-running.
+`catalyst_get_agent` returns the runtime registry record when `appId` is also passed, and that is often the one
+that answers the question: the registry lists what is actually registered in the project's
+runtime, including externally deployed OSS Dapr agents. A name in the registry but not in
+`catalyst_list_agents` is an agent nobody declared to Catalyst; the reverse is a
+declaration whose workload is not running.
 
 ## 4. Workflow runs
 
 `catalyst_get_workflow_run` returns the execution graph — which step a run is on or
-failed at. The CLI has no equivalent, so prefer it whenever the question is "where is it".
+failed at. Use it whenever the question is "where is it".
 
-`diagrid workflow list` covers every app in the project and takes filters worth using
-before you ask the user to narrow anything down:
-
-- `--status` — `running`, `completed`, `failed`, `terminated`, `suspended`, `canceled`
-- `--id` (the identity the run belongs to), `--name`, both repeatable
-- `--start-after`, `--start-before`, `--end-after`, `--end-before`, RFC3339
-- `--custom-status key=value`
-- `--sort-by name|createdAt|startAt|endAt|status|appId` with `--order asc|desc`
-- `--limit`, capped at 250
+`catalyst_list_workflow_runs` covers every app in the project and takes filters worth
+using before you ask the user to narrow anything down. Read its schema for the exact
+names; they include the run's status (`running`, `completed`, `failed`, `terminated`,
+`suspended`, `canceled`), the app identity, the workflow name, and start and end time
+windows. `catalyst_list_workflows` and `catalyst_get_workflow` describe the definitions
+and their activity graph.
 
 Workflow reads require the project's managed workflow store. On a project without it,
 these calls do not return an empty history — they fail or report the API as unsupported.
@@ -218,42 +197,31 @@ that error from your answer, and it sends them looking for a bug in code that wo
 
 The same trap applies twice more:
 
-- `customStatus` absent is not "the workflow never set one", and a `--custom-status`
-  filter matching nothing does not prove no run carries that key. Even once fetched, an
-  empty `customStatus` proves a clean run only if the workflow is documented to set one
-  on failure and the `output` agrees. Do not certify a run clean on a missing field.
-- Credentials are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
+- `customStatus` absent is not "the workflow never set one", and a filter on it matching
+  nothing does not prove no run carries that key. Even once fetched, an empty
+  `customStatus` proves a clean run only if the workflow is documented to set one on
+  failure and the `output` agrees. Do not certify a run clean on a missing field.
+- Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app
-  has no token.
+  has no token. No read tool returns an app's token; only `catalyst_get_app_connection`
+  does (see `catalyst-develop` section 3).
 
-Tell the user the field was withheld and why — then, before you stop, try the CLI. The
-data-sharing level is applied by the MCP server to MCP responses; the CLI talks to the
-management API and never passes through that filter. `diagrid workflow get <workflow-id>
---project <project> --id <app>` returns `input`, `output` and `customStatus` for the run
-*and for every activity in its history*, with no flag and no change to the org's level. If
-the CLI is unavailable too, hand them a console link so they can read it themselves — see
-section 6.
-
-Two conditions on that fallback. **Confirm the CLI is logged into the same organization** —
-section 2 notes the CLI session and the MCP connection are separate identities that can sit
-in different organizations, and a payload read from the wrong one is a worse answer than a
-refusal. And **say which surface the value came from**, so the user can tell a CLI read from
-a tool read.
-
-Do not attempt to route around the *level* itself — do not forge a data-sharing header, and
-do not ask an administrator to raise the org so you can finish an answer. It is a
-deliberate control. Reading the same data, in the same organization, through a surface the
-user is already entitled to use is not routing around it; it is using the product.
+Tell the user the field was withheld and why: "it was not shared at this organization's
+data-sharing level (`metadata`)". Name the level. The payload cannot be read through this
+session at that level, and only an organization administrator can raise it to `full`;
+raising it is their decision, so do not ask an administrator to change it so that you can
+finish an answer, and never try to route around the level. It is a deliberate control.
+If the user wants the payload, the console link in section 6 is where they can read it
+themselves.
 
 ## 5. Quotas and metrics
 
 `catalyst_get_metrics` reads request rates, error rates and quota consumption, scoped to
-a project or to one app, agent or MCP server. Use it before proposing a design that adds resources —
-headroom is cheaper to check than to discover.
+a project or to one app, agent or MCP server. Use it before proposing a design that adds
+resources — headroom is cheaper to check than to discover.
 
-`catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key across
-the organization. Limits
+`catalyst_get_usage` reports `used` and `limit` per key across the organization. Limits
 are scoped, not global: `catalyst.per_cloud_region` and `catalyst.per_private_region` are
 enforced **per region**, so usage arrives as one entry per scope and region. Summing
 across regions, or reading one region's entry as the organization total, produces a wrong
@@ -273,10 +241,10 @@ Read the numbers rather than reciting plan values from memory. Organizations get
 limits, so a remembered figure is often wrong for the one in front of you. The two
 exceptions are the pub/sub and KV counts in section 1, which are 1 everywhere.
 
-For anything metrics cannot answer — a specific error, a stack trace, an ordering
-question — go to the logs: `diagrid project logs --type app` for application output and
-`--type dapr` for sidecar output. They fail differently, and the distinction is usually
-the answer.
+For anything metrics cannot answer — a specific error, an ordering question — go to
+`catalyst_get_logs`, which shows each Dapr API call an app made through its sidecar with
+its status and any error. It works only at `full` data sharing; at the default level say
+so and stop. The application's own standard output is not available over MCP yet.
 
 ## 6. Link to the console
 
@@ -285,14 +253,10 @@ data-sharing level removed a payload: "the input was withheld at this organizati
 data-sharing level, and here it is in the console" is a useful answer where both a lie
 and a shrug are not.
 
-Never hardcode the host — production, staging, development and local are all different
-hosts. Do not hand-derive it either: **`diagrid web` opens the console for the environment
-you are actually logged in to**, and `catalyst-setup` section 3 carries the API-host →
-console-host mapping when you need the URL itself rather than a browser. If you cannot
-establish the host confidently, give the identifiers in plain text rather than a broken
-link.
+The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
+the identifiers in plain text.
 
-Use only these routes:
+Use only these routes, appended to that host:
 
 | Resource | Route |
 | --- | --- |
@@ -337,9 +301,9 @@ with a route from the table above and an identifier whose form you are sure of.
   whose form you are sure of, or plain identifiers instead. A link that lands on the
   wrong project fails silently and looks right. See section 6.
 - **Act on a refusal's instruction.** A refused call names its own kind and carries an
-  instruction addressed to you; follow it. Never ask the user to paste a credential — the
-  client's auth flow supplies those. Retry once only if the refusal says it is retryable;
-  retrying a permanent refusal looks to the user like a hang.
+  instruction addressed to you; follow it. Never ask the user to paste a token or key —
+  the client's sign-in flow supplies those. Retry once only if the refusal says it is
+  retryable; retrying a permanent refusal looks to the user like a hang.
 - **Stay in one project unless asked otherwise — and widen when asked.** An unqualified
   question is about the current project; name it, name what you did not look at, and stay
   there. A plural or comparing question is the exception and needs every project it
@@ -350,6 +314,6 @@ with a route from the table above and an identifier whose form you are sure of.
 - **Read the project before reporting anything missing.** Managed workflow storage and
   agent infrastructure are project settings, and their absence looks exactly like an
   empty system.
-- **Do not print secrets.** `--show-sensitive-values` exists on `diagrid component get`
-  and `diagrid mcpserver get`; leave it off unless the user asked for the value, and never
-  paste the result into a summary that outlives the answer.
+- **Do not print secrets.** Component reads withhold inline setting values at the default
+  level; never paste a secret's value, if you are ever given one, into a summary that
+  outlives the answer.

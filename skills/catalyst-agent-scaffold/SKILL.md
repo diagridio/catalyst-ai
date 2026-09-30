@@ -11,28 +11,25 @@ crashes is a chat loop, not a Durable Agent.
 
 ## 1. Know which resource you are looking at
 
-The Catalyst resource for an agent is **`diagrid agent`**: a connectivity and archiving
+The Catalyst resource for an agent is the **`Agent`** kind: a connectivity and archiving
 resource in front of an agent that **your** app runs. Your process runs the loop, you
-write the code, and the resource takes `--endpoint` and the `--archive-*` flags.
+write the code, and the resource takes an endpoint and archive settings. You create it
+with `catalyst_apply` (read `catalyst_get_resource_schema` for the `Agent` kind first, run
+with `dry_run`, show the user, then apply), which needs a write role.
 
 If the user asks for Catalyst to host or run the agent for them, say it is not something
-you can set up, and continue with their own app fronted by `diagrid agent`. That starts
-at section 3.
+you can set up, and continue with their own app fronted by an `Agent`. That starts at
+section 3.
 
-**Never write "create an agent" unqualified**, in prose or in a command. Say which
-command you mean.
+**Never write "create an agent" unqualified.** Say which resource you mean: an `Agent`
+fronting their app, or their own agent code.
 
-## 2. Confirm the command before relying on it
+## 2. Read the schema before writing the manifest
 
-The meaning of `diagrid agent` **changed between CLI versions.** Before 1.63.0 it named a
-different resource with different flags. From 1.63.0 onward it is the connectivity resource
-carrying `--endpoint` and `--archive-*`; still true at 1.66.0. One command name, two
-different resources, depending on a version you did not choose.
-
-So do not emit an agent command from memory, and do not trust the ones written here on
-sight. Run `diagrid version`, then the relevant `--help`, and match what you actually see.
-A command that was right one minor version ago can now create the wrong kind of resource
-without erroring.
+Do not write an `Agent` manifest from memory. `catalyst_get_resource_schema` returns the
+fields the kind takes and the platform rejects unknown ones; a guessed field name that
+happens to be accepted can mean something else. An `App` is a different resource with
+different fields, so check which one you are writing.
 
 ## 3. Your-own-app path: detect the language first
 
@@ -98,7 +95,7 @@ installed, not read off a registry page.
 
 ## 5. Python specifics, since it is the widest path
 
-Install the framework as an extra on the single `diagrid` distribution — there is no
+Install the framework as an extra on the single PyPI package named `diagrid`. There is no
 per-framework distribution:
 
 ```
@@ -109,8 +106,7 @@ The 11 frameworks are `langgraph`, `crewai`, `adk`, `strands`, `pydantic_ai`,
 `openai_agents`, `claude_agents`, `langchain`, `smolagents`, `deepagents` and
 `holmesgpt`. Three traps: the extras use **underscores** where the framework's own name
 uses a hyphen, `holmesgpt` conflicts with the others and needs its own environment, and
-the console script is **`diagridpy`**, not `diagrid` — `diagrid` is the Catalyst CLI, a
-different program. Python 3.11 or later, below 3.14.
+the console script is **`diagridpy`**, not `diagrid`. Python 3.11 or later, below 3.14.
 
 Import the runner from the framework's module: `DaprWorkflowAgentRunner` for most,
 `DaprWorkflowGraphRunner` for LangGraph, `DaprWorkflowDeepAgentRunner` for Deep Agents,
@@ -135,11 +131,10 @@ integration; note that only `ChatClient.call()` is durable today, not `.stream()
 
 **Do not create a project.** Every organization gets `default`, with managed pub/sub, a
 managed KV store, the workflow store and agent infrastructure already attached. Agent
-infrastructure comes with the managed KV store — `project create` has no
-`--enable-agent-infrastructure` flag, which was removed. Do not document it.
+infrastructure comes with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Check with `diagrid project list`; if it is gone, ask
+recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, ask
 which project to use rather than creating one. The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
@@ -153,60 +148,45 @@ A coordinator with specialists therefore **shares one broker and separates the a
 topic**, one topic per specialist plus one for results. Design for that from the start;
 it is not a workaround.
 
-Budget the resource slots before scaffolding. Per region:
-
-| | Allowance |
-| --- | --- |
-| Projects | 3 |
-| Resources — every app, agent and MCP server counts as one | 10 |
-| Managed pub/sub, KV store and workflow store, per project | 1 each |
-
-An app or a connectivity `agent` spends one resource slot. A coordinator plus four
-specialists is five slots — it fits, but a second copy does not.
-
-Throughput is capped per app and per project as well. Those figures move and are quoted
-inconsistently, so read them off the current plans page instead of hardcoding one here.
+Budget the resource slots before scaffolding: every app, agent and MCP server counts as
+one identity against a per-region allowance, and a coordinator plus four specialists is
+five of them. Read the allowance with `catalyst_get_usage` rather than quoting a figure,
+and do the same for throughput limits.
 
 ## 8. Run it, then kill it
 
-- `diagrid dev run --project default --id <app> --app-port <port> -- <run command>`
+- Make sure the `App` and the `Agent` exist (`catalyst_get_app`, `catalyst_get_agent`).
+- Start the agent process with the connection values in its environment:
+  `catalyst-develop` section 3 is the one place that says how, using
+  `catalyst_get_app_connection`, and how to keep the token out of chat, files and history.
 - Send a prompt, wait for it to be mid-run, kill the process, start it again.
 - The run must resume rather than restart. If it restarts, the agent is not durable and
   the scaffold is not finished — usually the workflow store or a component name.
 
-On `dev run` the short `-p` means `--app-port`, not `--project`, and `--id` names the
-identity the process runs as. Apps, agents and MCP servers are each backed by an identity
-(an "App ID" in some APIs). Where a tool asks for or returns `appId`, it means that
-identity's name. Read it from the resource's `status.appIds` (the get tools include it).
-For an agent registered from your own code, it's the `appId` on its registry record.
+Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
+Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
+resource's `status.appIds` (the get tools include it). For an agent registered from your
+own code, it's the `appId` on its registry record.
 
-`--app-port` **is** wanted here, unlike for a pure workflow worker: an agent exposes an
-endpoint Catalyst calls into, so there is a port to connect. `diagrid dev run` provisions
-the managed pub/sub, KV store and workflow store for the identities it creates, so you get
-the infrastructure by running.
+An agent exposes an endpoint Catalyst calls into, so unlike a pure workflow worker it
+needs an inbound port and a registered endpoint.
 
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
-empty value. Over MCP tools, `input`, `output` and `customStatus` are all removed, and
-only an organization administrator can raise the org's data-sharing level to `full`. Over
-the management API, the list endpoints need `includeData=true`; the single-execution read
-returns payloads without it. **The CLI needs no flag because it is not filtered at all** —
-withholding is applied by the MCP server to MCP responses, so `diagrid workflow get
-<workflow-id> --project <project> --id <app>` remains the fallback that can still show a
-payload an MCP tool withheld. Two conditions: confirm the CLI is logged into the same
-organization — the CLI session and the MCP connection are separate identities and can
-sit in different ones — and say which surface the value came from. Never forge a
-data-sharing header, and never ask an administrator to raise the organization's level so
-you can finish an answer.
+empty value. Over MCP tools, `input`, `output` and `customStatus` are all removed at the
+default `metadata` data-sharing level, and only an organization administrator can raise
+the level to `full`. Never forge a data-sharing header, and never ask an administrator to
+raise the level so you can finish an answer.
 
-So never report a missing payload as "the agent produced no output". Say it was withheld
-and by which surface. A tool that refuses is likewise not an agent that failed; report
-the refusal and fall back to the CLI.
+So never report a missing payload as "the agent produced no output". Say it was not
+shared at this organization's data-sharing level, name the level, and link the console
+run (section 9). A tool that refuses is likewise not an agent that failed; report the
+refusal.
 
 ## 9. Hand back a link, not a claim
 
 Once the agent exists, give the user a console link rather than asking them to trust the
-transcript. Only these routes exist:
+transcript. The console for the production server is `https://catalyst.diagrid.io`. Only these routes exist:
 
 | To show | Route |
 | --- | --- |
@@ -229,19 +209,15 @@ after that number, finds none, and **silently falls back to the user's default p
 — no error, just the wrong data. Name goes in `project`, number in `projectId`, and if
 you cannot tell which you hold, omit the parameter.
 
-Do not hardcode or hand-derive the host; prod, staging, dev and local differ, so any
-hardcoded host is wrong for someone. Prefer `diagrid web`, which opens the console for the
-environment the session is logged in to, and see `catalyst-setup` section 3 for the mapping
-when you need the URL itself. If you cannot establish it, print the identifiers as plain
-text — **a link that 404s or lands on the wrong project is worse than no link.**
+If you cannot establish a link you trust, print the identifiers as plain text — **a link
+that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
-  `diagrid agent`.
-- **Check every CLI command against `diagrid version` and `--help` before running it.**
-  `diagrid agent` changed which resource it creates between 1.51 and 1.63, so a remembered
-  command can quietly do the wrong thing.
+  an `Agent` resource.
+- **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field
+  name can quietly mean something else.
 - **Do not create a project.** Use `default`.
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
   language has no installable adapter instead of guessing one.
@@ -254,8 +230,3 @@ text — **a link that 404s or lands on the wrong project is worse than no link.
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
 
-<!-- Named in order to warn against it, not to instruct. The lint gate rejects
-     this string by default because a skill that tells someone to pass the flag
-     is a real defect.
-     lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
--->

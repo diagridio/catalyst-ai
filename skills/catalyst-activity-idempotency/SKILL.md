@@ -212,29 +212,20 @@ than reconstructing it in the body, so it is visible to a reviewer.
   `metadata` data-sharing level, workflow and activity `input`, `output` and
   `customStatus` are **removed from the response**, not returned empty. When you are
   checking history to find out whether a duplicate occurred, you cannot see payloads over
-  MCP. **You can over the CLI:** withholding is applied by the MCP server to MCP responses,
-  so `diagrid workflow get <workflow-id> --project <project> --id <app>` still returns
-  `input` and `output` for every activity in the history. That is the direct evidence for
-  this skill's question — the same activity name repeated with the same input is a retry,
-  and whether it reached the provider twice is exactly what you are trying to establish.
-  Two conditions: confirm the CLI is logged into the same organization — the CLI session
-  and the MCP connection are separate identities and can sit in different ones — and say
-  which surface the value came from. Never forge a data-sharing header, and never ask an
-  administrator to raise the organization's level so you can finish an answer.
-  If the CLI is unavailable too, say "the payload is not available at this data-sharing level"
-  — never "the activity returned nothing", which the user has no way to detect as wrong.
+  MCP at that level. Say "the payload was not shared at this organization's data-sharing
+  level" and name the level — never "the activity returned nothing", which the user has no
+  way to detect as wrong. Only an organization administrator can raise the level, so never
+  forge a data-sharing header and never ask for it so you can finish an answer.
   What remains available over MCP: event types and names, timestamps, `task_scheduled_id`,
   `task_execution_id`, the retry origin key, and failure messages with stack traces.
 - **Link the user to the run** when deciding whether a duplicate happened depends on a
-  payload you cannot see. The route is `/workflows/<appId>/<runId>` on the console host.
+  payload you cannot see. The route is `/workflows/<appId>/<runId>`.
   The project is a query parameter with two spellings and **no cross-fallback** —
   `?project=` matches the name-like project id (`default`), `?projectId=` matches the
   numeric uid (`prj-` prefix optional). A numeric uid passed as `?project=` matches no
   name, so the console never switches project and the run does not resolve where it
   lands. Name goes in `?project=`, number in `?projectId=`; if you cannot tell which you
-  hold, omit the parameter. Do not hardcode or hand-derive the host: prefer `diagrid web`,
-  which opens the console for the environment the session is logged in to, and see
-  `catalyst-setup` section 3 for the API-host mapping when you need the URL itself. A link
+  hold, omit the parameter. The console for the production server is `https://catalyst.diagrid.io`. A link
   that 404s or opens the wrong project is worse than no link: fall back to the run id and
   app id in plain text.
 
