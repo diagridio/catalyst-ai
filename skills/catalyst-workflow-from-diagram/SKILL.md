@@ -295,7 +295,7 @@ Alongside it, state plainly:
 
 The pipeline, the IR contract and the BPMN element mapping are adapted from the
 `create-workflow-from-diagram` skill in
-[diagridio/dapr-skills](https://github.com/diagridio/dapr-skills), which is MIT
+[diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills), which is MIT
 licensed. The record shapes, field names and `check_id` values are kept as they are
 upstream, because they are a contract and a renamed field is a broken generator.
 

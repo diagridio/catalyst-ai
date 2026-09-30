@@ -8,7 +8,7 @@ Two dialects matter: `flowchart` (and its older alias `graph`) and `sequenceDiag
 They need different rules and the difference is not cosmetic.
 
 > New in this skill. The upstream `create-workflow-from-diagram` skill in
-> [diagridio/dapr-skills](https://github.com/diagridio/dapr-skills) explicitly rejects
+> [diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills) explicitly rejects
 > Mermaid — "stop, tell the user the input type is not supported in v1, suggest they
 > export to BPMN or a standard image". Nothing here is lifted; it targets the IR
 > contract in [ir-schema.md](ir-schema.md), which is.
