@@ -293,7 +293,7 @@ cannot see, and prints that list on every run: MCP tool names, console routes, p
 coordinates and quota numbers are not in the CLI.
 
 One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
-and a few hidden command paths do not resolve without one, while `appid` and
+and some command paths cannot be resolved in CI, while `appid` and
 `tokenbudget` are hidden and resolve anyway. Those paths are declared in
 `[login_required]` in `.diagrid-cli-version`, and the gate names their invocations as
 **unverifiable** instead of reporting them absent. Run

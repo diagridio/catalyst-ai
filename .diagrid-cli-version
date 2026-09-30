@@ -67,4 +67,4 @@ darwin_arm64 = "875e085dc8e011c1e7d381941d73a4cccdc3d8b3fac3ebad0c9b78269e6b6b0b
 # Do not add to this to silence a failure. A command that does not resolve for
 # anyone is a defect in the skill, which is the whole point of the gate.
 [login_required]
-managed-agent = "hidden, and does not resolve without a login; no skill documents it, the gate's own tests use it"
+managed-agent = "not resolvable in CI; no skill documents it, the gate's own tests use it"

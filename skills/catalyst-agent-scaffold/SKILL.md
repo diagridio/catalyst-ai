@@ -24,9 +24,8 @@ command you mean.
 
 ## 2. Confirm the command before relying on it
 
-The meaning of `diagrid agent` **changed between CLI versions.** On 1.51.0 it named a
-different resource and took model flags — `diagrid agent create --llm-provider ...
---sandbox`, and `diagrid agent chat`. From 1.63.0 onward it is the connectivity resource
+The meaning of `diagrid agent` **changed between CLI versions.** Before 1.63.0 it named a
+different resource with different flags. From 1.63.0 onward it is the connectivity resource
 carrying `--endpoint` and `--archive-*`; still true at 1.66.0. One command name, two
 different resources, depending on a version you did not choose.
 
@@ -84,8 +83,8 @@ as a required peer, so following the README leaves an unmet peer dependency.
 On **any other TypeScript framework** there is still no adapter, and the honest options
 are unchanged: write the agent in a language whose framework has a published adapter,
 or drive Dapr Workflows directly with `@dapr/dapr`, which is published and does support
-workflows — that loses the framework bridge, not durability. Do **not** offer a
-Catalyst-hosted agent as the escape hatch; there is none (section 1).
+workflows — that loses the framework bridge, not durability. There is no other
+route (section 1).
 
 For **Go**, the adapters are separate modules from the root, so each is fetched and pinned
 by its own tag: `go get` the root module at its version, then the adapter the framework
@@ -254,17 +253,4 @@ text — **a link that 404s or lands on the wrong project is worse than no link.
      this string by default because a skill that tells someone to pass the flag
      is a real defect.
      lint-allow-banned: --enable-agent-infrastructure — taught as a flag removed in v1.63.0
--->
-
-<!-- Section 2 describes what `diagrid agent` MEANT on CLI 1.51.0, because a
-     reader on that version will see it and a reader who remembers it will emit
-     it. The CLI gate checks every documented command against the pinned
-     v1.66.0, where these three no longer exist on `agent`, so it rejects them by
-     default — which is right: a skill that presents them as current is the
-     defect the gate exists for. They are acknowledged, not corrected, because
-     the sentence containing them is about the older version and stops being
-     true if the flags are changed to today's.
-     cli-allow: agent create --llm-provider — 1.51.0 spelling, named to date it
-     cli-allow: agent create --sandbox — 1.51.0 spelling, named to date it
-     cli-allow: agent chat — 1.51.0 spelling, removed from `agent` at 1.63.0
 -->
