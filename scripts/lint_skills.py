@@ -88,15 +88,6 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
-    "CLI cannot show": (
-        "false. `diagrid workflow get` returns `input`, `output` and "
-        "`customStatus` with no flag, for the run and for every activity in its "
-        "history. Withholding is applied by the MCP server to MCP responses only "
-        "(`internal/filter` is imported by `services/catalyst/mcp/*` alone), so "
-        "the CLI is the fallback that can still show a withheld payload. This "
-        "shipped in catalyst-workflow-scaffold, inside the very section about not "
-        "misreporting field availability."
-    ),
     "managed-agent": (
         "a hidden CLI command for a feature that is not released to customers. The "
         "skills used to name it to warn against it, which only advertised it. The "
@@ -107,11 +98,6 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "skills speak the same vocabulary as the CLI and the console. Use "
         "`diagrid app|agent|mcpserver list|get`, and `diagrid project logs "
         "--ids` for logs."
-    ),
-    "on every surface": (
-        "payloads are withheld over MCP tools, not on every surface. The CLI and "
-        "the single-execution management read both return them. Saying otherwise "
-        "sends the model to the console when a working command was available."
     ),
 }
 

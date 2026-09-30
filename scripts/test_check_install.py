@@ -365,7 +365,7 @@ class Result:
 
     @property
     def ok(self) -> bool:
-        # Borrowed from test_check_cli_surface.py, and for its reason: a case
+        # Borrowed from test_check_mcp_surface.py, and for its reason: a case
         # that asserts only `expect` would otherwise be satisfied by a gate that
         # crashed before printing anything, which is the same vacuity the
         # control cases exist to catch. Every spec sets `must_say` today; the
