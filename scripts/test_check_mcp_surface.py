@@ -44,7 +44,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     (
         "prose, packages and domains that contain 'diagrid' pass",
         {
-            "skills/a/SKILL.md": "Diagrid Catalyst. `@diagrid/agent-mastra`, diagridio/x, https://mcp.cloud.r1.diagrid.io/mcp, `diagrid` alone.\n",
+            "skills/a/SKILL.md": "Diagrid Catalyst. `@diagrid/agent-mastra`, diagridio/x, https://mcp.cloud.r1.diagrid.io/mcp, `diagrid`.\n",
             "README.md": "Run `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`\n",
         },
         False,
@@ -63,6 +63,18 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("stg host in the README", {"README.md": "catalyst.stg.diagrid.io\n"}, True, "non-production"),
     ("dev host in an eval", {"evals/e/prompt.md": "api.dev.diagrid.io\n"}, True, "non-production"),
     ("local host in the plugin manifest", {".claude-plugin/plugin.json": '{"u": "x.local.diagrid.io"}\n'}, True, "non-production"),
+    ("CLI command with a closing backtick", {"skills/a/SKILL.md": "the `diagrid` command does it\n"}, True, "CLI invocation"),
+    ("CLI command split across a line wrap", {"skills/a/SKILL.md": "run diagrid\nproject list\n"}, True, "CLI invocation"),
+    ("the phrase diagrid CLI", {"skills/a/SKILL.md": "install the diagrid CLI.\n"}, True, "diagrid CLI"),
+    ("a wrapped local MCP server", {"skills/a/SKILL.md": "a local\nMCP server\n"}, True, "local MCP server"),
+    ("a mixed-case tool name", {"skills/a/SKILL.md": "Call `Catalyst_Get_App`.\n"}, True, "Catalyst_Get_App"),
+    ("a tool name with digits", {"skills/a/SKILL.md": "Call `catalyst_get_app2`.\n"}, True, "catalyst_get_app2"),
+    ("an all-caps error kind passes", {"skills/a/SKILL.md": "`CATALYST_NOT_ENABLED` means no entitlement.\n"}, False, ""),
+    ("a yaml file is scanned", {".github/workflows/x.yaml": "x"}, False, ""),
+    ("an unlisted diagrid host in a skill", {"skills/a/SKILL.md": "https://api.r1.diagrid.io/v1\n"}, True, "not an allowed host"),
+    ("a bare unlisted diagrid host in an eval", {"evals/e/prompt.md": "call api.r1.diagrid.io\n"}, True, "not an allowed host"),
+    ("allowlisted hosts pass", {"README.md": "https://catalyst.diagrid.io/x https://docs.diagrid.io https://diagrid.io mail a@diagrid.io\n"}, False, ""),
+    ("marketplace id and repo path pass", {"README.md": "claude plugin install catalyst-ai@diagrid    # ok\nclaude plugin marketplace update diagrid\nclaude plugin update x\nhttps://github.com/diagridio/catalyst-ai\n"}, False, ""),
     ("the override variable alone passes", {".claude-plugin/plugin.json": '{"u": "${DIAGRID_MCP_URL:-https://mcp.cloud.r1.diagrid.io/mcp}"}\n'}, False, ""),
 ]
 

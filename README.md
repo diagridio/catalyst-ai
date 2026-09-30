@@ -46,10 +46,12 @@ If you already added the server yourself with `claude mcp add`, remove that entr
 (`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
 have two copies of every Catalyst tool.
 
-The plugin requests the scopes `catalyst:read offline_access`. Without `offline_access`
-there is no refresh token, so you sign in again each time the session expires. A
-read-only role sees only the read tools; write tools, such as `catalyst_apply`, are left
-out of the tool list entirely for a role that cannot write.
+The plugin requests the scopes `catalyst:read catalyst:write offline_access`. Without
+`offline_access` there is no refresh token, so you sign in again each time the session
+expires. Write tools, such as `catalyst_apply`, are left out of the tool list entirely
+when your role is read-only or the sign-in did not grant write scope. If they are
+missing, sign in again and approve write access; if they are still missing, your role is
+read-only.
 
 Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
 `catalyst_whoami`.
@@ -57,32 +59,54 @@ Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
 ### Connect other clients to the remote MCP server
 
 Every client connects to the same remote server, `https://mcp.cloud.r1.diagrid.io/mcp`
-(the `r1` is required), and signs in with OAuth in the browser. Install the skills for
+(the `r1` is required), and signs in with OAuth in the browser. The authorization server
+has no dynamic registration, so each client uses its registered client ID: `codex`,
+`copilot-cli`, `vscode` or `claude-code`. Install the skills for
 the client first (below), then:
 
 **Codex**
 
 ```bash
-codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp
+codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex
 codex mcp login catalyst
 ```
 
 **GitHub Copilot CLI**
 
-```bash
-copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp
-```
-
-Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the browser.
-The equivalent entry in `~/.copilot/mcp-config.json` is:
+`copilot mcp add` has no client-ID flag, so add the server and then set `oauthClientId` in
+`~/.copilot/mcp-config.json`:
 
 ```json
 {
   "mcpServers": {
-    "catalyst": { "type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "tools": ["*"] }
+    "catalyst": {
+      "type": "http",
+      "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "oauthClientId": "copilot-cli",
+      "tools": ["*"]
+    }
   }
 }
 ```
+
+Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the browser.
+
+**VS Code** (Copilot Chat), in `.vscode/mcp.json` or your user MCP configuration:
+
+```json
+{
+  "servers": {
+    "catalyst": {
+      "type": "http",
+      "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "oauth": { "clientId": "vscode" }
+    }
+  }
+}
+```
+
+VS Code opens a browser for authorization on the first connection. See the
+[VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
@@ -133,8 +157,8 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | | skills install | skills register | a question answered |
 | --- | --- | --- | --- |
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
-| Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | ⛔ needs a ChatGPT/OpenAI credential we don't have |
-| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | ⛔ `copilot -p` gets HTTP 403 *not authorized to use this Copilot feature* on the account we tried — nothing to do with the skills |
+| Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
+| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
 
 If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
@@ -194,7 +218,7 @@ Being explicit, because the gap matters and you'll notice it:
 | Determinism and idempotency review | ✅ works now |
 | Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
-| Running your app locally against Catalyst | 🆕 through `catalyst_get_app_connection`, which the server is adding |
+| Running your app locally against Catalyst | 🆕 through `catalyst_get_app_connection`, which is not served yet |
 | Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, streaming requests, cluster diagnostics | ⛔ not available over MCP yet |
 
@@ -208,9 +232,9 @@ These are in the skills already; listed here because they're the ones that cost 
 hours, and they all fail *silently* or with an unhelpful error.
 
 - **Don't create a project.** Your org already has a `default` project, provisioned at
-  signup, with managed pub/sub, KV, workflow store and agent infrastructure. Free plans
-  allow **3 projects per region**, and a typo in a project name next to a `Project`
-  manifest creates one — spending a slot without asking.
+  signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
+  manifest in a batch creates the project it names, and projects count against a
+  per-region limit you can read with `catalyst_get_usage`.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid
@@ -228,8 +252,8 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
-- **The app's API token never goes in chat, a file or shell history.** The connection
-  values go only into the environment of the process that runs your app.
+- **The app's API token is kept out of files, `.env`, commits, logs and chat.** The
+  connection values go only into the environment of the process that runs your app.
 
 ## If your install is behind
 
@@ -304,10 +328,13 @@ substrings that each shipped somewhere and broke.
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
 surface. Every `catalyst_*` name must appear in `contracts/catalyst-mcp-tools.txt`, which
 is a copy of what the server's `tools/list` returns; update it when the server's tool list
-changes. The gate also fails on any invocation of the old command-line tool, on anything that points
-at a server other than the remote one, and on any non-production host. The skills drive
-Catalyst only through the remote MCP server, so where a capability has no tool, the skill
-says it is not available over MCP yet instead of reaching for something else.
+changes. The gate also fails on any invocation of the old command-line tool, on anything
+that points at a server other than the remote one, and on any host under Diagrid's
+domains that is not on its allowlist (the MCP server, the console, the docs and downloads
+hosts, and the main site).
+Tool names are matched case-insensitively. The skills drive Catalyst only through the
+remote MCP server, so where a capability has no tool, the skill says it is not available
+over MCP yet instead of reaching for something else.
 
 If you add a skill, or change any skill's content, bump `version` in
 `.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
