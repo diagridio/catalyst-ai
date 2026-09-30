@@ -4,4 +4,4 @@ target: last_message
 flags: i
 match: contains
 ---
-diagrid\s+(?:appid|app|project|agent)\s+(?:list|get)
+diagrid\s+(?:app|project|agent|mcpserver)\s+(?:list|get)

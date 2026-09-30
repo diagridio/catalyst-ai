@@ -1,6 +1,6 @@
 ---
 name: catalyst-agent-scaffold
-description: Build or stand up a Durable Agent on Diagrid Catalyst — your own agent app behind an App ID. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
+description: Build or stand up a Durable Agent on Diagrid Catalyst — your own agent app, fronted by a Catalyst agent resource. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
 ---
 
 # Scaffold a Durable Agent on Catalyst
@@ -174,11 +174,16 @@ inconsistently, so read them off the current plans page instead of hardcoding on
 - The run must resume rather than restart. If it restarts, the agent is not durable and
   the scaffold is not finished — usually the workflow store or a component name.
 
-On `dev run` the short `-p` means `--app-port`, not `--project`, and `--id` names the App
-ID. `--app-port` **is** wanted here, unlike for a pure workflow worker: an agent exposes an
+On `dev run` the short `-p` means `--app-port`, not `--project`, and `--id` names the
+identity the process runs as. Apps, agents and MCP servers are each backed by an identity
+(an "App ID" in some APIs). Where a tool asks for or returns `appId`, it means that
+identity's name. Read it from the resource's `status.appIds` (the get tools include it).
+For an agent registered from your own code, it's the `appId` on its registry record.
+
+`--app-port` **is** wanted here, unlike for a pure workflow worker: an agent exposes an
 endpoint Catalyst calls into, so there is a port to connect. `diagrid dev run` provisions
-the managed pub/sub, KV store and workflow store for App IDs it creates, so you get the
-infrastructure by running.
+the managed pub/sub, KV store and workflow store for the identities it creates, so you get
+the infrastructure by running.
 
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
@@ -206,7 +211,7 @@ transcript. Only these routes exist:
 | To show | Route |
 | --- | --- |
 | An agent | `/agents/<appId>/<id>` |
-| The backing App ID | `/apps/details/<appId>` |
+| The app it runs in | `/apps/details/<appId>` |
 | A run of the agent's workflow | `/workflows/<appId>/<runId>` |
 | An MCP server | `/mcp-servers/<id>` |
 

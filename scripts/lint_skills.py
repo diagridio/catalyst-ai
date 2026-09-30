@@ -97,6 +97,17 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "shipped in catalyst-workflow-scaffold, inside the very section about not "
         "misreporting field availability."
     ),
+    "managed-agent": (
+        "a hidden CLI command for a feature that is not released to customers. The "
+        "skills used to name it to warn against it, which only advertised it. The "
+        "agent path is the user's own app fronted by `diagrid agent`."
+    ),
+    "diagrid appid": (
+        "hidden in the CLI in favour of `app`, `agent` and `mcpserver`, and the "
+        "skills speak the same vocabulary as the CLI and the console. Use "
+        "`diagrid app|agent|mcpserver list|get`, and `diagrid project logs "
+        "--ids` for logs."
+    ),
     "on every surface": (
         "payloads are withheld over MCP tools, not on every surface. The CLI and "
         "the single-execution management read both return them. Saying otherwise "

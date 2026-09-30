@@ -219,7 +219,7 @@ Then run it:
 - `diagrid dev scaffold` writes the dev config for the project.
 - `diagrid dev run --project default --id <app> -- <run command>`
 
-`--id` names the App ID. On `dev run` the short `-p` means `--app-port`, not `--project`.
+`--id` names the identity the worker runs as. On `dev run` the short `-p` means `--app-port`, not `--project`.
 
 **Omit `--app-port`.** What a diagram translates into is a workflow worker: it dials
 Catalyst outbound and polls for work items, so there is no inbound endpoint to expose. Add
@@ -228,8 +228,7 @@ pub/sub delivery, an agent endpoint. Building an HTTP server just to answer a po
 not need is a common first-run failure, and it fails confusingly: the worker registers
 every workflow and activity, then dies at bind because something else holds the port.
 Check any command against `--help` before you rely on it, including these:
-this CLI moves flags between minor versions, and `appid` has already become `app`
-without the flags coming along.
+this CLI moves nouns and flags between minor versions.
 
 ## 8. Start one run, then read it back
 

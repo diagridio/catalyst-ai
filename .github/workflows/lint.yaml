@@ -163,7 +163,7 @@ jobs:
     # There is deliberately no `diagrid login` here, and no credential. The gate
     # only ever runs `--help`, which cobra answers before any pre-run hook, so it
     # needs none. The one consequence is that a few hidden paths — unlike the
-    # merely-hidden `appid` and `tokenbudget` — do not resolve without a login
+    # merely-hidden `tokenbudget` — do not resolve without a login
     # and cannot be inspected here. They are declared in `[login_required]` in
     # .diagrid-cli-version and reported as unverifiable rather than as absent,
     # so the verdict does not depend on whether anyone is logged in. Giving this job a credential to close that gap would trade a

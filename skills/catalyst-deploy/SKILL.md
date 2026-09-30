@@ -1,6 +1,6 @@
 ---
 name: catalyst-deploy
-description: Move an application from a laptop into Diagrid Catalyst. Covers budgeting headroom before designing a topology, declaring the App ID first, attaching connections and topic subscriptions, the order these must be created in, and proving each one came up.
+description: Move an application from a laptop into Diagrid Catalyst. Covers budgeting headroom, creating the app, agent or MCP server first, attaching connections and topic subscriptions, the order these must be created in, and proving each one came up.
 ---
 
 # Get an application running in Catalyst
@@ -23,10 +23,10 @@ the user's role, not a broken connection: use the CLI commands in the rest of th
 
 - **Send one application's resources together, with one exception.** Within a call it
   applies them in a fixed order: project, configurations, components and subscriptions,
-  agents and MCP servers, apps and App IDs, then access policies and token budgets.
-  That puts a subscription *before* the App IDs, but section 3 requires the App IDs a
-  subscription scopes to to exist first. So send subscriptions in a second call, after
-  the call that created their App IDs. Across calls, the order is yours to get right.
+  agents and MCP servers, apps, then access policies and token budgets. That puts a
+  subscription *before* the apps, but section 3 requires the identities a subscription
+  scopes to to exist first. So send subscriptions in a second call, after the call that
+  created their apps, agents or MCP servers. Across calls, the order is yours to get right.
 - **Call `catalyst_get_resource_schema` before writing a kind for the first time.** Do
   not guess field names.
 - **Run it with `dry_run` first** and show the user what will be created or replaced.
@@ -59,7 +59,7 @@ at create time, so the cost of discovering one late is a redesign rather than a 
 
 - `catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key.
 - `catalyst_get_metrics` reads request rates, error rates and consumption for a project
-  or a single App ID.
+  or a single app, agent or MCP server.
 
 Read the numbers. Do not recite remembered plan values — organizations get custom limits,
 so a figure from memory is often wrong for the one in front of you.
@@ -68,7 +68,7 @@ so a figure from memory is often wrong for the one in front of you.
 
 | Cap | Scope | Consequence for a design |
 | --- | --- | --- |
-| `number_of_appids` | Per region, **summed across every project in the organization** | Splitting a topology across two projects does not buy more |
+| `number_of_appids` — Identities: one per app, agent and MCP server | Per region, **summed across every project in the organization** | Splitting a topology across two projects does not buy more |
 | `number_of_connections` | Per region, org-wide | Same. A connection is a component |
 | `number_of_catalyst_subscriptions` | Per region, org-wide | Same |
 | `number_of_projects` | Per region | Low, and easy to spend by accident — see section 7 |
@@ -77,8 +77,8 @@ so a figure from memory is often wrong for the one in front of you.
 
 Two of those deserve stating out loud because they change what you build:
 
-**Apps, agents and MCP servers all consume the same allowance.** They are one namespace
-of App IDs under the hood. The rejection says so, and names the breakdown: *"has reached
+**Apps, agents and MCP servers all consume the same allowance.** Each is backed by one
+identity, and identities are what the quota counts. The rejection says so, and names the breakdown: *"has reached
 the maximum of N resources for its ... region ..., currently using N (...). Each agent,
 MCP server, and app counts toward this limit."* A coordinator plus four specialists plus
 one MCP server is six of them. The remedy in that message is to contact Diagrid support,
@@ -94,9 +94,9 @@ cannot be built. Note also that creating a managed pub/sub or KV store spends a
 *connection* slot as well as its per-project slot.
 
 Reference figures for the free plan, per cloud region, useful as a sanity check on what
-`org usage` returns rather than as a substitute for reading it — 3 projects, 10 App IDs,
-21 connections, 10 subscriptions, 100,000 requests, and 500 requests
-per second per App ID.
+`org usage` returns rather than as a substitute for reading it — 3 projects, 10
+identities, 21 connections, 10 subscriptions, 100,000 requests, and 500 requests
+per second per identity.
 
 Finally, headroom is not the only per-region property. Managed pub/sub, managed KV and
 the Workflows API are **regional capabilities**, and a region that lacks one gives you a
@@ -105,13 +105,18 @@ region supports them before you build on them.
 
 There is **no quota page in the console.** Do not link to one; report the numbers.
 
-## 2. The App ID comes first, because it is the identity
+## 2. The app, agent or MCP server comes first, because it carries the identity
 
-An App ID is not a deployment artifact. It is the identity the sidecar runs under: it
-owns the API token, it is what components are scoped to, it is what a subscription
-delivers to, and it is what a local connection attaches to. Nothing can reference an
-application that has no App ID, which is why every ordering constraint in section 3
-starts from it.
+Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
+Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
+resource's `status.appIds` (the get tools include it). For an agent registered from your
+own code, it's the `appId` on its registry record.
+
+The identity is not a deployment artifact. It is what the sidecar runs under: it owns the
+API token, it is what components are scoped to, it is what a subscription delivers to,
+and it is what a local connection attaches to. Nothing can reference an application whose
+resource does not exist yet, which is why every ordering constraint in section 3 starts
+from it.
 
 **Names are unique across three resource types in a project.** Creating an agent whose
 name is taken by an app fails with *"the name ... is already in use in project ...; App,
@@ -120,20 +125,15 @@ right resource type, and check `diagrid app list` and `diagrid agent list` befor
 
 ### Which noun to create
 
-| Deploying | Create | Who owns the App ID |
+| Deploying | Create | Who owns the identity |
 | --- | --- | --- |
-| Your own application | `diagrid app create <name>` | The App you just made |
-| An agent whose code you run yourself | `diagrid agent create <name>` | The Agent provisions and manages its own |
+| Your own application | `diagrid app create <name>` | The app you just made |
+| An agent whose code you run yourself | `diagrid agent create <name>` | The agent provisions and manages its own |
 | An MCP server | `diagrid mcpserver create <name>` | The MCP server, likewise |
 
-`diagrid appid` still works and is the lower-level view, but on v1.66.0 it is hidden from
-help in favour of `app`, `agent` and `mcpserver`. The two are not flag-compatible —
-`app create` takes `--endpoint` and `--endpoint-token`, while `appid create` takes
-`--app-endpoint` and `--app-token`, plus the protocol, health-check, body-size and
-`--app-config` settings that `app` deliberately hides. Check `--help` rather than carrying
-a flag across.
+Check `--help` for the flags; `app create` takes `--endpoint` and `--endpoint-token`.
 
-An endpoint is optional on both. Created without one you get an identity that Catalyst can
+An endpoint is optional. Created without one you get an identity that Catalyst can
 route *from* but not *to*, which is exactly what an app running behind a local connection
 wants.
 
@@ -153,28 +153,28 @@ recoverable.
 
 | Create this | Before this | Because |
 | --- | --- | --- |
-| The managed workflow store on the project | Any App ID that uses workflows | The sidecar reads workflow configuration **at boot**. An App ID created first comes up without workflow support and the Workflow API answers `FAILED_PRECONDITION`. Enabling the store afterwards does not retrofit the running sidecar |
-| Components and subscriptions | The App ID that consumes them | So they exist when the sidecar boots and loads them |
-| A Configuration | The App ID that names it via `appConfig` | The reference has to resolve at create time |
-| The **Agent** or **MCP server** | Any bare App ID of that name | **This one does not self-heal.** The Agent controller refuses to adopt a same-named App ID it does not own, so a plain App ID created first leaves the Agent permanently in an error state. There is no repair short of deleting the App ID |
-| The App IDs a subscription scopes to | The subscription | Scopes must already exist in the project and already have access to the broker |
+| The managed workflow store on the project | Any app, agent or MCP server that uses workflows | The sidecar reads workflow configuration **at boot**. One created first comes up without workflow support and the Workflow API answers `FAILED_PRECONDITION`. Enabling the store afterwards does not retrofit the running sidecar |
+| Components and subscriptions | The app, agent or MCP server that consumes them | So they exist when the sidecar boots and loads them |
+| A Configuration | The app that names it via `appConfig` | The reference has to resolve at create time |
+| The **Agent** or **MCP server** | Anything else of that name | **This one does not self-heal.** An Agent or MCP server will not adopt a same-named identity it does not own, so anything else created first under that name leaves it permanently in an error state. There is no repair short of deleting what took the name |
+| The apps, agents or MCP servers a subscription scopes to | The subscription | Scopes must already exist in the project and already have access to the broker |
 
-`diagrid dev run` honours all of these — it enables the workflow store before creating App
-IDs, creates resources before App IDs, and detects an Agent or MCP server that owns a name
-and skips provisioning rather than colliding with it. Doing the same work by hand in the
+`diagrid dev run` honours all of these — it enables the workflow store before creating
+identities, creates resources before identities, and detects an Agent or MCP server that
+owns a name and skips provisioning rather than colliding with it. Doing the same work by hand in the
 wrong order gets none of that protection.
 
 ## 4. Attach the connections
 
 A component exists in the project; it reaches an application by being **scoped** to that
-application's App ID.
+application's identity.
 
 ```
 diagrid component create <name> --type <type> --metadata key=value --scopes app-a,app-b
 ```
 
-- `--scopes` is the attachment. **Leaving it empty grants every App ID in the project
-  access**, which is convenient and is also how a component ends up loaded by a sidecar
+- `--scopes` is the attachment. **Leaving it empty grants every app, agent and MCP server
+  in the project access**, which is convenient and is also how a component ends up loaded by a sidecar
   nobody intended.
 - Types are `pubsub.*`, `state.*`, `bindings.*`, `secretstores.*` and `conversation.*`.
 - `--interactive` is the path the CLI's own help recommends. Prefer it when you do not
@@ -198,7 +198,7 @@ the sidecar.
 Subscriptions are the pub/sub half:
 
 ```
-diagrid subscription create <name> --component pubsub --topic <topic> --route /<path> --scopes <app-id>
+diagrid subscription create <name> --component pubsub --topic <topic> --route /<path> --scopes <identity>
 ```
 
 Four component facts that each cost a rebuild when missed:
@@ -219,14 +219,17 @@ Four component facts that each cost a rebuild when missed:
 `--wait` on a create is the beginning of the check, not the end of it. Read the resource
 back:
 
-- `catalyst_get_appid`, `catalyst_get_component`, `catalyst_get_agent` over MCP.
-- `diagrid app get <name> -o json`, or `diagrid appid get <id> --all -o json` for the full
-  lower-level object.
+- `catalyst_get_app`, `catalyst_get_agent`, `catalyst_get_mcp_server`,
+  `catalyst_get_component` over MCP. The first three include the backing identity under
+  `status.appIds`, which is where its readiness and token live.
+- `diagrid app get <name> -o json`, `diagrid agent get`, `diagrid mcpserver get`. For the
+  components and subscriptions attached to it, `diagrid component list --scope <identity>`
+  and `diagrid subscription list -o json` (read each one's `scopes`).
 
 Always `-o json`. The default table view drops fields, including the ones carrying the
 reason a thing is not ready.
 
-**Ready is not one field.** Catalyst's own readiness check requires the App ID's status to
+**Ready is not one field.** Catalyst's own readiness check requires the identity's status to
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
 nothing works".
@@ -240,28 +243,28 @@ rounding it to one of the nine. Agents report from a narrower set — `ready`, `
 Four readings that mislead if taken alone:
 
 - **A component's real reason lives under `status.appIdStatus[]`.** A component that fails
-  to load is only reported as such by the sidecar of each scoped App ID, so the
-  resource-level message is often empty while the App-ID-level one names the broker error.
+  to load is only reported as such by the sidecar of each scoped identity, so the
+  resource-level message is often empty while the per-identity one names the broker error.
   A pub/sub's `status.topicError` and a KV store's `status.itemsError` sit outside that
   structure entirely.
 - **A disabled MCP server reports `ready`**, with a message saying it is disabled and
-  loaded by no App ID. Disabled is a fully reconciled state, so `ready` is honest — it is
+  loaded by no app. Disabled is a fully reconciled state, so `ready` is honest — it is
   just not the answer to "is it serving". Read the message.
 - **`updating` right after a local connection attaches is normal.** Attaching one makes
-  the sidecar reconfigure, so the App ID goes `ready` → `updating` → `ready`.
-- **A missing local connection is not an error.** It means nobody is running that App ID
+  the sidecar reconfigure, so the identity goes `ready` → `updating` → `ready`.
+- **A missing local connection is not an error.** It means nobody is running that app
   from a machine right now.
 
 Then prove the path rather than trusting the status. These exercise one API each and
 separate the platform from the application:
 
 - `diagrid call invoke`, `call publish`, `call state`, `call bindings`, `call conversation`.
-  The App ID goes in `--id` on all five; `--app-id` is only a hidden deprecated alias.
-- `diagrid listen --id <app-id> --invoke <method>` streams inbound requests to your
+  The identity goes in `--id` on all five; `--app-id` is only a hidden deprecated alias.
+- `diagrid listen --id <identity> --invoke <method>` streams inbound requests to your
   terminal with no application code deployed. Nothing arriving means the problem is
   upstream of the app; requests arriving and still failing means it is not.
 
-Creating an App ID prints its API token to your terminal. **Do not paste it into a
+Creating an app, agent or MCP server prints its API token to your terminal. **Do not paste it into a
 summary, a file or a commit** — it is the credential for that identity.
 
 ## 6. Hand back a link so the user can see it
@@ -280,11 +283,11 @@ Use only these routes:
 
 | Resource | Route |
 | --- | --- |
-| App ID | `/apps/details/:id` |
-| Agent, either kind | `/agents/:appId/:id` |
+| App | `/apps/details/:id` |
+| Agent | `/agents/:appId/:id` |
 | MCP server | `/mcp-servers/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
-| Metrics for one App ID | `/metrics/appids/:id` |
+| Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
 
@@ -324,7 +327,7 @@ empty project and then reports that nothing is in it.
 
 ## Rules
 
-- **Check headroom before designing, not after building.** `diagrid org usage`. App IDs,
+- **Check headroom before designing, not after building.** `diagrid org usage`. Identities,
   connections and subscriptions are capped per region across the whole organization, so a
   second project buys nothing.
 - **Never offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
@@ -335,8 +338,8 @@ empty project and then reports that nothing is in it.
   reached, the platform's own remedy is to contact Diagrid support.
 - **Say `app` or `agent`, never just "agent".** They are different resources with
   different flags, creation paths and console routes.
-- **Create the Agent or MCP server before any App ID of that name.** A bare App ID created
-  first cannot be adopted, and the Agent is then permanently in error.
+- **Create the Agent or MCP server before anything else of that name.** It will not adopt
+  an identity it does not own, and is then permanently in error.
 - **Verify by reading the resource back, with `-o json`.** A create that returned is not a
   resource that works, and `ready` without an API token is not ready.
 - **Report a status verbatim.** The vocabulary is not closed, and paraphrasing a platform
