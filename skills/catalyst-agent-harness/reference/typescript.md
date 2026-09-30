@@ -246,8 +246,9 @@ The runtime keeps the process alive; it needs no HTTP server.
 | Send an approval from code | `new DaprWorkflowClient().raiseEvent(instanceId, "approval:<tool-call-id>", { approved: true })` |
 
 `WorkflowRuntime` and `DaprWorkflowClient` read `DAPR_GRPC_ENDPOINT` (or
-`DAPR_GRPC_PORT`) and `DAPR_API_TOKEN` from the environment when given no options, which
-is what a Catalyst worker needs.
+`DAPR_GRPC_PORT`) and `DAPR_API_TOKEN` from the environment when given no options.
+`dapr run` sets the port for the process it launches; a remote sidecar, Catalyst's
+included, needs the endpoint and token set explicitly.
 
 ## Traps
 

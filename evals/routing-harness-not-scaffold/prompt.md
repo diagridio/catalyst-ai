@@ -16,4 +16,4 @@ Our support bot is about eighty lines of Python: a while loop that sends the con
 to the model API, runs whichever of our functions the reply asks for, appends what they
 return, and goes round again until the model stops asking. When the process dies half way
 through, the conversation is gone and we pay for every model call again from the start.
-Make that loop pick up where it stopped, on Catalyst, without moving us onto a framework.
+Make that loop pick up where it stopped using Dapr, without moving us onto a framework.

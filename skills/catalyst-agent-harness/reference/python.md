@@ -237,9 +237,8 @@ def run_tools(ctx, agent, calls):
 
 
 def wait_for_approval(ctx, call):
-    # Custom status mirrors what is pending, but over MCP it is withheld at the default
-    # data-sharing level, so a real deployment also notifies someone - from an activity,
-    # never from here.
+    # Custom status mirrors what is pending, but not every reader can see it, so a real
+    # deployment also notifies someone - from an activity, never from here.
     ctx.set_custom_status(json.dumps({"awaiting_approval": call["id"], "tool": call["name"]}))
     decision = ctx.wait_for_external_event(f"approval:{call['id']}")
     timeout = ctx.create_timer(APPROVAL_TIMEOUT)
@@ -279,9 +278,9 @@ if __name__ == "__main__":
     main()
 ```
 
-Run it as section 12 of the skill says, with the app's connection values from
-`catalyst_get_app_connection` in the worker's environment, and start a run of `agent_loop`
-with a `{"task": "..."}` input. For a conversation, start
+Run the worker under any Dapr 1.18 sidecar — on a laptop,
+`dapr run --app-id <app-id> -- python agent.py` — and start a run of `agent_loop` with a
+`{"task": "..."}` input from `DaprWorkflowClient`, as in the table below. For a conversation, start
 `agent_session` once with `{}` and raise one `user_message` event, carrying
 `{"text": "..."}`, per message.
 

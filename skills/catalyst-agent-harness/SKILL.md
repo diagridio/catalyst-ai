@@ -1,15 +1,18 @@
 ---
 name: catalyst-agent-harness
-description: Make a hand-written agent loop durable on Catalyst with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
+description: Make a hand-written agent loop durable with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
 ---
 
 # Make a hand-written agent loop durable
 
 Goal: end this skill with the user's own agent loop — their prompt, their tools, their
-model call — running as a Dapr Workflow on Catalyst, where every model call and every
-tool call is its own activity. And with proof: a worker killed in the middle of a tool
-call resumes at that tool, and the model is not asked again for a turn it already
-answered. A loop that only survives when nothing crashes has gained nothing.
+model call — running as a Dapr Workflow, where every model call and every tool call is
+its own activity. And with proof: a worker killed in the middle of a tool call resumes at
+that tool, and the model is not asked again for a turn it already answered. A loop that
+only survives when nothing crashes has gained nothing.
+
+Nothing here depends on where the Dapr sidecar runs. The same code runs against a local
+sidecar, on Kubernetes or on Catalyst; section 13 is the only part specific to Catalyst.
 
 ## 1. This skill, or an adapter?
 
@@ -162,21 +165,22 @@ For a tool that needs a human, the workflow waits, not the tool:
 
 1. Announce what is pending from an activity — a message on a topic, a row the approval
    UI reads — carrying the run id and the tool-call id. Never publish from the workflow
-   body. Custom status can mirror it, but over MCP it is withheld at the default
-   `metadata` data-sharing level, so it cannot be the only notice.
+   body. Custom status can mirror it, but not every reader can see it — Catalyst's MCP
+   tools, for one, withhold it at the default data-sharing level — so it cannot be the
+   only notice.
 2. Wait for an event named after the call, `approval:<tool-call-id>`, so concurrent
    approvals never collide. Race it against a timer, or use the SDK's own timeout where
    it has one.
 3. On approval, run the tool. On denial or timeout, return an error `tool_result` saying
    so, and let the model respond to it.
 
-The decision comes back through `catalyst_raise_workflow_event` — the run, the event name
-`approval:<tool-call-id>` and `{"approved": true}` — or through the SDK's workflow client
-inside the approval service. `catalyst_raise_workflow_event` is a write tool, absent for a
-role that cannot write.
+The approval service sends the decision with the SDK's workflow client — the raise-event
+call in each language file — naming the run, the event `approval:<tool-call-id>` and a
+payload such as `{"approved": true}`. On Catalyst, an assistant can send the same event
+with `catalyst_raise_workflow_event`.
 
-Two measured facts, both against a local Dapr 1.18.1 sidecar rather than Catalyst. The
-wait survives a worker kill: after a restart the run was still waiting with the same
+Two measured facts, both on a local Dapr 1.18.1 sidecar. The wait survives a worker
+kill: after a restart the run was still waiting with the same
 custom status, and the model was not asked again. But **raising the event while no worker
 is connected fails** with `FAILED_PRECONDITION` (`did not find address for actor`) — the
 event is refused, not buffered — so the approver's side must retry until a worker is
@@ -215,10 +219,9 @@ and can exceed state-store limits.
   every event with its turn and let the UI drop a restarted one. Coarse progress fits in
   custom status.
 - **Never put a secret in a workflow or activity input.** Inputs and outputs are persisted
-  in the run's history, readable in the console and over MCP at `full` data sharing. The
-  model API key belongs in the activity's environment, handled like the connection token
-  in `catalyst-develop` section 3. Prompts and tool outputs are persisted too, so consider
-  what they contain before the first real run.
+  in the run's history in the workflow state store, and whoever can read that history can
+  read them. The model API key belongs in the activity's environment. Prompts and tool
+  outputs are persisted too, so consider what they contain before the first real run.
 
 ## 11. Names and shapes are a wire contract
 
@@ -232,8 +235,8 @@ results stop parsing.
 - **Prefer one `run_tool` activity with the tool name in its input** over one activity per
   tool. Adding or removing a tool then never changes an activity name. Per-tool
   activities buy per-tool names in history, at the cost of a registration per tool.
-- **Two workers for one app must agree on every shape.** Work is dispatched to whichever
-  worker is connected. Measured by accident: a stale worker in another language, still
+- **Two workers on one app ID must agree on every shape.** Dapr dispatches work to
+  whichever worker is connected for that app ID. Measured by accident: a stale worker in another language, still
   connected, answered `load_agent` with a differently-cased field, and the new worker's
   runs all stopped at turn zero.
 
@@ -243,62 +246,45 @@ name and let old runs drain; `catalyst-workflow-determinism` covers both. A rede
 swaps tool *implementations* under runs whose recorded configuration lists the old ones,
 so keep tool signatures backward compatible or version the tool name.
 
-## 12. Run it on Catalyst, then kill it
-
-Everything here goes through the `catalyst_*` tools; if they are missing or refuse with
-`NOT_AUTHENTICATED`, `catalyst-setup` covers it.
-
-**Do not create a project.** Every organization has one named `default` with the managed
-workflow store already attached, and that store is where run history lives. Confirm it
-with `catalyst_list_projects` and pass the project on every call; if it is gone, ask which
-project to use rather than creating one.
+## 12. Prove it: kill a run in the middle of a tool
 
 The loop needs the Dapr Workflow SDK for its language and no Diagrid package:
 `dapr-ext-workflow`, `@dapr/dapr`, `github.com/dapr/durabletask-go`, `Dapr.Workflow` or
 `io.dapr:dapr-sdk-workflows`. Section 2 of `catalyst-workflow-scaffold` has the versions
-and the coordinate traps.
+and the coordinate traps. Any Dapr 1.18 sidecar runs it. On a laptop that is `dapr init`
+once, then the worker under `dapr run --app-id <app-id> -- <run command>` with no app
+port: a worker dials its sidecar and polls for work, so it has nothing to listen on.
 
-1. **Make sure the app exists** — `catalyst_get_app`, else `catalyst_apply` an `App`, as
-   `catalyst-develop` section 2 describes. A worker needs no endpoint: it dials Catalyst
-   and polls for work, so it has nothing to listen on.
-2. **Start the worker** with the connection values from `catalyst_get_app_connection` in
-   its environment, exactly as `catalyst-develop` section 3 says, including how to keep
-   the token out of chat, files and history. If the tool is missing or refused, say it is
-   not available to this role or server, and stop.
-3. **Start a run** with `catalyst_start_workflow`: the project, the app's identity, the
-   workflow name `agent_loop` and `{"task": "<prompt>"}`. It assigns the run id and
-   returns it — keep it. It is a write tool, absent for a role that cannot write.
-4. **Read it** with `catalyst_get_workflow_run`. The execution graph lists `load_agent`,
-   then `call_llm`, one `run_tool` per call, then `call_llm` again — every step's name
-   and status, even where its payload is withheld.
+The kill test is the acceptance test, and it needs nothing but the worker and the SDK's
+workflow client:
 
-**The kill test is the acceptance test.** Give the agent a slow tool, start a run, kill
-the worker while that tool runs, start it again with the same environment, and read the
-run back. Pass means: the run completes; each turn's `call_llm` completed once; the tools
-that finished before the kill did not run again; the interrupted one ran again with the
-same idempotency key. The graph shows each step completing once; the worker's own output
-shows which tool bodies actually ran, and with which key, because at the default
-data-sharing level the run's payloads are withheld. If the model is called again for a
-turn it already answered, the loop is not durable and the work is not finished — look for
-a boundary coarser than section 3 allows.
+1. Give the agent a slow tool that logs when it starts and when it finishes, with its
+   idempotency key and its process id.
+2. Start a run from code with the workflow client — "Start a run from code" in the
+   language file — naming the instance yourself.
+3. While the slow tool runs, kill the worker with `kill -9`, then start it again.
+4. Wait for the run with the same client, and read the worker's log.
 
-## 13. Read it back honestly
+Pass means: the run completes; the model was called once per turn in total; the tools
+that finished before the kill did not run again; and the interrupted one ran again with
+the same idempotency key and a **different process id**. Check the process id. A kill
+that matched nothing passes every other check — measured, when a virtualenv's interpreter
+showed up under the base Python's path and the kill pattern missed it. If the model is
+called again for a turn it already answered, the loop is not durable and the work is not
+finished; look for a boundary coarser than section 3 allows.
 
-**An absent field is not an empty one.** At the default `metadata` data-sharing level,
-`catalyst_get_workflow_run` removes `input`, `output` and `customStatus` from the run and
-from every step — removed, not returned empty. Every model reply, every tool result and a
-pending approval's custom status are invisible there, while the graph of step names and
-statuses is not. Say that a payload was not shared at this organization's data-sharing
-level (`metadata`); never report a withheld reply as "the model returned nothing". Only an
-organization administrator can raise the level to `full`, and you cannot do it from here.
-Never forge a data-sharing header, and never ask an administrator to raise the level so
-you can finish an answer.
+## 13. On Catalyst
 
-Hand back a link rather than a claim: a run lives at
-`https://catalyst.diagrid.io/workflows/<appId>/<runId>`, where `<appId>` is the app's
-identity name from its `status.appIds`. Put a name-like project in `?project=` and a
-numeric uid in `?projectId=` — a uid in `?project=` silently lands on the wrong project.
-If you cannot build a link you trust, print the app and run id as plain text.
+Nothing above changes on Catalyst: the harness code is identical, and the worker only
+needs the sidecar's address and token in its environment. `catalyst-develop` covers
+connecting it and starting runs, and `catalyst-operate` and `catalyst-debug` read runs
+back.
+
+One difference changes what you can see. At the default data-sharing level Catalyst's MCP
+tools withhold every `input`, `output` and `customStatus` — removed, not returned empty —
+so a model reply or a tool result that is absent there was not shared, not missing. Never
+report it as "the model returned nothing". The kill test's evidence stays in the worker's
+own log either way.
 
 ## Language files
 
@@ -336,11 +322,7 @@ other four take the harness's existing model client behind a one-method interfac
   the denied, the unknown and the exhausted ones.
 - **Key side effects on `<instance-id>:<tool-call-id>`**, passed in the input.
 - **No secrets in inputs.** Every input and output is persisted and printable.
-- **Do not create a project.** Use `default`.
-- **Do not stop at a run that completes.** Kill one mid-tool and read the run back.
-- **Use only the `catalyst_*` tools.** Where a capability has no tool, say it is not
-  available over MCP yet, and stop.
-- **Never report a withheld field as an empty result.**
+- **Do not stop at a run that completes.** Kill one mid-tool and check the process ids.
 - For determinism in general use `catalyst-workflow-determinism`; for the write side of a
   tool, `catalyst-activity-idempotency`; for a framework with an adapter,
-  `catalyst-agent-scaffold`.
+  `catalyst-agent-scaffold`; to run the worker on Catalyst, `catalyst-develop`.
