@@ -74,8 +74,7 @@ Two related facts, so you do not go looking for a flag that is gone:
 - `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for any
   App ID it creates. You get them by running, not by configuring.
 
-A project holds **one managed pub/sub and one managed KV store** on every plan — free,
-enterprise and internal alike — and no plan upgrade raises it, so never offer one as the
+A project holds **one managed pub/sub and one managed KV store** on every plan, and no plan upgrade raises it, so never offer one as the
 fix. Fan work out across topics on the one broker. These are plan values overlaid per
 organization, not constants in the code, so read the live quota rather than asserting
 the 1 — and do not promise a user it can be raised for them, which is a commercial

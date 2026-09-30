@@ -162,12 +162,11 @@ jobs:
     #
     # There is deliberately no `diagrid login` here, and no credential. The gate
     # only ever runs `--help`, which cobra answers before any pre-run hook, so it
-    # needs none. The one consequence is that `managed-agent` — which this CLI
-    # resolves as a command only for some logins, unlike the
-    # merely-hidden `appid` and `tokenbudget` — cannot be inspected here. It is
-    # declared in `[identity_gated]` in .diagrid-cli-version and reported as
-    # unverifiable rather than as absent, so the verdict does not depend on who
-    # is logged in. Giving this job a credential to close that gap would trade a
+    # needs none. The one consequence is that a few hidden paths — unlike the
+    # merely-hidden `appid` and `tokenbudget` — do not resolve without a login
+    # and cannot be inspected here. They are declared in `[login_required]` in
+    # .diagrid-cli-version and reported as unverifiable rather than as absent,
+    # so the verdict does not depend on whether anyone is logged in. Giving this job a credential to close that gap would trade a
     # named blind spot for a secret in CI, which is a bad trade.
     runs-on: ubuntu-latest
     steps:

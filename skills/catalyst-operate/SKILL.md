@@ -78,7 +78,7 @@ Two project-scoped limits are fixed and never worth investigating:
 | `number_of_pubsubs_per_project` | 1 | Every topic shares one broker |
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
-Both are 1 on every plan — free, enterprise and internal alike. A multi-agent topology
+Both are 1 on every plan. A multi-agent topology
 separates traffic by topic and by key prefix, not by broker or store. State it as a
 platform default. Never present it as a free-tier limit or a reason to upgrade: no plan
 upgrade raises it, and a user who upgrades on your advice has been misled.
@@ -102,7 +102,7 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Org, projects, regions | `catalyst_whoami` | `diagrid org current`, `diagrid org list` |
 | Projects | `catalyst_list_projects`, `catalyst_get_project` | `diagrid project list`, `diagrid project get <name>` |
 | App IDs, and any tunnel on them | `catalyst_list_appids`, `catalyst_get_appid` | `diagrid appid list`, `diagrid appid get <id> --all` |
-| Agents, both kinds | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
+| Agents | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
 | The runtime agent registry | `catalyst_get_agent` with the hosting App ID | `diagrid agent registry list` |
 | MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` | `diagrid mcpserver list`, `diagrid mcpserver get <name> --tools` |
 | Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list`, `diagrid subscription list`, `diagrid pubsub list`, `diagrid kv list` |
@@ -161,9 +161,7 @@ message.
 ### Agents
 
 An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
-identified by `--endpoint` and the `--archive-*` flags. Say which resource you mean,
-since the CLI also has a hidden `managed-agent` command that is not available to users;
-do not report on it or suggest it.
+identified by `--endpoint` and the `--archive-*` flags. Say which resource you mean.
 
 `diagrid agent registry list` is the second thing, and often the one that answers the
 question: it lists what is actually registered in the project's runtime, including

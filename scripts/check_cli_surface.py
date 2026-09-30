@@ -82,8 +82,8 @@ UNVERIFIABLE = [
     "rendered into `--help`, so a wrong number of operands is invisible here.",
     "Flag names mentioned in prose without a command — `--show-sensitive-values` in "
     "a sentence cannot be attributed to a command path, so it is not checked.",
-    "Command paths the CLI reveals only to some logins, declared in "
-    "`[identity_gated]` in .diagrid-cli-version. CI has no `diagrid login`, so "
+    "Command paths that do not resolve without a login, declared in "
+    "`[login_required]` in .diagrid-cli-version. CI has no `diagrid login`, so "
     "these are named as unverifiable rather than reported as absent.",
     "Whether a required flag is required for YOU. Some are applied from local "
     "config: `dev stop` requires `--project` with no default project configured "
@@ -513,9 +513,9 @@ def count_unattributed(jobs: list[tuple[Invocation, str]]) -> set[str]:
 
 
 def check_stale_gates(surface: Surface, gated: dict[str, str], f: Findings) -> None:
-    """Fail a declared identity gate that the CLI no longer applies.
+    """Fail a declared login gate that the CLI no longer applies.
 
-    This is what stops `[identity_gated]` becoming a place to put failures. An
+    This is what stops `[login_required]` becoming a place to put failures. An
     entry only earns its keep while the command is genuinely invisible; once it
     turns up in the completion script it is available to everyone, the
     declaration is suppressing real coverage, and that has to be noticed loudly
@@ -524,7 +524,7 @@ def check_stale_gates(surface: Surface, gated: dict[str, str], f: Findings) -> N
     for name in sorted(gated):
         if surface.tree().resolve_child((), name) is not None:
             f.errors.append(
-                f".diagrid-cli-version: `identity_gated.{name}` is stale — "
+                f".diagrid-cli-version: `login_required.{name}` is stale — "
                 f"`diagrid {name}` is in this CLI's completion script, so it is "
                 f"available to everyone now.\n     Remove the entry so its "
                 f"commands and flags get checked like any other."
@@ -608,7 +608,7 @@ def report(surface: Surface, coverage: Coverage, f: Findings, gated: dict[str, s
             detail = f"\n      the CLI said: {said[0]}" if said else ""
             print(f"  `diagrid {name}` — {gated[name]}{detail}")
         print(
-            "  Run these on an account that can see them to have their flags "
+            "  Run these while logged in to have their flags "
             "checked; nothing is suppressed where the path resolves."
         )
 
@@ -675,15 +675,15 @@ def main(argv: list[str]) -> int:
         return 1
 
     f = Findings()
-    check_stale_gates(surface, pin.identity_gated, f)
-    coverage = check_skills(skills_dir, surface, f, pin.identity_gated)
+    check_stale_gates(surface, pin.login_required, f)
+    coverage = check_skills(skills_dir, surface, f, pin.login_required)
     if coverage.extracted == 0:
         # A gate that silently checks nothing is worse than no gate, and this is
         # the shape of that failure: the extraction regexes stopped matching.
         #
         # The condition is on what was EXTRACTED, not on what resolved. Counting
         # resolutions instead makes a skills tree whose commands are all
-        # identity-gated look like a broken extractor, which is a real state — CI
+        # login-required look like a broken extractor, which is a real state — CI
         # has no login, and `managed-agent` is invisible there.
         print(
             "no diagrid invocations found — the extractor is broken, or the skills "
@@ -691,7 +691,7 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    return report(surface, coverage, f, pin.identity_gated)
+    return report(surface, coverage, f, pin.login_required)
 
 
 if __name__ == "__main__":

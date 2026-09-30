@@ -240,9 +240,7 @@ tunnel means no local `diagrid dev` or `diagrid listen` session is attached.
 
 The agent resource is `diagrid agent`: a Catalyst front for an agent **your** app runs,
 identified by `--endpoint` and the `--archive-*` flags. It stops answering when your
-application is down or `--endpoint` points somewhere unreachable. The CLI also has a
-hidden `managed-agent` command that is not available to users; do not diagnose toward it
-or suggest it.
+application is down or `--endpoint` points somewhere unreachable.
 
 Then check `diagrid agent registry list`. The registry is the project's runtime view and
 includes externally deployed OSS Dapr agents, so it separates the two failures you cannot

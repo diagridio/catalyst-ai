@@ -84,8 +84,7 @@ MCP server, and app counts toward this limit."* A coordinator plus four speciali
 one MCP server is six of them. The remedy in that message is to contact Diagrid support,
 not to change plan — do not tell the user an upgrade fixes it without checking.
 
-**One managed pub/sub and one managed KV store per project, on every plan** — free,
-enterprise and internal alike. It is a platform default rather than a free-tier
+**One managed pub/sub and one managed KV store per project, on every plan**. It is a platform default rather than a free-tier
 restriction, and no plan upgrade raises it. (A negotiated per-organization override does
 exist, so if a live quota read disagrees with the 1, trust the live read.) A multi-service
 or multi-agent design therefore separates
@@ -141,8 +140,7 @@ wants.
 ### The agent resource is `diagrid agent`
 
 It fronts an agent your application runs, and takes `--project`, `--endpoint`, `--wait`,
-`--ignore-if-exists` and the `--archive-*` flags. The CLI also has a hidden
-`managed-agent` command; it is not available to users, so do not create it or offer it.
+`--ignore-if-exists` and the `--archive-*` flags.
 
 An application that runs itself — under `diagrid dev run`, in a container, anywhere — uses
 **`agent`**. There are no model flags on it, and looking for one is the signal that you
@@ -336,8 +334,7 @@ empty project and then reports that nothing is in it.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
 - **Say `app` or `agent`, never just "agent".** They are different resources with
-  different flags, creation paths and console routes. Do not create or offer
-  `managed-agent`; it is not available to users.
+  different flags, creation paths and console routes.
 - **Create the Agent or MCP server before any App ID of that name.** A bare App ID created
   first cannot be adopted, and the Agent is then permanently in error.
 - **Verify by reading the resource back, with `-o json`.** A create that returned is not a

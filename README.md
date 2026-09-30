@@ -293,11 +293,11 @@ cannot see, and prints that list on every run: MCP tool names, console routes, p
 coordinates and quota numbers are not in the CLI.
 
 One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
-and a few hidden command paths resolve only for some logins, while `appid` and
-`tokenbudget` are hidden and resolve for anyone. Those paths are declared in
-`[identity_gated]` in `.diagrid-cli-version`, and the gate names their invocations as
+and a few hidden command paths do not resolve without one, while `appid` and
+`tokenbudget` are hidden and resolve anyway. Those paths are declared in
+`[login_required]` in `.diagrid-cli-version`, and the gate names their invocations as
 **unverifiable** instead of reporting them absent. Run
-the gate locally on a login that can see them and they are checked in full, flags and required flags
+the gate locally while logged in and, where they resolve, they are checked in full, flags and required flags
 included; the pass/fail verdict is the same either way. Reporting a working command as
 nonexistent would be the worst outcome available here — the fix it invites is deleting
 correct content from a skill.

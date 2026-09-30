@@ -15,10 +15,9 @@ The Catalyst resource for an agent is **`diagrid agent`**: a connectivity and ar
 resource in front of an agent that **your** app runs. Your process runs the loop, you
 write the code, and the resource takes `--endpoint` and the `--archive-*` flags.
 
-The CLI also has a hidden `managed-agent` command. It is not available to users, so do
-not create it, offer it, or suggest it as an alternative. If the user mentions it, say it
-is not something you can set up, and continue with their own app fronted by
-`diagrid agent`. That starts at step 3.
+If the user asks for Catalyst to host or run the agent for them, say it is not something
+you can set up, and continue with their own app fronted by `diagrid agent`. That starts
+at section 3.
 
 **Never write "create an agent" unqualified**, in prose or in a command. Say which
 command you mean.
@@ -85,8 +84,8 @@ as a required peer, so following the README leaves an unmet peer dependency.
 On **any other TypeScript framework** there is still no adapter, and the honest options
 are unchanged: write the agent in a language whose framework has a published adapter,
 or drive Dapr Workflows directly with `@dapr/dapr`, which is published and does support
-workflows — that loses the framework bridge, not durability. Do **not** offer
-`managed-agent` as the escape hatch; it is not available to users (section 1).
+workflows — that loses the framework bridge, not durability. Do **not** offer a
+Catalyst-hosted agent as the escape hatch; there is none (section 1).
 
 For **Go**, the adapters are separate modules from the root, so each is fetched and pinned
 by its own tag: `go get` the root module at its version, then the adapter the framework
@@ -147,8 +146,7 @@ which project to use rather than creating one. The managed components have fixed
 
 ## 7. Fit the topology to one pub/sub
 
-A project holds **one managed pub/sub and one managed KV store** on every plan — free,
-enterprise and internal alike. It is a platform default rather than a free-tier limit, and
+A project holds **one managed pub/sub and one managed KV store** on every plan. It is a platform default rather than a free-tier limit, and
 no plan upgrade raises it, so never offer an upgrade as the fix. (A negotiated
 per-organization override exists; a live quota read beats this document.)
 
@@ -235,8 +233,8 @@ text — **a link that 404s or lands on the wrong project is worse than no link.
 
 ## Rules
 
-- **Do not create or offer `managed-agent`.** It is not available to users; the path is
-  their own app fronted by `diagrid agent`.
+- **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
+  `diagrid agent`.
 - **Check every CLI command against `diagrid version` and `--help` before running it.**
   `diagrid agent` changed which resource it creates between 1.51 and 1.63, so a remembered
   command can quietly do the wrong thing.

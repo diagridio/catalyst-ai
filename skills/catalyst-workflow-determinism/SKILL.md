@@ -131,8 +131,7 @@ escapes the scheduler, its ordering is not reproducible, and it is invisible to 
 so it re-runs on every replay while the engine has no record it ever ran.
 
 If a design fans out over pub/sub rather than over activities, note the shape of a
-Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan** — free,
-enterprise and internal alike, and no plan upgrade raises it. It is a platform default
+Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan**, and no plan upgrade raises it. It is a platform default
 rather than a free-tier restriction. These are plan values overlaid per organization,
 not constants in the code, so read the live quota rather than asserting the 1 — and do
 not promise a user it can be raised for them, which is a commercial question rather than
