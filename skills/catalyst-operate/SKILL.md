@@ -203,8 +203,8 @@ The same trap applies twice more:
   failure and the `output` agrees. Do not certify a run clean on a missing field.
 - Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
-  can still answer "which secret does this use". An absent `apiToken` never means the app
-  has no token. No read tool returns an app's token; only `catalyst_get_app_connection`
+  can still answer "which secret does this use". An absent `apiToken` never means the app,
+  agent or MCP server has no token. No read tool returns its token; only `catalyst_get_connection`
   does (see `catalyst-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's

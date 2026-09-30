@@ -205,7 +205,7 @@ inbound requests are not available over MCP yet. Say so rather than implying you
 them out.
 
 A missing tunnel is an ordinary answer, not an error: `catalyst_list_app_tunnels` showing
-none means no one is running that app from a local machine.
+none means no one is running that App ID from a local machine.
 
 ## 5. An agent that is not responding
 

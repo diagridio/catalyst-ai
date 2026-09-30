@@ -18,7 +18,7 @@ missing or refuse with `NOT_AUTHENTICATED`, the `catalyst-setup` skill covers it
 | Frequency | Step | How |
 | --- | --- | --- |
 | Once per app | Make sure the App ID exists, with its components | `catalyst_get_app`, else `catalyst_apply` (section 2) |
-| Every run of the process | Get the connection values and start the process with them | `catalyst_get_app_connection` (section 3) |
+| Every run of the process | Get the connection values and start the process with them | `catalyst_get_connection` (section 3) |
 | Every iteration | Trigger a run and read what happened | `catalyst_start_workflow`, `catalyst_get_workflow_run` (section 4) |
 
 What survives an iteration: the app and its identity, its API token, the components, the
@@ -60,15 +60,16 @@ The app runs as the user's own process with three values in its environment. Cat
 hands them out through one tool.
 
 1. Make sure the App ID exists (section 2).
-2. Call `catalyst_get_app_connection` for that project and App ID. It returns
+2. Call `catalyst_get_connection` for that project and App ID. For an agent or an MCP
+   server, pass the App ID behind it: one tool serves all three. It returns
    `DAPR_API_TOKEN`, `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT`. It is a
    write-consent tool and its calls are audited, so the client may ask the user to
    approve it.
-3. Start the app process with those three values set **only in that process's
+3. Start the process (the app, agent or MCP server) with those three values set **only in that process's
    environment**, for example, run in the background:
 
    ```
-   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app> uv run main.py
+   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
    ```
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port
@@ -84,7 +85,7 @@ hands them out through one tool.
    launch command with placeholders to run in their own terminal, and stop there.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
-6. If `catalyst_get_app_connection` is missing or refused, say that it is unavailable to
+6. If `catalyst_get_connection` is missing or refused, say that it is unavailable to
    this role or server, and stop. There is no other route to these values.
 
 Two things about the worker process itself:
@@ -167,7 +168,7 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 
 | Symptom | Cause | Do |
 | --- | --- | --- |
-| `catalyst_get_app_connection` missing or refused | Not available to this role or server | Say so and stop |
+| `catalyst_get_connection` missing or refused | Not available to this role or server | Say so and stop |
 | `catalyst_get_app` says the app does not exist | Wrong name or project | Check the name with `catalyst_list_apps` |
 | The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `catalyst_list_components` and then `catalyst-debug` |
 | The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `catalyst_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
