@@ -71,7 +71,6 @@ so a figure from memory is often wrong for the one in front of you.
 | `number_of_appids` | Per region, **summed across every project in the organization** | Splitting a topology across two projects does not buy more |
 | `number_of_connections` | Per region, org-wide | Same. A connection is a component |
 | `number_of_catalyst_subscriptions` | Per region, org-wide | Same |
-| `number_of_durable_agents` | Per region, org-wide | Same |
 | `number_of_projects` | Per region | Low, and easy to spend by accident — see section 7 |
 | `number_of_pubsubs_per_project` | Per project | **1 on every plan** |
 | `number_of_kvstores_per_project` | Per project | **1 on every plan** |
@@ -85,8 +84,7 @@ MCP server, and app counts toward this limit."* A coordinator plus four speciali
 one MCP server is six of them. The remedy in that message is to contact Diagrid support,
 not to change plan — do not tell the user an upgrade fixes it without checking.
 
-**One managed pub/sub and one managed KV store per project, on every plan** — free,
-enterprise and internal alike. It is a platform default rather than a free-tier
+**One managed pub/sub and one managed KV store per project, on every plan**. It is a platform default rather than a free-tier
 restriction, and no plan upgrade raises it. (A negotiated per-organization override does
 exist, so if a live quota read disagrees with the 1, trust the live read.) A multi-service
 or multi-agent design therefore separates
@@ -97,7 +95,7 @@ cannot be built. Note also that creating a managed pub/sub or KV store spends a
 
 Reference figures for the free plan, per cloud region, useful as a sanity check on what
 `org usage` returns rather than as a substitute for reading it — 3 projects, 10 App IDs,
-21 connections, 10 subscriptions, 5 durable agents, 100,000 requests, and 500 requests
+21 connections, 10 subscriptions, 100,000 requests, and 500 requests
 per second per App ID.
 
 Finally, headroom is not the only per-region property. Managed pub/sub, managed KV and
@@ -139,16 +137,10 @@ An endpoint is optional on both. Created without one you get an identity that Ca
 route *from* but not *to*, which is exactly what an app running behind a local connection
 wants.
 
-### `agent` and `managed-agent` are different resources
+### The agent resource is `diagrid agent`
 
-Never write "create an agent" unqualified — both commands parse.
-
-| | `diagrid agent` | `diagrid managed-agent` |
-| --- | --- | --- |
-| What it is | A Catalyst front for an agent **you** run | A Durable Agent that Catalyst hosts |
-| Create flags | `--project`, `--endpoint`, `--wait`, `--ignore-if-exists`, `--archive-binding-name`, `--archive-binding-type`, `--archive-completed/-failed/-terminated` | The `--llm-*` family, `--sandbox`, and the git and GitHub flags |
-| Where the code runs | Your application | Catalyst |
-| Availability | Generally available | Hidden from help and restricted to Diagrid accounts |
+It fronts an agent your application runs, and takes `--project`, `--endpoint`, `--wait`,
+`--ignore-if-exists` and the `--archive-*` flags.
 
 An application that runs itself — under `diagrid dev run`, in a container, anywhere — uses
 **`agent`**. There are no model flags on it, and looking for one is the signal that you
@@ -341,8 +333,8 @@ empty project and then reports that nothing is in it.
   with many key prefixes.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
-- **Say `app`, `agent` or `managed-agent`, never just "agent".** They are different
-  resources with different flags, different creation paths and different console routes.
+- **Say `app` or `agent`, never just "agent".** They are different resources with
+  different flags, creation paths and console routes.
 - **Create the Agent or MCP server before any App ID of that name.** A bare App ID created
   first cannot be adopted, and the Agent is then permanently in error.
 - **Verify by reading the resource back, with `-o json`.** A create that returned is not a

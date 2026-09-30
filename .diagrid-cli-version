@@ -45,33 +45,26 @@ linux_arm64 = "181ce15940d746b5baa5037132e3323d68cd15f87f0519009d60799558528b5a"
 darwin_amd64 = "f0a4fd8114ca0f52c0fdfa30dbeda1a43323abfd5e52c1975e31270499632e0e"
 darwin_arm64 = "875e085dc8e011c1e7d381941d73a4cccdc3d8b3fac3ebad0c9b78269e6b6b0b"
 
-# Command paths whose very EXISTENCE the CLI reveals only to some logins.
+# Command paths that do not resolve without a login.
 #
 # This is not the same as hidden. `appid` and `tokenbudget` are hidden — absent
-# from `--help` and from the completion script — and still resolve for anyone, so
-# the gate probes them and checks them fully. `managed-agent` is different:
-# measured on the same pinned binary, same commit,
+# from `--help` and from the completion script — and still resolve with no login,
+# so the gate probes them and checks them fully. The paths below do not resolve
+# at all without a login, and CI has none.
 #
-#   logged in as @diagrid.io   `diagrid managed-agent --help` prints its help
-#   no login at all (CI)       cobra does not resolve it as a command
-#
-# So a gate that treated "cobra will not resolve it" as "does not exist" would
-# report `diagrid managed-agent runs list` — which catalyst-debug documents and
-# which works — as a nonexistent command on every pull request, while passing on
-# the author's laptop. Someone would then "fix" a correct skill to get green.
-#
-# Listed here, the gate stops reporting the path as nonexistent and instead
-# reports it as unverifiable in this environment, by name, with the CLI's own
-# error. Where the path DOES resolve — any Diagrid developer's machine — nothing
-# is suppressed and its flags and required flags are checked normally.
+# A gate that treated "cobra will not resolve it" as "does not exist" would report
+# them as nonexistent on every pull request while passing on a logged-in laptop,
+# and someone would then "fix" a correct skill to get green. Listed here, the gate
+# reports them as unverifiable in this environment instead, by name, with the
+# CLI's own error. Where a path does resolve, nothing is suppressed and its flags
+# and required flags are checked normally.
 #
 # The list is deliberately narrow and self-policing: an entry that turns out to
-# be present in the completion script is a hard failure, because the CLI has
-# stopped gating it and the entry is now hiding real coverage. Only the first
-# token is matched, so `managed-agent bogus-verb` is still rejected wherever
-# `managed-agent` resolves.
+# be present in the completion script is a hard failure, because the entry is now
+# hiding real coverage. Only the first token is matched, so a bogus verb under a
+# listed path is still rejected wherever the path resolves.
 #
 # Do not add to this to silence a failure. A command that does not resolve for
 # anyone is a defect in the skill, which is the whole point of the gate.
-[identity_gated]
-managed-agent = "hidden unconditionally and gated on a @diagrid.io login; catalyst-agent-scaffold documents it precisely so a model recognises it rather than offering it"
+[login_required]
+managed-agent = "not resolvable in CI; no skill documents it, the gate's own tests use it"

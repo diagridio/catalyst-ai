@@ -194,8 +194,8 @@ first and match what you see, including against the commands written here.
 ### Trigger a run, so there is output to read
 
 Nothing above produces anything until a workflow actually runs. Starting one is a write,
-so it is the one part of this loop that is absent from a read-only tool surface — if
-`catalyst_start_workflow` is not in the tool list, that is why, and the CLI still works.
+so `catalyst_start_workflow` is absent from the tool list for a role that cannot write —
+if it is not there, that is why, and the CLI still works.
 
 | | |
 | --- | --- |

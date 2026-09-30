@@ -58,8 +58,8 @@ class Spec:
     """One fixture: a SKILL.md body and the verdict it must produce.
 
     `must_not_say` exists for the cases whose *depth* of checking depends on the
-    login running them. `managed-agent` resolves on a Diagrid account and does
-    not resolve in CI, so "is this rejected" is not a question with one answer —
+    login running them. `managed-agent` does not resolve without a login, so
+    it does not resolve in CI, so "is this rejected" is not a question with one answer —
     but "is it ever reported as a nonexistent command" is, and that is the
     property worth pinning, because a false "does not exist" is the failure that
     gets a correct skill edited.
@@ -71,7 +71,7 @@ class Spec:
     must_say: str | None = None
     must_not_say: str | None = None
     # Extra TOML appended to the pin file for this fixture, for testing the
-    # `[identity_gated]` declaration itself.
+    # `[login_required]` declaration itself.
     pin_extra: str | None = None
 
 
@@ -109,7 +109,7 @@ def run_checker(root: Path, cli: Path, pin_extra: str | None = None) -> subproce
     version of the sibling suite report passes it had not earned.
 
     The real pin file is copied in for the same reason: the gate reads
-    `[identity_gated]` from it, and a fixture without one fails on a missing pin
+    `[login_required]` from it, and a fixture without one fails on a missing pin
     rather than on its own defect. `pin_extra` appends to it, which is how the
     stale-declaration guard gets tested.
     """
@@ -219,9 +219,9 @@ SPECS: list[Spec] = [
         must_say='required flag(s) "instance-id" not set',
     ),
     # This one and the next assert `must_not_say` rather than a verdict, because
-    # `managed-agent` is identity-gated: it resolves on a @diagrid.io login and
-    # does not resolve at all in CI. What must hold in BOTH is that a command
-    # catalyst-debug documents, and which works, is never called nonexistent.
+    # `managed-agent` is login-required: it does not resolve without a
+    # login, so not at all in CI. What must hold in BOTH is that a command
+    # a skill might document, and which works where it resolves, is never called nonexistent.
     # The group rule itself is asserted below on `call invoke`, which everyone
     # can see.
     Spec(
@@ -251,13 +251,13 @@ SPECS: list[Spec] = [
         "```\ndiagrid workflow start my-wf --app-id my-app --instance-id run-1\n```\n",
         must_say="absent from `--help`",
     ),
-    # The real invocation from catalyst-debug:219. It works, and CI cannot see it.
+    # An login-required invocation. It works after a login, and CI cannot see it.
     # Where it resolves the missing `--agent` is reported; where it does not, the
     # gate must say so rather than call it nonexistent. Detection of the
     # `[Required]` annotation this relies on is pinned by test_parsers() below,
     # which needs no binary and so runs the same everywhere.
     Spec(
-        "a required flag on an identity-gated command is never called nonexistent",
+        "a required flag on an login-required command is never called nonexistent",
         "Read the runs with `diagrid managed-agent runs list --thread <id>`.\n",
         expect="either",
         must_not_say="is not a command on this CLI",
@@ -265,7 +265,7 @@ SPECS: list[Spec] = [
     # The gate must not suppress by resemblance. `managed-agentz` is not the
     # declared prefix, so it is still a nonexistent command.
     Spec(
-        "a near-miss on an identity-gated name is still rejected",
+        "a near-miss on an login-required name is still rejected",
         "Try `diagrid managed-agentz list`.\n",
         must_say="is not a command on this CLI",
     ),
@@ -277,10 +277,10 @@ SPECS: list[Spec] = [
         must_say="is not a subcommand of `diagrid appid`",
     ),
     # The anti-rot guard on the declaration itself: `project` is in the completion
-    # script, so declaring it identity-gated is stale by construction and must
+    # script, so declaring it login-required is stale by construction and must
     # fail rather than silently suppress every `project` finding.
     Spec(
-        "a stale identity_gated entry is rejected",
+        "a stale login_required entry is rejected",
         "```\ndiagrid project list\n```\n",
         must_say="is stale",
         pin_extra='\nproject = "not actually gated; this entry should be refused"\n',

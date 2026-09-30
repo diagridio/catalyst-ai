@@ -73,9 +73,9 @@ class Pin:
     version: str
     bucket: str
     checksums: dict[str, str]
-    # Command paths the CLI resolves only for some logins. See the long note in
+    # Command paths that do not resolve without a login. See the long note in
     # the pin file; the gate reports these as unverifiable rather than absent.
-    identity_gated: dict[str, str]
+    login_required: dict[str, str]
 
 
 def read_pin(pin_file: Path = PIN_FILE) -> Pin:
@@ -86,7 +86,7 @@ def read_pin(pin_file: Path = PIN_FILE) -> Pin:
     version = data.get("version")
     bucket = data.get("bucket")
     checksums = data.get("sha256") or {}
-    gated = data.get("identity_gated") or {}
+    gated = data.get("login_required") or {}
     if not isinstance(version, str) or not version.startswith("v"):
         raise PinError(f"{pin_file.name}: `version` must be a string like \"v1.66.0\", got {version!r}")
     if not isinstance(bucket, str) or not bucket:
@@ -94,18 +94,18 @@ def read_pin(pin_file: Path = PIN_FILE) -> Pin:
     if not isinstance(checksums, dict) or not checksums:
         raise PinError(f"{pin_file.name}: `[sha256]` must list at least one platform")
     if not isinstance(gated, dict):
-        raise PinError(f"{pin_file.name}: `[identity_gated]` must be a table of name = reason")
+        raise PinError(f"{pin_file.name}: `[login_required]` must be a table of name = reason")
     for name, reason in gated.items():
         if not isinstance(reason, str) or not reason.strip():
             raise PinError(
-                f"{pin_file.name}: `identity_gated.{name}` needs a reason. An entry "
+                f"{pin_file.name}: `login_required.{name}` needs a reason. An entry "
                 f"without one is indistinguishable from silencing a real defect."
             )
     return Pin(
         version=version,
         bucket=bucket,
         checksums={str(k): str(v) for k, v in checksums.items()},
-        identity_gated={str(k): str(v) for k, v in gated.items()},
+        login_required={str(k): str(v) for k, v in gated.items()},
     )
 
 

@@ -78,7 +78,7 @@ Two project-scoped limits are fixed and never worth investigating:
 | `number_of_pubsubs_per_project` | 1 | Every topic shares one broker |
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
-Both are 1 on every plan — free, enterprise and internal alike. A multi-agent topology
+Both are 1 on every plan. A multi-agent topology
 separates traffic by topic and by key prefix, not by broker or store. State it as a
 platform default. Never present it as a free-tier limit or a reason to upgrade: no plan
 upgrade raises it, and a user who upgrades on your advice has been misled.
@@ -102,7 +102,7 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | Org, projects, regions | `catalyst_whoami` | `diagrid org current`, `diagrid org list` |
 | Projects | `catalyst_list_projects`, `catalyst_get_project` | `diagrid project list`, `diagrid project get <name>` |
 | App IDs, and any tunnel on them | `catalyst_list_appids`, `catalyst_get_appid` | `diagrid appid list`, `diagrid appid get <id> --all` |
-| Agents, both kinds | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
+| Agents | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
 | The runtime agent registry | `catalyst_get_agent` with the hosting App ID | `diagrid agent registry list` |
 | MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` | `diagrid mcpserver list`, `diagrid mcpserver get <name> --tools` |
 | Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list`, `diagrid subscription list`, `diagrid pubsub list`, `diagrid kv list` |
@@ -125,9 +125,10 @@ Two limits in that table are deliberate, not oversights:
   `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
   policy, not a fault: do not retry it. Fall back to the CLI, and only an org admin
   raising the level to `full` changes the answer.
-- **The MCP surface reads; it does not manage.** There are no create, update or delete
-  tools. Only workflow lifecycle calls write, and this skill does not use them. Anything
-  the user wants changed goes through the CLI or the console, with their consent.
+- **This skill only reads, even where the MCP server can write.** For a role that allows
+  writes, the server also has create, change and delete tools (see `catalyst-deploy`) and
+  workflow-run actions (see `catalyst-debug`). This skill uses none of them. Anything the
+  user wants changed goes to those skills or the CLI, with their consent.
 
 `-o json` on any CLI read gives you the full object; the default table view drops
 fields. Read the JSON before concluding that a field does not exist. One read runs the other way:
@@ -145,7 +146,7 @@ The App ID goes in `--id` throughout. `--app-id` lingers as a hidden deprecated 
 
 Projects, App IDs, MCP servers and every component kind report one of `ready`,
 `pending`, `processing`, `provisioning`, `updating`, `deleting`, `deleted`, `error`,
-`unknown`. Agents and managed agents use a narrower set — `ready`, `error`, `pending`, or
+`unknown`. Agents use a narrower set — `ready`, `error`, `pending`, or
 empty before their first reconcile.
 
 The set is not closed: an unmapped state passes through as whatever the platform called
@@ -157,21 +158,12 @@ message saying it is disabled and loaded by no App ID. Disabled is a fully recon
 state, so `ready` is correct — but "ready" is not the answer to "is it serving". Read the
 message.
 
-### `agent` and `managed-agent` are different resources
+### Agents
 
-Never say "the agent" without saying which.
+An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
+identified by `--endpoint` and the `--archive-*` flags. Say which resource you mean.
 
-| | `diagrid agent` | `diagrid managed-agent` |
-| --- | --- | --- |
-| What it is | A Catalyst front for an agent **you** run | A Catalyst-hosted Durable Agent |
-| Identifying flags | `--endpoint`, `--archive-binding-name`, `--archive-completed/-failed/-terminated` | `--llm-provider`, `--llm-model`, `--sandbox`, `--github-app-id`, `--git-repo` |
-| Where the code runs | Your application | Catalyst |
-| Availability | Generally available | Restricted; hidden from help, gated at execution |
-
-`catalyst_list_agents` returns both kinds, so read the type on each record rather than
-inferring it from the name.
-
-`diagrid agent registry list` is the third thing, and often the one that answers the
+`diagrid agent registry list` is the second thing, and often the one that answers the
 question: it lists what is actually registered in the project's runtime, including
 externally deployed OSS Dapr agents. A name in the registry but not in `agent list` is an
 agent nobody declared to Catalyst; the reverse is a declaration whose workload is not
@@ -259,7 +251,7 @@ headroom number.
 Keys you will be asked about: `number_of_projects`, `number_of_appids`,
 `number_of_connections`, `number_of_catalyst_subscriptions`,
 `number_of_pubsubs_per_project`, `number_of_kvstores_per_project`,
-`number_of_durable_agents`, `number_of_inbound_outbound_requests`,
+`number_of_inbound_outbound_requests`,
 `max_requests_per_second_per_appid`; and at organization scope `number_of_users`,
 `number_of_apikeys`, `number_of_sso_connections`.
 

@@ -200,7 +200,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
 ## Catalyst notes
 
 - **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Catalyst
-  plan — free, enterprise and internal alike — and no plan upgrade raises it.
+  plan, and no plan upgrade raises it.
   These are plan values overlaid per organization, not constants in the code, so read
   the live quota rather than asserting the 1 — and do not promise a user it can be
   raised for them, which is a commercial question rather than one you can answer. A
