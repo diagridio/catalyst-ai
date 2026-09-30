@@ -329,11 +329,15 @@ empty project and then reports that nothing is in it.
 
 - **Check headroom before designing, not after building.** `diagrid org usage`. Identities,
   connections and subscriptions are capped per region across the whole organization, so a
-  second project buys nothing.
+  second project adds no headroom for them.
 - **Never offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
   every plan, so no plan change buys a second one. Read the live quota rather than
   asserting the 1. Describe the shape that works — one broker with many topics, one store
   with many key prefixes.
+- **Do not offer a second project as the way to get a second broker or store.** It would
+  carry one, but it spends a project slot and splits one app into two environments. The
+  intended shape is one broker separated by topic; if you mention a second project at
+  all, say that.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
   reached, the platform's own remedy is to contact Diagrid support.
 - **Say `app` or `agent`, never just "agent".** They are different resources with
