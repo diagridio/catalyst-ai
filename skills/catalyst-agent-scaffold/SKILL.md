@@ -95,7 +95,7 @@ installed, not read off a registry page.
 
 ## 5. Python specifics, since it is the widest path
 
-Install the framework as an extra on the single `diagrid` distribution — there is no
+Install the framework as an extra on the single PyPI package named `diagrid`. There is no
 per-framework distribution:
 
 ```
@@ -148,19 +148,10 @@ A coordinator with specialists therefore **shares one broker and separates the a
 topic**, one topic per specialist plus one for results. Design for that from the start;
 it is not a workaround.
 
-Budget the resource slots before scaffolding. Per region:
-
-| | Allowance |
-| --- | --- |
-| Projects | 3 |
-| Resources — every app, agent and MCP server counts as one | 10 |
-| Managed pub/sub, KV store and workflow store, per project | 1 each |
-
-An app or a connectivity `agent` spends one resource slot. A coordinator plus four
-specialists is five slots — it fits, but a second copy does not.
-
-Throughput is capped per app and per project as well. Those figures move and are quoted
-inconsistently, so read them off the current plans page instead of hardcoding one here.
+Budget the resource slots before scaffolding: every app, agent and MCP server counts as
+one identity against a per-region allowance, and a coordinator plus four specialists is
+five of them. Read the allowance with `catalyst_get_usage` rather than quoting a figure,
+and do the same for throughput limits.
 
 ## 8. Run it, then kill it
 
@@ -195,7 +186,7 @@ refusal.
 ## 9. Hand back a link, not a claim
 
 Once the agent exists, give the user a console link rather than asking them to trust the
-transcript. The console is `https://catalyst.diagrid.io`. Only these routes exist:
+transcript. The console for the production server is `https://catalyst.diagrid.io`. Only these routes exist:
 
 | To show | Route |
 | --- | --- |

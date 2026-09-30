@@ -4,4 +4,4 @@ target: last_message
 flags: i
 match: contains
 ---
-metadata
+metadata|data[- ]sharing level

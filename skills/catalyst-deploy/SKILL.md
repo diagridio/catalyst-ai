@@ -94,13 +94,7 @@ exist, so if a live quota read disagrees with the 1, trust the live read.) A mul
 or multi-agent design therefore separates
 traffic by **topic** on the one broker and by **key prefix** in the one store. Design for
 that from the start; presenting it as a limitation to work around produces a design that
-cannot be built. Note also that creating a managed pub/sub or KV store spends a
-*connection* slot as well as its per-project slot.
-
-Reference figures for the free plan, per cloud region, useful as a sanity check on what
-`catalyst_get_usage` returns rather than as a substitute for reading it — 3 projects, 10
-identities, 21 connections, 10 subscriptions, 100,000 requests, and 500 requests
-per second per identity.
+cannot be built. Read `catalyst_get_usage` for every other figure rather than quoting one.
 
 Finally, headroom is not the only per-region property. Managed pub/sub, managed KV and
 the Workflows API are **regional capabilities**, and a region that lacks one gives you a
@@ -221,8 +215,8 @@ back:
 **Ready is not one field.** Catalyst's own readiness check requires the identity's status to
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
-nothing works". The token itself is never returned over MCP, so you can see that a
-resource is ready but not its credential.
+nothing works". No read tool returns the API token; only `catalyst_get_app_connection`
+does (see `catalyst-develop` section 3).
 
 The status vocabulary is `ready`, `pending`, `processing`, `provisioning`, `updating`,
 `deleting`, `deleted`, `error`, `unknown` — but the set is not closed and the API declares
@@ -252,15 +246,16 @@ has served or sent anything. Invoking the app directly, publishing a test messag
 reading state back are not available over MCP yet; say so rather than claiming you
 checked them.
 
-An `App`'s API token is the credential for that identity and is never returned over MCP.
-Do not ask the user to paste one, and do not write one into a summary, a file or a commit.
+An `App`'s API token is the credential for that identity. No read tool returns it; only
+`catalyst_get_app_connection` does (see `catalyst-develop` section 3). Do not ask the user
+to paste one, and do not write one into a summary, a file or a commit.
 
 ## 6. Hand back a link so the user can see it
 
 Once something exists, give the user a way to look at it. Naming a resource you cannot
 link to is a weaker answer than naming it with a link.
 
-The console is `https://catalyst.diagrid.io`. If you cannot build a link you trust, print
+The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, print
 the identifiers as plain text.
 
 Use only these routes, appended to that host:
@@ -302,12 +297,11 @@ workflow store and agent infrastructure already attached. Deploy into it.
 It is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm with `catalyst_list_projects`; if it is genuinely
 gone, ask which project to use rather than inventing one. A hand-made project that behaves
-differently is indistinguishable from a broken one to the person asking for help, and it
-spends one of three per-region slots to get there.
+differently is indistinguishable from a broken one to the person asking for help.
 
-Be careful with the project you pass to `catalyst_apply`: a `Project` manifest in the
-batch creates it, and a typo in the name provisions an empty project rather than failing.
-Send a `Project` manifest only when the user has explicitly asked for a new project.
+Be careful with a `Project` manifest in a `catalyst_apply` batch: it creates the project
+it names, so check its `metadata.name`. A `project` argument that differs from it is
+rejected. Send one only when the user has explicitly asked for a new project.
 
 ## Rules
 
@@ -319,7 +313,7 @@ Send a `Project` manifest only when the user has explicitly asked for a new proj
   asserting the 1. Describe the shape that works — one broker with many topics, one store
   with many key prefixes.
 - **Do not offer a second project as the way to get a second broker or store.** Each project
-  carries its own, but a second one spends a project slot and splits one app into two environments. The
+  carries its own, but a second one spends a project slot (read `catalyst_get_usage`) and splits one app into two environments. The
   intended shape is one broker separated by topic; if you mention a second project at
   all, say that.
 - **Never suggest an upgrade to clear a cap.** Read the limit, and if it is genuinely
@@ -332,8 +326,8 @@ Send a `Project` manifest only when the user has explicitly asked for a new proj
   not a resource that works, and `ready` without an API token is not ready.
 - **Report a status verbatim.** The vocabulary is not closed, and paraphrasing a platform
   error loses the detail that mattered.
-- **Do not create a project.** Use `default`, and watch for a typo in the project name
-  creating one on your behalf.
+- **Do not create a project.** Use `default`, and check the `metadata.name` of any
+  `Project` manifest in a batch.
 - **Ask before any delete.** `catalyst_delete_resource` cannot be undone.
 - **Do not print secrets.** Never paste a secret value, or an API token if you are ever
   given one, into anything that outlives the answer.

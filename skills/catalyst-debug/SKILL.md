@@ -213,7 +213,7 @@ The agent resource is an `Agent`: a Catalyst front for an agent **your** app run
 identified by its endpoint and archive settings. It stops answering when your application
 is down or its endpoint points somewhere unreachable.
 
-Then check the runtime registry, which `catalyst_get_agent` carries. The registry is the
+Then check the runtime registry, which `catalyst_get_agent` returns when `appId` is also passed. The registry is the
 project's runtime view and includes externally deployed OSS Dapr agents, so it separates
 the two failures you cannot otherwise tell apart: a declared agent with no running
 workload, versus a running workload nobody declared.
@@ -287,7 +287,7 @@ not retry at all, because a permanent refusal retried presents to the user as a 
 Give the user a link to the resource you are talking about, so they can look at what you
 looked at. This is what makes a withheld field an honest answer rather than a dead end.
 
-The console is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
+The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
 the identifiers in plain text.
 
 Use only these routes, appended to that host:

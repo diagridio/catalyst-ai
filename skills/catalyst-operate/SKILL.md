@@ -67,21 +67,19 @@ store and agent infrastructure already attached. Use it. **Never create a projec
 hand-made project that behaves differently is indistinguishable from a broken one to the
 person asking for help.
 
-Two project-scoped limits are fixed and never worth investigating:
+Two project-scoped limits matter for designs:
 
-| Limit | Value | What it means for a design |
+| Limit | Default | What it means for a design |
 | --- | --- | --- |
 | `number_of_pubsubs_per_project` | 1 | Every topic shares one broker |
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
-Both are 1 on every plan. A multi-agent topology
-separates traffic by topic and by key prefix, not by broker or store. State it as a
-platform default. Never present it as a free-tier limit or a reason to upgrade: no plan
-upgrade raises it, and a user who upgrades on your advice has been misled.
-
-These are plan limits with a per-organization override, not constants in the code. If a
-live quota read shows a higher number, that organization has a negotiated limit and the
-live value wins over this document. Read the budget rather than asserting the 1.
+The default is 1 on every plan, and confirming it is one call to `catalyst_get_usage`. A
+multi-agent topology separates traffic by topic and by key prefix, not by broker or
+store. State it as a platform default. Never present it as a free-tier limit or a reason
+to upgrade: no plan upgrade raises it, and a user who upgrades on your advice has been
+misled. The limits carry a per-organization override, so if the live read shows a higher
+number, the live value wins over this document.
 
 ## 2. Attribute every value
 
@@ -96,7 +94,7 @@ is a guess.
 | Projects | `catalyst_list_projects`, `catalyst_get_project` |
 | Apps, and any tunnel on them | `catalyst_list_apps`, `catalyst_get_app` |
 | Agents, declared and runtime-registered | `catalyst_list_agents`, `catalyst_get_agent` |
-| The runtime agent registry | `catalyst_get_agent`, also naming the app the agent runs in (the `appId` on its registry record) |
+| The runtime agent registry | `catalyst_get_agent`, with `appId` also passed, for the registry record |
 | MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` |
 | Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` |
 | Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` |
@@ -156,7 +154,7 @@ An agent is an `Agent` resource: a Catalyst front for an agent **your** app runs
 identified by its endpoint and its archive settings. Say `agent` or `app`, never leave
 it ambiguous: they are different resources.
 
-`catalyst_get_agent` also carries the runtime registry record, and that is often the one
+`catalyst_get_agent` returns the runtime registry record when `appId` is also passed, and that is often the one
 that answers the question: the registry lists what is actually registered in the project's
 runtime, including externally deployed OSS Dapr agents. A name in the registry but not in
 `catalyst_list_agents` is an agent nobody declared to Catalyst; the reverse is a
@@ -206,7 +204,8 @@ The same trap applies twice more:
 - Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app
-  has no token.
+  has no token. No read tool returns an app's token; only `catalyst_get_app_connection`
+  does (see `catalyst-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's
 data-sharing level (`metadata`)". Name the level. The payload cannot be read through this
@@ -254,7 +253,7 @@ data-sharing level removed a payload: "the input was withheld at this organizati
 data-sharing level, and here it is in the console" is a useful answer where both a lie
 and a shrug are not.
 
-The console is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
+The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
 the identifiers in plain text.
 
 Use only these routes, appended to that host:

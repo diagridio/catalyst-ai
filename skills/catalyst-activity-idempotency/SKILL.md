@@ -225,7 +225,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
   numeric uid (`prj-` prefix optional). A numeric uid passed as `?project=` matches no
   name, so the console never switches project and the run does not resolve where it
   lands. Name goes in `?project=`, number in `?projectId=`; if you cannot tell which you
-  hold, omit the parameter. The console is `https://catalyst.diagrid.io`. A link
+  hold, omit the parameter. The console for the production server is `https://catalyst.diagrid.io`. A link
   that 404s or opens the wrong project is worse than no link: fall back to the run id and
   app id in plain text.
 

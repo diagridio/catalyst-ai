@@ -35,15 +35,18 @@ user to paste.
 | Client | Do |
 | --- | --- |
 | Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:catalyst`. Open `/mcp`, pick that server and complete the browser sign-in |
-| Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp`, then `codex mcp login catalyst` |
-| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then run `/mcp` inside Copilot and authenticate the `catalyst` server in the browser |
+| Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then `codex mcp login catalyst` |
+| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
 call `catalyst_whoami` again. Tools appear when it finishes.
 
-If the client lets you set scopes, request `catalyst:read offline_access`. Without
-`offline_access` there is no refresh token, so the user signs in again each time the
+The sign-in must be granted the scopes `catalyst:read catalyst:write offline_access`. The
+authorization server has no dynamic registration, so each client signs in with its
+registered client ID (the table above). Without `catalyst:write` a signed-in user never
+sees write tools, whatever their role. Without `offline_access` there is no refresh token, so the user signs in again each time the
 session expires.
 
 If the user already added the server by hand in Claude Code and also installed the
@@ -56,11 +59,13 @@ plugin, they have two copies of every tool. Ask them to remove their own entry.
 - **A token only works on the server it was issued for.** A token from another server is
   refused as `NOT_AUTHENTICATED`. If sign-in succeeded but calls are refused, check the
   server URL first.
-- **The tool list depends on the user's role.** Write tools, such as `catalyst_apply`, or
-  starting or terminating a workflow run, are left out of the list entirely for a user
-  whose role cannot write. They are not refused when called; they are simply not there. If
-  one is missing, that is the user's role, not a broken connection, so do not go looking
-  for it. Tell the user a write role is needed and stop.
+- **The tool list depends on the user's role and on the scopes they granted.** Write
+  tools, such as `catalyst_apply`, or starting or terminating a workflow run, are left out
+  of the list entirely unless the role can write and the sign-in granted `catalyst:write`.
+  They are not refused when called; they are simply not there. If one is missing, either
+  the role is read-only or the sign-in did not grant write scope. Ask the user to sign in
+  again and approve write access; if the tool is still missing, their role is read-only,
+  so tell them a write role is needed and stop.
 
 ## 4. Read the error, do not guess
 
@@ -71,7 +76,7 @@ user for an API key, which is never the right next step.
 | Kind | What it means | Do |
 | --- | --- | --- |
 | `NOT_AUTHENTICATED` | No token, or it does not verify | Ask the user to sign in to the MCP server again (section 2). Do not ask for a token. If they just did, check the server URL (section 3) |
-| `NO_ORG` | Verified, but no organization resolved | Ask the user which organization |
+| `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user which organization |
 | `ORG_MISMATCH` | A supplied org disagrees with the sign-in | Stop. Report both values. Do not retry with either |
 | `ORG_UNAVAILABLE` | Organization blocked or being deleted | Terminal. Tell the user to contact Diagrid support. Do not retry |
 | `CATALYST_NOT_ENABLED` | No Catalyst entitlement, or an expired trial | Report which. These need different remedies, enabling versus renewing |

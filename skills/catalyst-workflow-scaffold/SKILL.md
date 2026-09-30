@@ -125,8 +125,8 @@ Where a tool asks for or returns `appId`, it means that identity's name. Read it
 resource's `status.appIds` (the get tools include it). For an agent registered from your
 own code, it's the `appId` on its registry record.
 
-Budget the identities. A region allows **10, where every app, agent and MCP server counts
-as one**, and 3 projects. Scaffold one app for the workflow and add more only when the
+Budget the identities. Every app, agent and MCP server counts as one identity against a
+per-region allowance; read it with `catalyst_get_usage`. Scaffold one app for the workflow and add more only when the
 user asks. Workflows themselves are not quotaed — instances are free, apps are not.
 
 ## 6. Read the result back before claiming success
@@ -161,7 +161,7 @@ A tool that refuses is likewise not a workflow that failed. Report the refusal.
 ## 7. Hand back a link, not a claim
 
 Once the app exists and a run has started, give the user a console link so they can
-see it for themselves. The console is `https://catalyst.diagrid.io`. Only these routes
+see it for themselves. The console for the production server is `https://catalyst.diagrid.io`. Only these routes
 exist:
 
 | To show | Route |

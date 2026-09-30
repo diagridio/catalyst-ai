@@ -29,10 +29,9 @@ change. Read it before you delete anything.
 **Never create a project to develop in.** Every organization gets one named `default`
 with managed pub/sub, KV, workflow store and agent infrastructure already attached.
 Confirm with `catalyst_list_projects`, and pass the project on every call; there is no
-current project. A typo in a project name passed to `catalyst_apply` alongside a
-`Project` manifest provisions a fresh empty project, spends one of the three per-region
-slots, and then reports that nothing is in it. Send a `Project` manifest only when the
-user explicitly asked for a new project.
+current project. A `Project` manifest creates the project it names, so if one is in a
+batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
+`Project` manifest only when the user explicitly asked for a new project.
 
 ## 2. Make sure the App ID exists
 
@@ -45,9 +44,9 @@ own code, it's the `appId` on its registry record.
    on.
 2. If it does not exist, create it with `catalyst_apply`: read
    `catalyst_get_resource_schema` for the `App` kind first, run with `dry_run` and show
-   the user, then apply. Apply the project's components and subscriptions, scoped to the
-   app, **before** the app, so they exist when its sidecar boots (see `catalyst-deploy`
-   for the full ordering). An app with no endpoint is the correct shape for a pure
+   the user, then apply. Apply the project's components first, then the app, then the
+   subscriptions scoped to it in a second call (see `catalyst-deploy` for the full
+   ordering), so the components exist when its sidecar boots. An app with no endpoint is the correct shape for a pure
    workflow worker, which dials Catalyst outbound.
 3. Read it back and wait for `ready`. `updating` right after a local connection attaches
    is normal; give it time before calling it broken.
@@ -77,10 +76,12 @@ hands them out through one tool.
    --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
    no inbound port. Alternatively, export the values only in the shell that runs the
    app.
-4. **Never echo, print, log or write the token** to chat, to a file, to `.env` or to
-   shell history. Do not show the command line with the value in it: when you describe the
-   command to the user, show the placeholders, as above. Do not commit it. Do not paste a
-   value into a launch profile.
+4. **Handle the token as a secret, and be honest about where it goes.** It passes through
+   the tool result and through the launch command you run, so this session can see it.
+   Keep it out of files, `.env`, commits, logs and your own chat prose, and never repeat
+   it back to the user. When you describe the command, show the placeholders, as above.
+   If the user objects to the value passing through the session, offer to give them the
+   launch command with placeholders to run in their own terminal, and stop there.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
 6. If `catalyst_get_app_connection` is missing or refused, say that it is unavailable to
@@ -189,8 +190,9 @@ Two quieter failure modes with no error to search for:
 
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
-- **Never show the token.** Not in chat, not in a file, not in `.env`, not in shell
-  history, not in a commit. Show placeholders when describing the command.
+- **Keep the token out of files, `.env`, commits, logs and chat prose**, and never repeat
+  it to the user. Show placeholders when describing the command; if the user objects to
+  the value passing through the session, hand them a placeholder command to run themselves.
 - **Do not fall back to anything else when a tool is missing or refused.** Say it is
   unavailable to this role or server, and stop.
 - **Say which source a line came from.** Your process, the run and the sidecar log fail
