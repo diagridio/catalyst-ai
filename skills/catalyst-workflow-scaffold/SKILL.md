@@ -105,7 +105,7 @@ instead and let the old instances drain. Workflow versioning is not solved for y
    with `dry_run`, show the user, then apply). A write role is needed: if
    `catalyst_apply` is not in the tool list, say so and stop.
 2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
-   start the process with the connection values from `catalyst_get_app_connection` in its
+   start the process with the connection values from `catalyst_get_connection` in its
    environment, and how to keep the token out of chat, files and history. Follow it
    rather than improvising.
 

@@ -204,7 +204,7 @@ The same trap applies twice more:
 - Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app
-  has no token. No read tool returns an app's token; only `catalyst_get_app_connection`
+  has no token. No read tool returns an app's token; only `catalyst_get_connection`
   does (see `catalyst-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's
