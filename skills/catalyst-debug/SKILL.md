@@ -130,7 +130,8 @@ back with the payload removed at `metadata`. Removal happens on the response, af
 upstream answered.
 
 The same trap appears twice more. `customStatus` absent is not "the workflow never set
-one". And credentials are scrubbed at every level, `full` included — `apiToken`,
+one", and an empty one proves a clean run only if the workflow is documented to set one
+on failure and `output` agrees. And credentials are scrubbed at every level, `full` included — `apiToken`,
 `appToken`, `token`, `apiKey`, `clientSecret`, `privateKey` — so a missing `apiToken`
 never means the app has no token. Secret *references* survive, so "which secret does
 this use" is still answerable.
