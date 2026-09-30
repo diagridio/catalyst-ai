@@ -8,9 +8,9 @@ allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
   Notes that no catalyst_* MCP tools are available in this session and hands over
   the CLI reads that answer the question instead. Does not present the missing
-  tools as Catalyst being unreachable, and does not invent App ID names or
+  tools as Catalyst being unreachable, and does not invent app names or
   statuses to fill the gap — no tool in this run can read a live project.
 ---
 
-What App IDs are running in our Catalyst project right now, and which of them are
+What apps are running in our Catalyst project right now, and which of them are
 not ready? I need the list for a handover in ten minutes.

@@ -72,7 +72,7 @@ Two related facts, so you do not go looking for a flag that is gone:
 - Agent infrastructure arrives with the managed KV store. `project create` has no
   `--enable-agent-infrastructure` flag — it was removed and is not coming back.
 - `diagrid dev run` provisions the managed pub/sub, KV store and workflow store for any
-  App ID it creates. You get them by running, not by configuring.
+  app it creates. You get them by running, not by configuring.
 
 A project holds **one managed pub/sub and one managed KV store** on every plan, and no plan upgrade raises it, so never offer one as the
 fix. Fan work out across topics on the one broker. These are plan values overlaid per
@@ -112,13 +112,18 @@ Scaffold the dev config, then run. Both commands default to the current project,
 - `diagrid dev run --project default --id <app> -- <your run command>`
 - Add `--app-port <port>` **only** if Catalyst must call *into* your application.
 
-`--id` names the App ID, and on `dev run` the short `-p` means `--app-port`, not
-`--project`.
+`--id` names the identity the worker runs as, and on `dev run` the short `-p` means
+`--app-port`, not `--project`.
+
+Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
+Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
+resource's `status.appIds` (the get tools include it). For an agent registered from your
+own code, it's the `appId` on its registry record.
 
 **A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
 items, so there is no inbound endpoint to expose and nothing should be listening. The CLI
 documents this shape itself: its own `dev run` example with no `--app-port` is the one
-labelled *"without a local app connection"*. An App ID with no registered endpoint is the
+labelled *"without a local app connection"*. An app with no registered endpoint is the
 correct shape for a worker.
 
 Do not invent an HTTP server to satisfy a port you do not need. It is a common first-run
@@ -126,20 +131,18 @@ failure and it fails confusingly — the worker registers the workflow and every
 successfully, then dies at bind because something else already holds the port, so the logs
 show a healthy startup followed by an error that has nothing to do with workflows. Reach
 for `--app-port` only when Catalyst calls in: service invocation, pub/sub delivery, or an
-agent endpoint. Use `diagrid app`. The older `appid` command still exists but is hidden,
-and it is **not** flag-compatible — `app create` takes `--endpoint` and
-`--endpoint-token` where `appid create` takes `--app-endpoint` and `--app-token`. So
-treat them as two commands, never as a noun you can swap while keeping the flags.
+agent endpoint. Use `diagrid app`; `app create` takes `--endpoint` and
+`--endpoint-token`.
 
 **Confirm every command against `--help` before relying on it**, including the ones
-written here. This CLI renames nouns and moves flags between minor versions — `appid`
-became `app`, and in the agent commands a single name changed which resource it creates.
+written here. This CLI renames nouns and moves flags between minor versions — in the agent
+commands a single name changed which resource it creates.
 Run `diagrid version` and the relevant `--help`, then match what you actually see rather
 than what you remember.
 
 **`dev run` has a much larger flag surface than the line above.** The three worked around
 most often, because this section does not quote them: **`-e, --env`** passes environment
-variables through to your process, **`--app-id-env-server-enabled`** serves the App ID's
+variables through to your process, **`--app-id-env-server-enabled`** serves the app's
 connection details to it, and **`--app-log-destination`** redirects its logs. Those names
 are here so you do not need another skill to find them; `catalyst-develop` documents the
 full surface, and `diagrid dev run --help` lists it too.
@@ -148,10 +151,9 @@ Check one of those before building a workaround. Hand-building an environment fi
 around a flag that already exists is the expensive mistake here, and it is easy to make
 from this section alone.
 
-Budget the App IDs. A region allows **10 resources, where every app, agent and MCP
-server counts as one**, and 3 projects. Scaffold one App ID for the workflow and add
-more only when the user asks. Workflows themselves are not quotaed — instances are free,
-App IDs are not.
+Budget the identities. A region allows **10, where every app, agent and MCP server counts
+as one**, and 3 projects. Scaffold one app for the workflow and add more only when the
+user asks. Workflows themselves are not quotaed — instances are free, apps are not.
 
 ## 6. Read the result back before claiming success
 
@@ -170,7 +172,7 @@ shaped differently in three ways worth checking rather than inferring:
 - `get` also has no `--output` flag. It always prints YAML, so `-o json` on it is an
   unknown flag rather than a format choice — the one place `-o json` does not apply.
 
-The App ID goes in `--id`. `--app-id` still parses as a hidden deprecated alias and
+The identity goes in `--id`. `--app-id` still parses as a hidden deprecated alias and
 prints a notice, but it is absent from `--help`, so write `--id`.
 
 Workflow exploration is only available for the managed workflow store — another reason
@@ -211,14 +213,14 @@ back to the CLI.
 
 ## 7. Hand back a link, not a claim
 
-Once the App ID exists and a run has started, give the user a console link so they can
+Once the app exists and a run has started, give the user a console link so they can
 see it for themselves. Only these routes exist:
 
 | To show | Route |
 | --- | --- |
-| The App ID | `/apps/details/<appId>` |
+| The app | `/apps/details/<appId>` |
 | A workflow run | `/workflows/<appId>/<runId>`, optionally `/<tab>` |
-| Metrics for an App ID | `/metrics/appids/<appId>` |
+| Metrics for the app | `/metrics/appids/<appId>` |
 
 There is **no project detail page** and **no quota page**. Do not link to either; the only
 project routes are the admin ones.
@@ -238,7 +240,7 @@ project** — no error, just the wrong data. Name goes in `project`, number goes
 Do not hardcode or hand-derive the host. Prod, staging, dev and local are different hosts,
 so a hardcoded one will be wrong for someone. Prefer `diagrid web`, which opens the console
 for the environment the session is logged in to; `catalyst-setup` section 3 carries the
-mapping when you need the URL itself. If the host is not determinable, print the App ID and
+mapping when you need the URL itself. If the host is not determinable, print the app and
 run id as plain text — **a link that 404s or lands on the wrong project is worse than no
 link.**
 

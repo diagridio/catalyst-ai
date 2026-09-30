@@ -112,7 +112,7 @@ def main() -> int:
     # when a client tries to load the skill.
     cases.append(case(
         "frontmatter that is not valid YAML (colon-space in a plain scalar)",
-        lambda s: write(s, "bad-yaml", "---\nname: bad-yaml\ndescription: covers project: App IDs and more\n---\n\nBody.\n"),
+        lambda s: write(s, "bad-yaml", "---\nname: bad-yaml\ndescription: covers project: apps and more\n---\n\nBody.\n"),
     ))
 
     cases.append(case(
@@ -233,7 +233,7 @@ def main() -> int:
     OPERATE_D = ("Inspect a running project read-only — what is deployed, what "
                  "state it sits in, which quota is close.")
     DEBUG_D = ("Diagnose why a resource is stuck, then stop, kill or rerun a run. "
-               "Covers a failed run, an unready App ID, a silent agent.")
+               "Covers a failed run, an unready app, a silent agent.")
 
     def scope_rule_dropped(s: Path) -> None:
         write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))

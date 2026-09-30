@@ -158,7 +158,7 @@ SPECS: list[Spec] = [
     ),
     Spec(
         "a command group named as a noun passes",
-        "| | `diagrid agent` | `diagrid managed-agent` |\n",
+        "| | `diagrid agent` | `diagrid app` |\n",
         expect="pass",
     ),
     # `managed-agent chat` groups list|show|stop|watch|delete AND runs a chat

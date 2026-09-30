@@ -17,10 +17,10 @@ gets slow.
 
 | Frequency | Command | What it does |
 | --- | --- | --- |
-| Once per project, then on change | `diagrid dev scaffold` | Writes a dev config file describing every App ID in the project, and exports the project's own resources next to it |
+| Once per project, then on change | `diagrid dev scaffold` | Writes a dev config file describing every app, agent and MCP server in the project, and exports the project's own resources next to it |
 | Every iteration | `diagrid dev run` | Reconciles the resources, attaches a local app connection, and launches your process |
 
-What survives an iteration: the App ID, its API token, the components, the subscriptions,
+What survives an iteration: the app and its identity, its API token, the components, the subscriptions,
 the managed pub/sub and KV store. What you redo: your process. Nothing in a code change
 requires touching the platform, and the section on what *does* force a change is below —
 read it before you delete anything.
@@ -45,11 +45,11 @@ components are skipped with a `skipping managed component` line — that is corr
 failure, because a managed component is not yours to declare.
 
 Scaffold refuses to run against a project that is not settled. It polls the project for
-readiness, then polls the App IDs, and gives up with `App ID "x" must be in ready status
+readiness, then polls each app's identity, and gives up with `App ID "x" must be in ready status
 in order to scaffold dev session configuration`. That is a wait, not an error to work
 around — see the readiness row in section 7.
 
-If the project has no App IDs it writes an empty file and says so, pointing you at
+If the project has no apps it writes an empty file and says so, pointing you at
 creating one first. An empty dev file is not runnable.
 
 ### What it fills in, and what it leaves for you
@@ -59,10 +59,16 @@ Per app it writes `appID`, `appDirPath`, `appChannelAddress` (`127.0.0.1`), `app
 
 | Variable | Why your code needs it |
 | --- | --- |
-| `DAPR_APP_ID` | The identity the sidecar answers as |
+| `DAPR_APP_ID` | The identity the sidecar answers as — see the note below the table |
 | `DAPR_HTTP_ENDPOINT` | Where the Dapr HTTP API lives, on the project's host, not localhost |
 | `DAPR_GRPC_ENDPOINT` | The same for gRPC |
-| `DAPR_API_TOKEN` | The App ID's credential |
+| `DAPR_API_TOKEN` | The identity's credential |
+
+Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
+Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
+resource's `status.appIds` (the get tools include it). For an agent registered from your
+own code, it's the `appId` on its registry record. The dev file's `appID` field and the
+CLI's `--id` flag take the same name.
 
 It leaves `appPort` at `0` and `command` empty. Those two are yours to fill in — a
 scaffolded file with neither will refuse to start with `port and command cannot both be
@@ -93,7 +99,7 @@ Flags worth knowing, all present on v1.66.0:
 
 | Flag | Note |
 | --- | --- |
-| `--id`, `-a` | The App ID. `--app-id` still works but is a hidden, deprecated alias |
+| `--id`, `-a` | The identity to run as. `--app-id` still works but is a hidden, deprecated alias |
 | `--app-port`, `-p` | **`-p` is the port here, not the project** |
 | `--project` | No shorthand on `run`. On `scaffold`, `stop`, `status` and `cleanup`, `-p` *is* `--project` |
 | `--file`, `-f` | The dev config file |
@@ -102,8 +108,8 @@ Flags worth knowing, all present on v1.66.0:
 | `--app-dir-path` | Working directory for the command, default `.` |
 | `--enable-api-logging` | Streams the API log, see section 5 |
 | `--app-log-destination` | `file`, `console` or `all` |
-| `--app-id-env-server-enabled` | Serves each App ID's environment over HTTP, see section 6 |
-| `--rm-appids` | Deletes App IDs this run created, on exit |
+| `--app-id-env-server-enabled` | Serves each app's environment over HTTP, see section 6 |
+| `--rm-appids` | Deletes the apps this run created, on exit |
 | `--skip-managed-pubsub`, `--skip-managed-kv`, `--skip-managed-workflow`, `--skip-default-resiliency` | Opt out of the automatic provisioning below |
 
 The `-p` collision is worth spelling out, because only one half of it announces itself.
@@ -117,15 +123,15 @@ back to whatever project the CLI context holds, and runs against it.
 cosmetic. Knowing it tells you which line a failure belongs to.
 
 1. **Project.** Used if it exists, created if not, waited for if it is mid-deletion.
-2. **The managed workflow store, before any App ID exists.** The sidecar reads workflow
-   configuration at boot, so an App ID created before the store is enabled comes up
+2. **The managed workflow store, before any app exists.** The sidecar reads workflow
+   configuration at boot, so an app created before the store is enabled comes up
    without workflow support and the Workflow API answers `FAILED_PRECONDITION` until it is
    redeployed. This is why enabling the store afterwards does not fix a broken run.
-3. **Configuration resources**, so an App ID can reference one by `appConfig`.
+3. **Configuration resources**, so an app can reference one by `appConfig`.
 4. **Components and subscriptions**, so they exist when the sidecars boot.
-5. **App IDs**, in parallel. Names are lowercased for you.
-6. **Readiness** — the project, then every component, then every App ID.
-7. **The local app connections.** Attaching one makes the App ID reconfigure, so its
+5. **Apps**, in parallel. Names are lowercased for you.
+6. **Readiness** — the project, then every component, then every app.
+7. **The local app connections.** Attaching one makes the app reconfigure, so its
    status goes `ready` → `updating` → `ready`.
 8. **Readiness again**, because of step 7, so the sidecar's gRPC endpoint is actually
    there before your process gets a chance to call it.
@@ -154,14 +160,15 @@ Three different streams, and picking the wrong one is why bugs look invisible.
 | Stream | How | What it carries |
 | --- | --- | --- |
 | Your process | Inline in `dev run`, or written to file with `--app-log-destination` | Whatever your code prints |
-| The API log | `--enable-api-logging`, or `enableApiLogging` per app in the file | One JSON line per Dapr API call, prefixed `== API - <appid> ==`, with method, status, protocol, execution time, component name and the trace and span ids |
-| The platform | `diagrid appid logs <id> -f -t 50` | The sidecar and the app as Catalyst saw them |
+| The API log | `--enable-api-logging`, or `enableApiLogging` per app in the file | One JSON line per Dapr API call, prefixed `== API - <identity> ==`, with method, status, protocol, execution time, component name and the trace and span ids |
+| The platform | `diagrid app logs <name> --follow --tail 50` | The sidecar and the app as Catalyst saw them |
 
 Reach for the API log the moment a call "does nothing": it shows whether the call left
 your process at all, which is the fork between an application bug and a wiring bug. The
-trace id in it is what joins a request across App IDs.
+trace id in it is what joins a request across apps.
 
-For the platform logs, the type is the whole point:
+For the platform logs of several apps at once, or split by type, use `project logs` — the
+type is the whole point:
 
 - `diagrid project logs --ids <a>,<b> --type dapr` — the sidecar. Component
   initialisation and connection errors land here.
@@ -184,11 +191,12 @@ For the platform logs, the type is the whole point:
 
 Note the flag is `--ids`, not `--appids`, and the project name is a positional argument
 rather than a flag. `project logs` does not follow — it paginates with `--limit` and
-`--page`, and defaults to JSON output. `appid logs` is the one that takes `--follow`.
+`--page`, and defaults to JSON output. `app logs`, `agent logs` and `mcpserver logs` are
+the ones that take `--follow`.
 
 **Confirm a command against `diagrid <noun> --help` before you rely on it.** This CLI
-moves nouns and flags between minor versions, `appid` is now hidden in favour of `app`,
-and `--app-id` has already become a deprecated alias for `--id`. Run `diagrid version`
+moves nouns and flags between minor versions, and `--app-id` has already become a
+deprecated alias for `--id`. Run `diagrid version`
 first and match what you see, including against the commands written here.
 
 ### Trigger a run, so there is output to read
@@ -200,7 +208,7 @@ if it is not there, that is why, and the CLI still works.
 | | |
 | --- | --- |
 | MCP | `catalyst_start_workflow` — needs `projectId`, `appId` and `name` |
-| CLI | `diagrid workflow start <workflow-name> --id <app-id> --instance-id <run-id> -p <project> --data '<json>'` |
+| CLI | `diagrid workflow start <workflow-name> --id <identity> --instance-id <run-id> -p <project> --data '<json>'` |
 
 **Capture the instance id.** It is how every later call refers to that run — reading its
 status, its history, or stopping it. Losing it means listing runs and guessing which one
@@ -218,7 +226,7 @@ irreversible and belongs with diagnosis rather than iteration.
 ## 6. Iterating without touching the platform
 
 A code change needs nothing but your process restarted. Stop `dev run`, start it again,
-and the App ID, components and subscriptions are found rather than made — the run prints
+and the app, components and subscriptions are found rather than made — the run prints
 `Using existing dapr app id ...` for each, which is your confirmation that the loop is
 tight.
 
@@ -228,8 +236,8 @@ What genuinely does require a platform change:
 | --- | --- |
 | A new component or subscription | It has to exist before the sidecar that loads it boots |
 | A component's **type** | Immutable. It must be deleted and recreated, and that includes converting to or from a Diagrid managed type |
-| A new App ID | Nothing can reference an app that has no App ID |
-| Health-check or protocol settings | An App ID's spec is not updatable in place; the health check is re-applied when the connection attaches, and `appConfig` is the one field `dev run` will patch |
+| A new app | Nothing can reference an app that does not exist yet |
+| Health-check or protocol settings | An app's identity spec is not updatable in place; the health check is re-applied when the connection attaches, and `appConfig` is the one field `dev run` will patch |
 
 ### The connection outlives your process
 
@@ -256,8 +264,8 @@ Attach the connection without launching anything, then start the process yoursel
 diagrid dev run --project default --id <app> --app-port <port> --app-id-env-server-enabled
 ```
 
-The environment server then serves each App ID's `DAPR_HTTP_ENDPOINT`,
-`DAPR_GRPC_ENDPOINT` and `DAPR_API_TOKEN` as JSON at `http://localhost:8001/<app-id>`
+The environment server then serves each app's `DAPR_HTTP_ENDPOINT`,
+`DAPR_GRPC_ENDPOINT` and `DAPR_API_TOKEN` as JSON at `http://localhost:8001/<identity>`
 (`--app-id-env-server-port` moves it). Your debug configuration reads them from there
 instead of you copying a token into a launch profile where it will rot.
 
@@ -280,7 +288,7 @@ Then start the process directly — `python app.py`, `go run .`, whatever it is.
 Prefer `dev run --app-id-env-server-enabled` when you can: it serves the same two values,
 keeps the token out of your shell history, and refreshes it. Reach for the variables
 directly when you cannot — a container, a CI job, a run configuration that will not shell
-out. **The App ID token is a credential.** Do not echo it, do not write it into a file that
+out. **The app's API token is a credential.** Do not echo it, do not write it into a file that
 gets committed, and do not paste it into a launch profile; read it at start-up from the
 environment or a secret store, the same as a database password.
 
@@ -291,10 +299,10 @@ Route by the message you actually saw. Guessing here wastes a whole iteration.
 | Message | Cause | Do |
 | --- | --- | --- |
 | `project <name> not found` | The dev file names a project that is gone, or `--project` is a typo | Check `diagrid project list`. Do not let `dev run` create the typo |
-| `App ID <name> not found` | The dev file is ahead of the project | Re-scaffold rather than hand-editing |
+| `App ID <name> not found` | The dev file names an app the project does not have | Re-scaffold rather than hand-editing |
 | `App ID x does not match provided env var DAPR_APP_ID y` | A hand-edited or copied dev file | Re-scaffold. This check exists because the mismatch otherwise surfaces as a silent auth failure |
 | `API token org ID / project ID / App ID does not match` | A token pasted from another project or organization | Re-scaffold. Never hand-write a token into the file |
-| `App ID "x" must be in ready status in order to scaffold` | The App ID is still provisioning | Wait. Scaffold already retries at 4 second intervals; a tighter loop of your own does not help |
+| `App ID "x" must be in ready status in order to scaffold` | The app is still provisioning | Wait. Scaffold already retries at 4 second intervals; a tighter loop of your own does not help |
 | `error connecting to tunnel for app "x"` | The connection could not be established | `diagrid dev status`, then `dev stop` a stale one. Then check whether the project was created with app tunnels disabled — that is a project setting, and no local connection will ever attach while it is set |
 | `tunnel for app "x" did not start` | It connected but never came up | Same as above |
 | `App IDs did not become ready after tunnel connection` | The reconfigure at step 7 of section 4 did not settle | Expected transient, then a real failure. `updating` immediately after attach is normal; give it the poll window before calling it broken, then read `--type dapr` logs |
@@ -324,7 +332,7 @@ Two quieter failure modes with no error to grep for:
   A workflow worker needs no port at all; see section 6.
 
 If you get past all of that and requests still are not arriving, stop guessing at the app
-and check the path: `diagrid listen --id <app-id> --invoke <method>` streams inbound
+and check the path: `diagrid listen --id <identity> --invoke <method>` streams inbound
 requests straight to your terminal with no application code involved. Nothing arriving
 means the problem is upstream of your process.
 
@@ -332,7 +340,7 @@ means the problem is upstream of your process.
 
 - **Do not create a project.** Use `default`, and remember `dev run` will create a typo
   rather than reject it. Check the project name before every first run of a session.
-- **Treat the dev file as a secret.** It holds a live API token per App ID. Gitignore it,
+- **Treat the dev file as a secret.** It holds a live API token per app. Gitignore it,
   and never print its contents.
 - **Do not hand-edit the generated app entries.** Re-scaffold; it preserves the port and
   command you added and fixes the identity fields that go stale.
@@ -340,14 +348,13 @@ means the problem is upstream of your process.
   fail differently, and a conclusion drawn from the wrong one sends the user to the wrong
   file.
 - **Confirm every command against `diagrid version` and `--help`.** `-p` means different
-  things on different `dev` subcommands, `appid` is hidden in favour of `app`, and
-  `--app-id` is deprecated in favour of `--id`. Quote what you verified.
+  things on different `dev` subcommands, and `--app-id` is deprecated in favour of `--id`. Quote what you verified.
 - **Wait for readiness rather than retrying past it.** The CLI already polls the project,
-  the components and the App IDs. Restarting the run resets those timers and makes a slow
+  the components and the apps. Restarting the run resets those timers and makes a slow
   provision look like a hang.
 - **Stop what you started.** A dev session left running holds a local app connection on
-  the App ID. `diagrid dev status` shows it, `diagrid dev stop --id <app> --project default`
+  the app. `diagrid dev status` shows it, `diagrid dev stop --id <app> --project default`
   releases it.
 - **Do not delete resources to test a code change.** Nothing in an edit-run-observe cycle
-  needs a component or App ID recreated, and `--rm-appids` on a shared project deletes
+  needs a component or app recreated, and `--rm-appids` on a shared project deletes
   what this run created out from under whoever else is using it.

@@ -1,6 +1,6 @@
 ---
 name: catalyst-operate
-description: Inspect a running Diagrid Catalyst project, read-only. Covers projects, App IDs, agents, MCP servers, components, workflow runs, logs and quotas. Use when asked what is deployed, what state it is in, or whether a limit is being hit.
+description: Inspect a running Diagrid Catalyst project, read-only. Covers projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use when asked what is deployed, what state it is in, or whether a limit is being hit.
 ---
 
 # Inspect a running Catalyst project
@@ -51,7 +51,7 @@ the reads that follow it.
 broken anywhere", "across the organization", a named second project — and any plural or
 comparing question, which needs more than one project by its nature. "Which of my
 projects uses the most quota" has no single call behind it: metrics are per project or
-per App ID and `diagrid org usage` reports per scope and region, so ranking projects
+per app, agent or MCP server, and `diagrid org usage` reports per scope and region, so ranking projects
 means reading each one, and that is the correct answer rather than a violation. All of
 these are worth one sentence first saying how many projects you are about to read.
 
@@ -62,7 +62,7 @@ project called `prod`. If you cannot resolve the current
 project, ask which one. Enumerating an organization to avoid asking a question costs the
 user more than the question would have.
 
-Then read the project, even when the question is about one App ID. The project is the
+Then read the project, even when the question is about one app. The project is the
 only object that names the managed infrastructure everything else sits on, and a large
 share of "X is missing" turns out to be "X's backing store was never enabled here".
 
@@ -101,22 +101,22 @@ that disagree with each other. Attribution is the only thing that surfaces that.
 | --- | --- | --- |
 | Org, projects, regions | `catalyst_whoami` | `diagrid org current`, `diagrid org list` |
 | Projects | `catalyst_list_projects`, `catalyst_get_project` | `diagrid project list`, `diagrid project get <name>` |
-| App IDs, and any tunnel on them | `catalyst_list_appids`, `catalyst_get_appid` | `diagrid appid list`, `diagrid appid get <id> --all` |
-| Agents | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
-| The runtime agent registry | `catalyst_get_agent` with the hosting App ID | `diagrid agent registry list` |
+| Apps, and any tunnel on them | `catalyst_list_apps`, `catalyst_get_app` | `diagrid app list`, `diagrid app get <name>`; tunnels with `diagrid dev status` |
+| Agents, declared and runtime-registered | `catalyst_list_agents`, `catalyst_get_agent` | `diagrid agent list`, `diagrid agent get <name>` |
+| The runtime agent registry | `catalyst_get_agent`, also naming the app the agent runs in (the `appId` on its registry record) | `diagrid agent registry list` |
 | MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` | `diagrid mcpserver list`, `diagrid mcpserver get <name> --tools` |
-| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list`, `diagrid subscription list`, `diagrid pubsub list`, `diagrid kv list` |
+| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` | `diagrid component list` (`--scope <identity>` for one app's), `diagrid subscription list` (read `scopes` in `-o json`), `diagrid pubsub list`, `diagrid kv list` |
 | Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` | — |
-| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <app-id>` |
+| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` | `diagrid workflow list`, `diagrid workflow get <run-id> --id <identity>` |
 | One region in detail | `catalyst_get_region` | `diagrid region get <region-id>` |
 | Access policies — why a workflow or MCP call was refused | `catalyst_list_access_policies`, `catalyst_get_access_policy` | `diagrid workflow access-policy list`, `diagrid mcpserver access get <mcpserver>` |
-| Dev tunnels open on a project | `catalyst_list_app_tunnels` | `diagrid appid get <id> --all` |
+| Dev tunnels open on a project | `catalyst_list_app_tunnels` | `diagrid dev status` |
 | Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` | — |
 | Who changed what, and when | `catalyst_list_audit_events` | `diagrid audit list` |
 | Request rates, error rates, quota consumption | `catalyst_get_metrics` | — |
 | Plan limits and how much of each is used | `catalyst_get_usage` | `diagrid org usage` |
 | Token budgets and their spend | `catalyst_list_token_budgets` | `diagrid tokenbudget list` |
-| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid project logs`, `diagrid appid logs <id>` |
+| Logs | `catalyst_get_logs` (full data sharing only) | `diagrid app logs <name>` (and `agent logs`, `mcpserver logs`), or `diagrid project logs --ids <a>,<b>` for several at once |
 
 Two limits in that table are deliberate, not oversights:
 
@@ -138,13 +138,21 @@ JSON. See section 1. `diagrid workflow
 get` is the exception — it has no `--output` flag and always prints YAML, so `-o json`
 there is an unknown flag rather than a formatting choice.
 
-The App ID goes in `--id` throughout. `--app-id` lingers as a hidden deprecated alias on
-`workflow`, `listen`, `dev` and the `call` verbs: it works, warns, and does not appear in
-`--help`, so write `--id` and nobody has to take your word for it.
+Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
+Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
+resource's `status.appIds` (the get tools include it). For an agent registered from your
+own code, it's the `appId` on its registry record.
+
+On the CLI, the `app`, `agent` and `mcpserver` verbs take the resource's name and resolve
+the identity themselves. The flags that take the identity directly are `--id`, and `--ids`
+on `project logs`.
+`--app-id` lingers as a hidden deprecated alias on `workflow`, `listen`, `dev` and the
+`call` verbs: it works, warns, and does not appear in `--help`, so write `--id` and nobody
+has to take your word for it.
 
 ### Readiness
 
-Projects, App IDs, MCP servers and every component kind report one of `ready`,
+Projects, apps, MCP servers and every component kind report one of `ready`,
 `pending`, `processing`, `provisioning`, `updating`, `deleting`, `deleted`, `error`,
 `unknown`. Agents use a narrower set — `ready`, `error`, `pending`, or
 empty before their first reconcile.
@@ -154,14 +162,15 @@ it, and the API schema declares the field as a bare string with no enumeration. 
 value you were given verbatim rather than rounding it to one of the nine.
 
 One value lies if you read it alone: a **disabled MCP server reports `ready`**, with a
-message saying it is disabled and loaded by no App ID. Disabled is a fully reconciled
+message saying it is disabled and loaded by no app. Disabled is a fully reconciled
 state, so `ready` is correct — but "ready" is not the answer to "is it serving". Read the
 message.
 
 ### Agents
 
 An agent is a `diagrid agent` resource: a Catalyst front for an agent **your** app runs,
-identified by `--endpoint` and the `--archive-*` flags. Say which resource you mean.
+identified by `--endpoint` and the `--archive-*` flags. Say `agent` or `app`, never leave
+it ambiguous: they are different resources.
 
 `diagrid agent registry list` is the second thing, and often the one that answers the
 question: it lists what is actually registered in the project's runtime, including
@@ -174,11 +183,11 @@ running.
 `catalyst_get_workflow_run` returns the execution graph — which step a run is on or
 failed at. The CLI has no equivalent, so prefer it whenever the question is "where is it".
 
-`diagrid workflow list` covers every App ID in the project and takes filters worth using
+`diagrid workflow list` covers every app in the project and takes filters worth using
 before you ask the user to narrow anything down:
 
 - `--status` — `running`, `completed`, `failed`, `terminated`, `suspended`, `canceled`
-- `--id`, `--name`, both repeatable
+- `--id` (the identity the run belongs to), `--name`, both repeatable
 - `--start-after`, `--start-before`, `--end-after`, `--end-before`, RFC3339
 - `--custom-status key=value`
 - `--sort-by name|createdAt|startAt|endAt|status|appId` with `--order asc|desc`
@@ -213,8 +222,8 @@ The same trap applies twice more:
   filter matching nothing does not prove no run carries that key.
 - Credentials are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
-  can still answer "which secret does this use". An absent `apiToken` never means the App
-  ID has no token.
+  can still answer "which secret does this use". An absent `apiToken` never means the app
+  has no token.
 
 Tell the user the field was withheld and why — then, before you stop, try the CLI. The
 data-sharing level is applied by the MCP server to MCP responses; the CLI talks to the
@@ -238,7 +247,7 @@ user is already entitled to use is not routing around it; it is using the produc
 ## 5. Quotas and metrics
 
 `catalyst_get_metrics` reads request rates, error rates and quota consumption, scoped to
-a project or to one App ID. Use it before proposing a design that adds resources —
+a project or to one app, agent or MCP server. Use it before proposing a design that adds resources —
 headroom is cheaper to check than to discover.
 
 `catalyst_get_usage`, or `diagrid org usage`, reports `used` and `limit` per key across
@@ -247,6 +256,9 @@ are scoped, not global: `catalyst.per_cloud_region` and `catalyst.per_private_re
 enforced **per region**, so usage arrives as one entry per scope and region. Summing
 across regions, or reading one region's entry as the organization total, produces a wrong
 headroom number.
+
+`number_of_appids` is the Identities quota: one per app, agent and MCP server, summed
+across every project in the organization, per region.
 
 Keys you will be asked about: `number_of_projects`, `number_of_appids`,
 `number_of_connections`, `number_of_catalyst_subscriptions`,
@@ -282,17 +294,17 @@ Use only these routes:
 
 | Resource | Route |
 | --- | --- |
-| App ID | `/apps/details/:id` |
+| App | `/apps/details/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
-| Agent, either kind | `/agents/:appId/:id` |
+| Agent | `/agents/:appId/:id` |
 | MCP server | `/mcp-servers/:id` |
-| Metrics for one App ID | `/metrics/appids/:id` |
+| Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
 
 Two pages you may expect do not exist. There is **no project detail view** — only the
 list, and `/admin/projects/:id/users` — and there is **no quota page** for a project or
-an App ID. Linking to either one 404s.
+an app. Linking to either one 404s.
 
 ### The project is a query parameter, and there are two of them
 

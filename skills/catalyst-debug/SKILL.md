@@ -1,6 +1,6 @@
 ---
 name: catalyst-debug
-description: Diagnose why something in Diagrid Catalyst is broken or stuck, then stop, kill, rerun or purge a workflow run. Covers a run that failed or hangs, an App ID not ready, an agent not answering, a component that will not connect.
+description: Diagnose why something in Diagrid Catalyst is broken or stuck, then stop, kill, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
 ---
 
 # Diagnose a Catalyst failure
@@ -14,7 +14,7 @@ diagnosis, and neither is a plausible story with no read behind it.
 | Symptom | Start with | Then |
 | --- | --- | --- |
 | A workflow run failed, or hangs | `catalyst_get_workflow_run` | section 3 |
-| An App ID never became ready | `catalyst_get_appid` | section 4 |
+| An app never became ready | `catalyst_get_app` | section 4 |
 | An agent does not answer | `catalyst_get_agent`, `diagrid agent registry list` | section 5 |
 | A component will not connect | `catalyst_get_component` | section 6 |
 | Nothing named — "is anything broken?" | `diagrid project list`, then the project | below |
@@ -57,33 +57,38 @@ project with different settings turns one unexplained failure into two.
   the thing. Logs only tell you what happened if it did. Opening with logs is how a "never
   scheduled" resource gets diagnosed as an application bug.
 - **The reason is rarely at the top.** A status carries messages at up to three levels,
-  and for anything scoped to App IDs the useful one is the deepest:
+  and for anything scoped to apps, agents or MCP servers the useful one is the deepest:
 
   | Where | Field | When it holds the answer |
   | --- | --- | --- |
   | Resource | `status.messages[].message` | Control-plane level failures |
   | Per region | `status.instances[].messages[].message` | One region reconciled and another did not |
-  | Per App ID | `status.appIdStatus[].messages[].message` | **Components and MCP servers.** A component that fails to load is only reported as such by the sidecar of each scoped App ID, so this is usually the only place the reason exists |
+  | Per identity | `status.appIdStatus[].messages[].message` | **Components and MCP servers.** A component that fails to load is only reported as such by the sidecar of each identity it is scoped to, so this is usually the only place the reason exists |
 
   Two more error strings sit outside that structure and are easy to miss: a pub/sub's
   `status.topicError` and a KV store's `status.itemsError`.
 - **`catalyst_get_logs` works only at `full` data sharing.** Log lines carry whatever
   the application chose to print, so at the default `metadata` level the tool returns
   `DATA_SHARING_RESTRICTED`. That is policy, not a fault: do not retry it. Run
-  `diagrid project logs` or `diagrid appid logs` instead.
+  `diagrid app logs <name>` (or `agent logs`, `mcpserver logs`) instead, or
+  `diagrid project logs` for the whole project.
 - **`-o json` on every CLI read.** The default table view drops fields, including the
   ones carrying the failure reason. A conclusion drawn from the table view is a
   conclusion drawn from a truncated object. One exception: `diagrid workflow get` has
   no `--output` flag at all and always prints YAML, so `-o json` there fails to parse
   rather than reformatting.
-- **The App ID flag is `--id`, not `--app-id`.** On `workflow`, `listen`, `dev` and
+- **Apps, agents and MCP servers are each backed by an identity** (an "App ID" in some
+  APIs). Where a tool asks for or returns `appId`, it means that identity's name. Read it
+  from the resource's `status.appIds` (the get tools include it). For an agent registered
+  from your own code, it's the `appId` on its registry record.
+- **The identity flag is `--id`, not `--app-id`.** On `workflow`, `listen`, `dev` and
   `call invoke/publish/state/bindings/conversation`, `--app-id` survives only as a
   hidden deprecated alias — it still works, prints a deprecation notice, and is absent
   from `--help`, so nobody can confirm it from the CLI. Write `--id`. (`diagrid call
   workflow ...`, a different subtree, does take `--app-id` as its real flag.)
 - **Confirm a command before you quote it: `diagrid <noun> --help`.** The CLI moves.
-  `agent` named a different resource in older versions and refers to a front for your
-  own application in newer ones; `tokenbudget` is absent from older ones entirely. A flag quoted from the wrong version reads to the user
+  `agent` changed which resource it names at 1.63.0, and `tokenbudget` is absent from
+  older versions entirely. A flag quoted from the wrong version reads to the user
   as your mistake, and they stop trusting the rest of your answer.
 - **One change at a time, and only with consent.** Everything in section 3 that is not a
   read mutates a live run.
@@ -91,11 +96,11 @@ project with different settings turns one unexplained failure into two.
 ## 3. A workflow run that failed
 
 1. Find it: `catalyst_list_workflow_runs`, or
-   `diagrid workflow list --status failed --id <app-id> --start-after <RFC3339>`.
+   `diagrid workflow list --status failed --id <identity> --start-after <RFC3339>`.
    Statuses are `running`, `completed`, `failed`, `terminated`, `suspended`, `canceled`.
 2. Read it: `catalyst_get_workflow_run`. It returns the execution graph showing which
    step the run is on or failed at, which is the answer to "where is it stuck" and has no
-   CLI equivalent. `diagrid workflow get <run-id> --id <app-id>` is the fallback; it
+   CLI equivalent. `diagrid workflow get <run-id> --id <identity>` is the fallback; it
    takes no `--output` flag and always prints YAML.
 3. Diagnose at the failing step, not at the top. The run-level failure is almost always
    an activity's error re-surfaced. Quoting the top-level message alone tells the user
@@ -127,7 +132,7 @@ upstream answered.
 The same trap appears twice more. `customStatus` absent is not "the workflow never set
 one". And credentials are scrubbed at every level, `full` included — `apiToken`,
 `appToken`, `token`, `apiKey`, `clientSecret`, `privateKey` — so a missing `apiToken`
-never means the App ID has no token. Secret *references* survive, so "which secret does
+never means the app has no token. Secret *references* survive, so "which secret does
 this use" is still answerable.
 
 Say the field was withheld and why — then try the CLI before you stop. Withholding is
@@ -207,10 +212,12 @@ If `workflow list` or `workflow get` fails outright rather than returning nothin
 project has no managed workflow store and the Workflows API is unavailable there. That is
 a project setting, not a broken run.
 
-## 4. An App ID that is not ready
+## 4. An app, agent or MCP server that is not ready
 
-Read `catalyst_get_appid`, or `diagrid appid get <id> --all -o json`, then work down this
-list. Stop at the first thing that explains it.
+Read `catalyst_get_app` (or `catalyst_get_agent`, `catalyst_get_mcp_server`), or
+`diagrid app get <name> -o json`, then work down this list. The backing identity, with its
+own status and messages, is under `status.appIds`. Stop at the first thing that explains
+it.
 
 1. **Its own status and messages.** The vocabulary is `ready`, `pending`, `processing`,
    `provisioning`, `updating`, `deleting`, `deleted`, `error`, `unknown` — but the set is
@@ -218,14 +225,19 @@ list. Stop at the first thing that explains it.
    and message you were given, verbatim. Paraphrasing a platform error is how the detail
    that mattered gets lost. Agents report from a narrower set: `ready`, `error`, `pending`,
    or empty before their first reconcile.
-2. **The components it depends on.** An App ID that cannot initialise a component does
-   not come up. `catalyst_list_components`, then section 6.
-3. **The sidecar's own output.** `diagrid project logs --ids <id> --type dapr` carries
-   component initialisation and connection errors; `--type app` carries your
+2. **The components it depends on.** An app that cannot initialise a component does
+   not come up. `catalyst_list_components`, or `diagrid component list --scope <identity>`
+   and `diagrid subscription list -o json` (read each one's `scopes`), then section 6.
+3. **The sidecar's own output.** `diagrid project logs --ids <identity> --type dapr`
+   carries component initialisation and connection errors; `--type app` carries your
    application's output. They fail differently and the distinction is usually the answer.
-4. **Recent activity.** `diagrid appid get <id> --include-activity` and
-   `diagrid appid logs <id> -t 50`.
-5. **Whether requests reach it at all.** `diagrid listen --id <app-id> --invoke <method>`
+4. **Recent activity.** `diagrid app get <name> --include-activity -o json` (and the same
+   flag on `agent get` and `mcpserver get`) sets `status.appIds[].status.isActive`: `true`
+   means the identity served or sent a request in the last 5 minutes, `false` means it
+   did not. **A missing `isActive` means unknown, not idle** — an older control plane does
+   not report it. `catalyst_get_metrics` for that app shows the same thing as request
+   rates. Then the recent logs: `diagrid app logs <name> --tail 50`.
+5. **Whether requests reach it at all.** `diagrid listen --id <identity> --invoke <method>`
    streams inbound requests to your terminal without deploying application code. If
    nothing arrives the problem is upstream of the app; if requests arrive and it still
    fails, it is not.
@@ -233,7 +245,7 @@ list. Stop at the first thing that explains it.
    `call state`, `call bindings` and `call conversation` each exercise one API directly
    and separate the platform from the application.
 
-A missing tunnel is an ordinary answer, not an error: `catalyst_get_appid` reporting no
+A missing tunnel is an ordinary answer, not an error: `catalyst_get_app` reporting no
 tunnel means no local `diagrid dev` or `diagrid listen` session is attached.
 
 ## 5. An agent that is not responding
@@ -251,7 +263,7 @@ What to check:
 
 - **The endpoint and the app.** The failure is nearly always the endpoint or the
   application behind it. Confirm the endpoint on the resource, confirm the app is up and
-  reachable, then `diagrid listen --id <app-id>` to see whether the request even arrives.
+  reachable, then `diagrid listen --id <identity>` to see whether the request even arrives.
 - **Access to the MCP servers it uses.** A tool call the agent is not authorized for is
   refused, which looks like an agent that stops mid-task. Read the per-tool policy with
   `catalyst_get_access_policy` or `diagrid mcpserver access get <mcpserver>`, and grant a
@@ -284,7 +296,7 @@ What to check:
 
 An MCP server is the same shape of problem with one extra trap: a **disabled** MCP server
 reports `ready`, because disabled is a fully reconciled state. Its message says it is
-disabled and loaded by no App ID. `ready` is not the answer to "is it serving" — read the
+disabled and loaded by no app. `ready` is not the answer to "is it serving" — read the
 message before looking for a connection fault that does not exist. The remedy is
 `diagrid mcpserver enable`, which is a change, so propose it rather than running it.
 
@@ -330,17 +342,17 @@ Use only these routes:
 
 | Resource | Route |
 | --- | --- |
-| App ID | `/apps/details/:id` |
+| App | `/apps/details/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
-| Agent, either kind | `/agents/:appId/:id` |
+| Agent | `/agents/:appId/:id` |
 | MCP server | `/mcp-servers/:id` |
-| Metrics for one App ID | `/metrics/appids/:id` |
+| Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
 
 Two pages you may expect do not exist. There is **no project detail view** — only the
 list, and `/admin/projects/:id/users` — and there is **no quota page** for a project or an
-App ID. Linking to either one 404s.
+app. Linking to either one 404s.
 
 The project is a query parameter, and there are two of them:
 

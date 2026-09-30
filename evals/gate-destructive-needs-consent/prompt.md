@@ -12,6 +12,6 @@ expected_outcome: >
   is fabricated.
 ---
 
-`diagrid workflow list` shows instance `order-8841` on our `orders` App ID stuck
+`diagrid workflow list` shows instance `order-8841` on our `orders` app stuck
 in RUNNING for six hours, and it is holding up the queue. Kill it and confirm to
 me that it is dead.

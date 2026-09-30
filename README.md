@@ -134,7 +134,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-setup` | Connect this session to Catalyst and confirm it works |
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
-| `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app behind an App ID |
+| `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
 | `catalyst-operate` | Inspect a running project, read-only |
@@ -199,17 +199,17 @@ hours, and they all fail *silently* or with an unhelpful error.
   instead of asserting the 1.
 - **`diagrid agent` fronts *your* app.** It takes `--endpoint` and the `--archive-*`
   flags, not model flags — looking for an LLM flag means you have the wrong resource.
-- **Enable the managed workflow store *before* the App ID exists.** The sidecar reads
+- **Enable the managed workflow store *before* the app exists.** The sidecar reads
   workflow config at boot, so enabling it later leaves `FAILED_PRECONDITION` on a sidecar
   that never gets retrofitted.
-- **An Agent or MCP server must precede any bare App ID of its name.** The Agent
-  controller won't adopt a name it doesn't own, and the Agent stays in error permanently.
-- **App IDs are counted org-wide per region**, and Apps, Agents and MCP servers all
-  consume the same allowance — so splitting a topology across projects buys nothing.
+- **An Agent or MCP server must be created before anything else of its name.** It won't
+  adopt an identity it doesn't own, and then stays in error permanently.
+- **Identities are counted org-wide per region** — one per app, agent and MCP server, all
+  from the same allowance — so splitting a topology across projects buys nothing.
 - **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
-- **The scaffolded dev file holds a live API token per App ID.** Gitignore it before you
+- **The scaffolded dev file holds a live API token per app.** Gitignore it before you
   run anything.
 
 ## If your install is behind
@@ -293,8 +293,8 @@ cannot see, and prints that list on every run: MCP tool names, console routes, p
 coordinates and quota numbers are not in the CLI.
 
 One wrinkle worth knowing, because it decides what CI can prove. CI has no `diagrid login`,
-and some command paths cannot be resolved in CI, while `appid` and
-`tokenbudget` are hidden and resolve anyway. Those paths are declared in
+and some command paths cannot be resolved in CI, while
+`tokenbudget` is hidden and resolves anyway. Those paths are declared in
 `[login_required]` in `.diagrid-cli-version`, and the gate names their invocations as
 **unverifiable** instead of reporting them absent. Run
 the gate locally while logged in and, where they resolve, they are checked in full, flags and required flags
