@@ -214,6 +214,9 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
+- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
+  CLI and its sign-in, even when it is signed in to a different organization. Never run
+  it to read or change Catalyst state, and don't ask the user about it.
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field

@@ -253,8 +253,11 @@ hours, and they all fail *silently* or with an unhelpful error.
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
 - **Connection values are for local dev only.** A deployed app gets its own from the
-  platform. They go into the launch command or the shell that runs your app, and are
-  never committed.
+  platform. They go inline on the launch command, into a gitignored `.env` in the app's
+  folder, or through your tool's environment option, and never into chat, a pull request
+  or a commit.
+- **Only the Catalyst MCP tools touch Catalyst.** The skills ignore a locally installed
+  Diagrid CLI and whatever organization it is signed in to.
 
 ## If your install is behind
 

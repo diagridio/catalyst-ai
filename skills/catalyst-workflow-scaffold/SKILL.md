@@ -190,6 +190,9 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
+- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
+  CLI and its sign-in, even when it is signed in to a different organization. Never run
+  it to read or change Catalyst state, and don't ask the user about it.
 - **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
   rather than inventing a substitute that behaves differently.
 - **Do not name a package version you have not resolved.** Check the registry, or state

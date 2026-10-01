@@ -9,6 +9,8 @@ Goal: end this skill able to name the user's organization and project, having ma
 real call to Catalyst. Anything less is not connected, however healthy it looks.
 
 These skills drive Catalyst only through the Catalyst MCP server, the `catalyst_*` tools.
+A Diagrid CLI installed on this machine, and whatever organization it is signed in to,
+plays no part: ignore it.
 Setup is therefore two things: the server is added to the client, and the user has signed
 in to it with the client's own OAuth flow. There is nothing to install and no separate
 login command.
@@ -113,6 +115,9 @@ yet.
 
 ## Rules
 
+- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
+  CLI and its sign-in, even when it is signed in to a different organization. Never run
+  it to read or change Catalyst state, and don't ask the user about it.
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
 - **Do not create a project.** Every organization gets a project named `default` with

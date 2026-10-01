@@ -231,6 +231,9 @@ than reconstructing it in the body, so it is visible to a reviewer.
 
 ## Rules
 
+- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
+  CLI and its sign-in, even when it is signed in to a different organization. Never run
+  it to read or change Catalyst state, and don't ask the user about it.
 - **Assume at least once.** An activity that is correct only if it runs once is a bug,
   not a risk to monitor.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every
