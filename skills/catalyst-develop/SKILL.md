@@ -74,9 +74,11 @@ hands them out through one tool.
      DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
      ```
 
-   - **A `.env` file in the app's folder** that the app loads (for example
-     `uv run --env-file .env main.py`). Make sure `.env` is listed in `.gitignore`, and
-     add it if it isn't.
+   - **A `.env` file in the app's folder.** The quickstart samples don't read `.env`
+     themselves, so load it into the process's environment when you start it: with
+     `uv run --env-file .env main.py`, or with `set -a; . ./.env; set +a` in the same shell
+     before the run command. Make sure `.env` is listed in `.gitignore`, and add it if it
+     isn't.
    - **Your tool's own environment option**, if it has one.
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port
