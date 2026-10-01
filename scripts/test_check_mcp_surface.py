@@ -78,6 +78,21 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("CLI invocation in web html", {"web/demo.html": "<code>diagrid project list</code>\n"}, True, "CLI invocation"),
     ("prose after diagrid in a README under web stays strict", {"web/install/README.md": "run diagrid site embed\n"}, True, "CLI invocation"),
     ("CLI invocation in the web component", {"web/install/c.js": "const t = 'diagrid login';\n"}, True, "CLI invocation"),
+    (
+        "the tunnel skill may name the tunnel commands",
+        {
+            "skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid version`, `diagrid login`, `diagrid whoami`,\n"
+            "`diagrid dev run --id x --app-port 8000` and `diagrid listen --id x`.\n",
+            "evals/tunnel-mcp/graders/g.md": "diagrid dev run --id travel\n",
+        },
+        False,
+        "",
+    ),
+    ("the tunnel skill may not name other CLI commands", {"skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid mcpserver create x`.\n"}, True, "diagrid mcpserver"),
+    ("a tunnel eval may not name other CLI commands", {"evals/tunnel-mcp/prompt.md": "diagrid project list\n"}, True, "diagrid project"),
+    ("another skill may not name the tunnel commands", {"skills/catalyst-develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
+    ("an eval outside the tunnel prefix may not name them", {"evals/other/prompt.md": "diagrid listen --id x\n"}, True, "diagrid listen"),
+    ("the tunnel skill may still not name a local MCP server", {"skills/catalyst-app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
     ("local MCP server in the web demo", {"web/demo.html": "<p>Start the local MCP server.</p>\n"}, True, "local MCP server"),
     ("staging host in the web component", {"web/install/data.js": "x = 'https://mcp.cloud.staging.diagrid.dev/mcp'\n"}, True, "non-production"),
     ("unlisted host in the embed snippet", {"web/embed/diagrid-io.html": "<a href='https://api.r1.diagrid.io'>\n"}, True, "not an allowed host"),

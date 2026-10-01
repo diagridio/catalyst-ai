@@ -112,8 +112,11 @@ turns out to be wrong costs more than an honest "the server is added but not sig
 
 Some things have no `catalyst_*` tool. Say so in one line and do not improvise a route
 around it: invoking an app, publishing to a topic, reading or writing state through
-Catalyst, streaming inbound requests, and cluster diagnostics are not available over MCP
-yet.
+Catalyst, and cluster diagnostics are not available over MCP yet.
+
+The one exception is an app tunnel, which lets Catalyst call into a process on the
+user's machine and print inbound requests as they arrive. No tool opens one, so the
+`catalyst-app-tunnels` skill uses the Diagrid CLI for that, and only for that.
 
 ## Rules
 
@@ -124,6 +127,7 @@ yet.
   managed pub/sub, KV, workflow store and agent infrastructure already attached. Use it. A
   hand-made project that behaves differently is indistinguishable from a broken one to the
   person asking for help.
-- **Do not install anything.** Everything here runs through the MCP server.
+- **Do not install anything.** Everything here runs through the MCP server. Only an app
+  tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an
   organization, and you have said so. Configuration that looks right is not proof.

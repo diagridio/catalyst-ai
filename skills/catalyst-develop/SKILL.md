@@ -107,9 +107,10 @@ Two things about the worker process itself:
   something else holds the port, and the startup log reads as healthy right up to the
   error.
 - **An app that Catalyst must call into** (service invocation, pub/sub delivery, an agent
-  endpoint) needs an inbound port and a registered endpoint. `catalyst_list_app_tunnels`
-  lists local connections open on the project, so you can see whether Catalyst currently
-  reaches a local process.
+  endpoint, the MCP server behind an `MCPServer`) needs an app tunnel as well, and these
+  three values do not open one. The `catalyst-app-tunnels` skill covers it. Never use a
+  public tunnel instead. `catalyst_list_app_tunnels` lists the tunnels open on the
+  project, so you can see whether Catalyst currently reaches a local process.
 
 If the process cannot connect, read the app back (`catalyst_get_app`) before changing
 code. Status and the per-identity messages under `status.appIds` say whether the platform
@@ -214,9 +215,10 @@ Two quieter failure modes with no error to search for:
 - **A setting that does nothing.** Catalyst applies components as written and ignores
   Dapr settings that belong to a self-hosted sidecar. If a setting appears to have no
   effect, read the resource back before debugging your code.
-- **The app is ready and requests still do not arrive.** Reading inbound requests as they
-  arrive is not available over MCP yet. Check `catalyst_get_metrics` for the app and the
-  endpoint registered on the resource.
+- **The app is ready and requests still do not arrive.** Check
+  `catalyst_list_app_tunnels`: with no tunnel open on that App ID, nothing in Catalyst can
+  reach the local process (`catalyst-app-tunnels`, which can also print requests as they
+  arrive). Then check `catalyst_get_metrics` for the app.
 
 ## Rules
 

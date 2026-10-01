@@ -12,6 +12,9 @@ compile:
 * A `diagrid <subcommand>` CLI invocation. There is no CLI path any more: no
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.
+  One exception: opening an app tunnel, so Catalyst can call into a process on
+  the user's machine, has no `catalyst_*` tool. The `catalyst-app-tunnels` skill
+  and its evals may name the CLI commands that do that, and no others.
 * A local MCP server (`mcp serve`, `mcp install`) or a host outside the allowlist.
   The only server is the remote one at https://mcp.cloud.r1.diagrid.io/mcp, and
   nothing public should name another Diagrid host or environment.
@@ -54,6 +57,28 @@ CLI_INVOCATION_CODE = re.compile(
 )
 WEB_CODE_SUFFIXES = frozenset({".js", ".mjs", ".ts", ".html"})
 CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
+
+# The one carve-out from the CLI rule. No `catalyst_*` tool opens an app tunnel, so
+# letting Catalyst call into a process on the user's machine (service invocation,
+# pub/sub delivery, an MCPServer whose upstream runs locally) needs `diagrid dev run`
+# or `diagrid listen`. Only the tunnel skill and its evals may name them, and only the
+# subcommands that installing, signing in and tunnelling need. Every other subcommand
+# still fails there, so the skill cannot drift into doing with the CLI what a
+# `catalyst_*` tool already does.
+TUNNEL_SKILL = Path("skills") / "catalyst-app-tunnels"
+TUNNEL_EVAL_PREFIX = "tunnel-"
+TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "dev", "listen"})
+
+
+def is_tunnel_material(rel: Path) -> bool:
+    parts = rel.parts
+    return rel.is_relative_to(TUNNEL_SKILL) or (
+        len(parts) > 1 and parts[0] == "evals" and parts[1].startswith(TUNNEL_EVAL_PREFIX)
+    )
+
+
+def tunnel_subcommand(match: re.Match[str]) -> bool:
+    return match.group(0).split()[-1] in TUNNEL_SUBCOMMANDS
 
 LOCAL_SERVER = re.compile(r"\bmcp\s+(?:serve|install)\b|\blocal\s+MCP\s+servers?\b", re.IGNORECASE)
 
@@ -111,10 +136,14 @@ def shipped_tools(root: Path) -> set[str] | None:
     }
 
 
-def _scan(path: Path, root: Path, pattern: re.Pattern[str], message: str) -> list[Finding]:
+def _scan(
+    path: Path, root: Path, pattern: re.Pattern[str], message: str, allowed=lambda match: False
+) -> list[Finding]:
     text = path.read_text(encoding="utf-8")
     found: list[Finding] = []
     for match in pattern.finditer(text):
+        if allowed(match):
+            continue
         line = text.count("\n", 0, match.start()) + 1
         shown = " ".join(match.group(0).split())
         found.append(Finding(str(path.relative_to(root)), line, message.format(match=shown)))
@@ -171,11 +200,13 @@ def check(root: Path) -> list[Finding]:
             )
 
     for path in tool_files:
-        is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in path.relative_to(root).parts[:1]
+        rel = path.relative_to(root)
+        is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in rel.parts[:1]
         findings += _scan(
             path, root, CLI_INVOCATION_CODE if is_web_code else CLI_INVOCATION,
             "`{match}` is a CLI invocation. Skills drive Catalyst only through `catalyst_*` tools; "
             "say the capability is not available over MCP yet instead.",
+            allowed=tunnel_subcommand if is_tunnel_material(rel) else (lambda match: False),
         )
         findings += _scan(
             path, root, CLI_PROSE,

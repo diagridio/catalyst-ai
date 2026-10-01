@@ -171,7 +171,10 @@ resource's `status.appIds` (the get tools include it). For an agent registered f
 own code, it's the `appId` on its registry record.
 
 An agent exposes an endpoint Catalyst calls into, so unlike a pure workflow worker it
-needs an inbound port and a registered endpoint.
+needs an inbound port and a registered endpoint. Run on a laptop, that endpoint is
+reached through an app tunnel on the agent's App ID (`catalyst-app-tunnels`). The same
+goes for an MCP server on this machine that the agent calls tools on: it is tunneled
+behind its own `MCPServer`, and the agent is granted access to its tools.
 
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
