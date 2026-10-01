@@ -44,10 +44,15 @@ own code, it's the `appId` on its registry record.
    on.
 2. If it does not exist, create it with `catalyst_apply`: read
    `catalyst_get_resource_schema` for the `App` kind first, run with `dry_run` and show
-   the user, then apply. Apply the project's components first, then the app, then the
-   subscriptions scoped to it in a second call (see `catalyst-deploy` for the full
-   ordering), so the components exist when its sidecar boots. An app with no endpoint is the correct shape for a pure
-   workflow worker, which dials Catalyst outbound.
+   the user, then apply. The project's managed `pubsub` and `kvstore` and its workflow
+   store are already there. Apply a component only if the app needs one beyond them,
+   and apply it before the app, then any subscriptions scoped to the app in a second
+   call (see `catalyst-deploy` for the full ordering), so they exist when its sidecar
+   boots. An agent needs none: apply its `Agent` resource and Catalyst provides its
+   state, pub/sub and registry (`catalyst-agent-scaffold`). A sample's local
+   `resources/` files are for running without Catalyst, so leave them out. An app with
+   no endpoint is the correct shape for a pure workflow worker, which dials Catalyst
+   outbound.
 3. Read it back and wait for `ready`. `updating` right after a local connection attaches
    is normal; give it time before calling it broken.
 
