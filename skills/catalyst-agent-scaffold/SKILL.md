@@ -112,11 +112,13 @@ Import the runner from the framework's module: `DaprWorkflowAgentRunner` for mos
 `DaprWorkflowGraphRunner` for LangGraph, `DaprWorkflowDeepAgentRunner` for Deep Agents,
 `DaprWorkflowHolmesRunner` for HolmesGPT. Then `runner.serve(...)` exposes the app.
 
-Components are discovered **by name**, not by configuration. Ship the app's own
-components as `agent-memory`, `agent-pubsub`, `agent-registry`, `agent-configuration` and
+Components are discovered **by name**, not by configuration. Outside Catalyst, ship the
+app's own components as `agent-memory`, `agent-pubsub`, `agent-registry`, `agent-configuration` and
 `agent-runtime`, or discovery silently finds nothing and the failure looks like a
 connectivity problem. These are the app's components, distinct from the project's managed
-`pubsub` and `kvstore`.
+`pubsub` and `kvstore`. On Catalyst, apply the `Agent` resource and let the platform
+provide its state, pub/sub and registry. The platform creates `agent-registry` and refuses
+one created by hand. A sample's local `resources/` files are for running without Catalyst.
 
 To start from a working tree rather than a blank file, `diagridpy init <name> --framework
 <framework>` clones a template. It covers fewer frameworks than the extras list, so check
