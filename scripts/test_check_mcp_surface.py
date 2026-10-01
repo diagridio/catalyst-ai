@@ -50,6 +50,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
         False,
         "",
     ),
+    ("the r1 console host passes", {"skills/a/SKILL.md": "https://catalyst.r1.diagrid.io/workflows/a/b?project=c\n"}, False, ""),
     ("unknown tool in a skill", {"skills/a/SKILL.md": "Call `catalyst_frobnicate`.\n"}, True, "catalyst_frobnicate"),
     ("unknown tool in an eval", {"evals/e/prompt.md": "uses catalyst_frobnicate\n"}, True, "catalyst_frobnicate"),
     ("unknown tool in the README", {"README.md": "catalyst_frobnicate\n"}, True, "catalyst_frobnicate"),

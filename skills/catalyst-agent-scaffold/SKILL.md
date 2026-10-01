@@ -188,7 +188,7 @@ refusal.
 ## 9. Hand back a link, not a claim
 
 Once the agent exists, give the user a console link rather than asking them to trust the
-transcript. The console for the production server is `https://catalyst.diagrid.io`. Only these routes exist:
+transcript. The console for the production server is `https://catalyst.r1.diagrid.io`. Only these routes exist:
 
 | To show | Route |
 | --- | --- |

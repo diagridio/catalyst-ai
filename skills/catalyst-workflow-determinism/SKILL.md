@@ -204,7 +204,7 @@ data-sharing level.* Then reason from what is available:
 
 When the diagnosis turns on a payload you cannot see, say the payload was not shared at
 this organization's data-sharing level, name the level, and **hand the user a link to the
-run** so they can read it themselves: `https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
+run** so they can read it themselves: `https://catalyst.r1.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
 Only an organization administrator can raise the level, and that is their decision: never
 forge a data-sharing header, and never ask for it so you can finish an answer. The project
 is a query parameter with two spellings and **no cross-fallback between them** —

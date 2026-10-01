@@ -253,7 +253,7 @@ data-sharing level removed a payload: "the input was withheld at this organizati
 data-sharing level, and here it is in the console" is a useful answer where both a lie
 and a shrug are not.
 
-The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
+The console for the production server is `https://catalyst.r1.diagrid.io`. If you cannot build a link you trust, give
 the identifiers in plain text.
 
 Use only these routes, appended to that host:

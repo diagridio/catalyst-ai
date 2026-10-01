@@ -55,6 +55,7 @@ ALLOWED_HOSTS = frozenset(
     {
         "mcp.cloud.r1.diagrid.io",
         "catalyst.diagrid.io",
+        "catalyst.r1.diagrid.io",
         "docs.diagrid.io",
         "diagrid.io",
         "www.diagrid.io",

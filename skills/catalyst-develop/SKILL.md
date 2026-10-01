@@ -126,7 +126,7 @@ was yours, which is ambiguous the moment two runs start in the same second.
 **Show the run's console link at every step.** That means when the run starts, whenever
 you wait for the user (a crash, an approval, "type continue"), and when it ends. Use the
 link the tool response gives. If it gives none, build it from the run:
-`https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>`. This
+`https://catalyst.r1.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>`. This
 works for an agent's runs too, with the agent's App ID.
 
 Read the result with `catalyst_get_workflow_run`: it returns the execution graph, so you

@@ -255,7 +255,7 @@ to paste one, and do not write one into a summary, a file or a commit.
 Once something exists, give the user a way to look at it. Naming a resource you cannot
 link to is a weaker answer than naming it with a link.
 
-The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, print
+The console for the production server is `https://catalyst.r1.diagrid.io`. If you cannot build a link you trust, print
 the identifiers as plain text.
 
 Use only these routes, appended to that host:
