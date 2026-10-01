@@ -1,0 +1,49 @@
+{
+  "name": "@diagrid/catalyst-ai-install",
+  "version": "0.1.0",
+  "description": "A <catalyst-ai-install> web component that shows how to connect Claude Code, Codex, Copilot CLI or VS Code to Diagrid Catalyst, with a copy button on every step.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./catalyst-ai-install.js",
+  "module": "./catalyst-ai-install.js",
+  "types": "./catalyst-ai-install.d.ts",
+  "exports": {
+    ".": {
+      "types": "./catalyst-ai-install.d.ts",
+      "default": "./catalyst-ai-install.js"
+    },
+    "./install.json": "./install.json",
+    "./data.js": {
+      "types": "./data.d.ts",
+      "default": "./data.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": true,
+  "files": [
+    "catalyst-ai-install.js",
+    "catalyst-ai-install.d.ts",
+    "data.js",
+    "data.d.ts",
+    "install.json"
+  ],
+  "keywords": ["diagrid", "catalyst", "dapr", "mcp", "web-component", "custom-element"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diagridio/catalyst-ai.git",
+    "directory": "web/install"
+  },
+  "homepage": "https://github.com/diagridio/catalyst-ai/tree/main/web/install#readme",
+  "bugs": {
+    "url": "https://github.com/diagridio/catalyst-ai/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "generate": "python3 ../../scripts/build_install_data.py",
+    "check": "python3 ../../scripts/build_install_data.py --check",
+    "test": "node --test"
+  }
+}

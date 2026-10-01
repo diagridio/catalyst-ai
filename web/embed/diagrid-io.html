@@ -1,0 +1,12 @@
+<!--
+  Catalyst AI install block, for diagrid.io (paste into a custom-HTML slot).
+
+  Loads the web component from npm via jsDelivr, pinned to an exact version. The
+  component makes no network calls of its own. To pick up a new release, change the
+  version below on purpose.
+
+  Optional: listen for `catalyst-ai-install:copy` (detail: { client, item, source })
+  to feed your own analytics. `source` is whatever you set on the element.
+-->
+<script type="module" src="https://cdn.jsdelivr.net/npm/@diagrid/catalyst-ai-install@0.1.0/catalyst-ai-install.js"></script>
+<catalyst-ai-install source="website" variant="full" theme="auto"></catalyst-ai-install>
