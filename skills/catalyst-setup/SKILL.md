@@ -97,9 +97,8 @@ at all: a permanent refusal retried looks to the user like a hang.
 Report two things, from a real call and not from configuration:
 
 - the organization, by name. It is `data.attributes.name` under `getCurrentOrgWithDetails`
-  in the `catalyst_whoami` answer. If that part is missing or failed, call
-  `catalyst_get_usage`, which reads the same record. Fall back to the ID only when neither
-  has a name, and then just give the ID; do not explain why the name is missing.
+  in the `catalyst_whoami` answer. If it has no name, give the organization ID instead,
+  and do not explain why the name is missing.
 - the project you will work in
 
 Then add one line on write access: whether the write tools are present. Keep it to that.
@@ -119,9 +118,6 @@ yet.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not talk about hosts, URLs or API endpoints.** The address appears only inside the
-  section 2 setup commands for a client that needs it. Console links to a resource are
-  fine; those are for the user to click.
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
 - **Do not create a project.** Every organization gets a project named `default` with
