@@ -192,10 +192,16 @@ transcript. The console for the production server is `https://catalyst.diagrid.i
 
 | To show | Route |
 | --- | --- |
-| An agent | `/agents/<appId>/<id>` |
+| An agent | `/agents/<appId>/<agentId>` |
 | The app it runs in | `/apps/details/<appId>` |
 | A run of the agent's workflow | `/workflows/<appId>/<runId>` |
 | An MCP server | `/mcp-servers/<id>` |
+
+An agent's `<agentId>` is not its name. It is the `agent_id` on the agent's registry record,
+from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+`O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
+opens a page that cannot find the agent. An agent with no registry record yet takes its
+app ID in both places: `/agents/<appId>/<appId>`.
 
 There is **no project detail page** and **no quota page**. Do not link to either.
 
