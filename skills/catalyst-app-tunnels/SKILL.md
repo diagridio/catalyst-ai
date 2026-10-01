@@ -64,29 +64,65 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
 - **The command after `--` is started for you**, with `DAPR_APP_ID`,
   `DAPR_HTTP_ENDPOINT`, `DAPR_GRPC_ENDPOINT` and `DAPR_API_TOKEN` already in its
   environment, so `catalyst_get_connection` is not needed. Leave the command off to
-  tunnel a process the user already started on that port.
+  tunnel a process the user already started on that port. **When that command exits,
+  `dev run` exits too**, so an app that crashes on startup takes the tunnel down with
+  it; read the app's output first.
+- The app's own settings (an LLM key, say) go in with `-e NAME=value`, repeatable, or by
+  loading a gitignored `.env` in the command itself:
+  `-- sh -c 'set -a; . ./.env; set +a; exec <command>'`. Never let a `.env` override the
+  four values `dev run` injects.
 - **`--yes`** skips the confirmation prompt, which a background shell cannot answer.
 - It runs in the foreground until stopped. Start it in the background with your shell
-  tool and keep its output; that output is where tunnel and app errors appear. Stop it
-  with Ctrl-C, or with `diagrid dev stop --id <app-id> -p <project>` (in `dev stop`, `-p`
-  is the project).
+  tool and keep its output; that output is where tunnel and app errors appear. `-a` is
+  the short form of `--id` in every `dev` command and in `listen`.
+- `--rm-appids` deletes the App IDs that this run created when it stops. It suits a
+  throwaway app; never use it on an App ID that existed before.
+
+**Stopping a tunnel.** Ending the process does not always close the tunnel:
+
+- Stop `dev run` with Ctrl-C (SIGINT) in its own shell. That stops the app it started
+  and closes the tunnel.
+- If it was killed instead (SIGKILL, a background-task time limit, a crash of the app),
+  the tunnel record stays `ready` with nothing behind it. Run
+  `diagrid dev stop --id <app-id> -p <project>` to close it (in `dev stop`, `-p` is the
+  project).
+- `dev stop` can leave the app that `dev run` started still running on its port. Check
+  the port with `lsof -i :<port>` afterwards and stop the leftover.
+- After a stop, the tunnel takes up to a minute to finish closing. Until
+  `catalyst_list_app_tunnels` no longer lists the App ID, an apply or a grant on it is
+  still refused, and a new `listen` on it can fail with `local app connection not found`.
+  Wait for it to go, then retry.
 
 What it does to the platform:
 
-- **It creates the App ID if it is missing, and never changes one that exists.** For an
-  `Agent` or an `MCPServer`, create that resource **first** with `catalyst_apply`. Run
-  `dev run` before it exists, and `dev run` creates a plain App ID of that name. The
+- **It creates the App ID if it is missing, and does not provision one that exists.**
+  While the tunnel is open, though, Catalyst points that App ID's endpoint at the tunnel,
+  so `catalyst_get_app` shows a different `appEndpoint` and a higher resource version.
+  Closing the tunnel restores the original endpoint. That is the tunnel working, not a
+  change to undo.
+- **For an `Agent` or an `MCPServer`, create that resource first** with `catalyst_apply`.
+  Run `dev run` before it exists, and `dev run` creates a plain App ID of that name. The
   Agent or MCP server then refuses to adopt it and stays in error (`catalyst-deploy`).
   For a resource that already exists, `dev run` prints that the App ID is managed by it
   and skips provisioning. That is correct.
-- **The tunnel waits for the App ID to be `ready`.** Right after creation that can take
-  a minute or two. The App ID then goes `ready` → `updating` → `ready` as the tunnel
-  attaches, which is normal.
+- **The tunnel needs the App ID to be `ready`, and `dev run` gives up after about 100
+  seconds** with `App <id> not ready`, without starting the command. Right after
+  creation, readiness can take a minute or two. So when an Agent or MCP server is new,
+  read its App ID with `catalyst_get_app` until it is `ready`, then start `dev run`. If
+  `dev run` already gave up, run it again once the App ID is `ready`. Once the tunnel
+  attaches, the App ID goes `ready` → `updating` → `ready`, which is normal.
+- **The port must be free.** With `-- <command>`, an old copy of the server still
+  holding the port makes the new one fail to bind, or leaves the stale copy answering
+  every tunneled request. Check the port before starting (`lsof -i :<port>`), and stop
+  what holds it only if it is the user's own leftover process.
 - **While a tunnel is open, that App ID cannot be updated.** A `catalyst_apply` to it, or
   an access grant that has to attach a policy to it, is refused with a message telling
-  you to stop the tunnel. Stop the tunnel, make the change, start it again.
-- `catalyst_list_app_tunnels` lists the tunnels open on a project: the check that the
-  tunnel exists, from the MCP side.
+  you to stop the tunnel. Stop the tunnel and wait for it to close (above), make the
+  change, start it again.
+- `catalyst_list_app_tunnels` lists the tunnel records on a project. A record can stay
+  `ready` after its `dev run` has exited, so it shows that a tunnel was opened, not that
+  one is live. Proof of a live tunnel is a request arriving in the local process's own
+  log.
 
 **Several processes at once:** `diagrid dev scaffold -p <project>` writes a multi-app
 run file (`apps:` with `appID`, `appPort`, `command`, `env`). Then run
@@ -107,14 +143,13 @@ run file (`apps:` with `appID`, `appPort`, `command`, `env`). Then run
 4. Calls between apps in a project are allowed unless an access policy restricts them.
    To restrict them, use `catalyst_grant_access` with `target_kind: app` (or `agent`).
    **Grant before you open the target's tunnel**, because attaching the policy updates
-   the target's App ID (section 3).
+   the target's App ID (section 3). The first grant on an app creates a Configuration
+   named after it. With `action: deny` its default becomes deny, and a denied call is
+   refused with 403 before it reaches the target. Delete that Configuration along with
+   the app when you clean up.
 5. Prove it: the target's own log shows the request, and `catalyst_get_metrics` for the
    target shows it served something. A call that goes straight to `localhost` proves
    nothing about Catalyst.
-
-`dev run` also scopes a default resiliency policy to the apps it runs (5 retries, 30s
-timeout). A failing target therefore shows up in its log as repeated requests: that is
-the policy retrying, not the caller looping.
 
 ## 5. An app or agent calling an MCP server on this machine
 
@@ -153,12 +188,23 @@ not tunnel the caller.
      with a `connect.path`.
    - MCP: `POST` JSON-RPC to `$DAPR_HTTP_ENDPOINT` + that `connect.path` (for example
      `/v1.0/diagrid/mcp/<mcpserver-name>`), with `Accept: application/json,
-     text/event-stream`. Anything after the server name is appended to the spec URL's
-     path. With a spec URL ending in `/mcp`, post to the bare name, or the upstream sees
-     `/mcp/mcp`.
+     text/event-stream`. Speak streamable HTTP MCP as to any server: `initialize` first,
+     then send the `Mcp-Session-Id` it returns on every later request. A client that
+     skips `initialize` gets 400s. Any MCP client library does this for you.
+   - Anything after the server name is appended to the spec URL's path. With a spec URL
+     ending in `/mcp`, post to the bare name, or the upstream sees `/mcp/mcp`.
 8. **Prove it.** `catalyst_get_mcp_server` lists the server's tools. The caller's
-   discovery lists the server only after the grant. A granted tool call shows up in the
-   MCP server's own log. A tool left out of the grant is refused.
+   discovery lists the server only after the grant, and its `tools/list` shows only the
+   granted tools. A granted tool call shows up in the MCP server's own log. A tool left
+   out of the grant is refused with 403, and never reaches the server.
+
+**Use the HTTP endpoint above for an MCP server behind a tunnel.** Some agent frameworks
+call MCP tools as workflows instead (`dapr.internal.mcp.<name>.*` child workflows). That
+path does not go through the tunnel today. Its calls never reach the server on this
+machine, and the parent workflow waits forever rather than failing. So if the agent's
+code schedules those workflows, tell the user it cannot use an MCP server on this
+machine yet, and point it at the HTTP endpoint instead. The HTTP proxy working proves
+nothing about the workflow path.
 
 **Tear down in this order:** stop the tunnel, then delete the `MCPServer`. An open
 tunnel blocks the delete of its identity.
@@ -172,20 +218,30 @@ diagrid listen --id <app-id> -p <project>
 It tunnels an **existing** App ID to a built-in server and prints every request that
 arrives: invocations, pub/sub deliveries, binding events. It never creates the App ID,
 so create it first. `--subscription <name>`, `--binding <name>` and `--invoke <method>`
-answer those requests; `--invoke <method>!` answers with an error. Use it to check that a
+answer those requests; `--invoke <method>!` answers with a 500. Use it to check that a
 subscription routes or an invocation arrives before writing the handler. For real code,
-use `dev run`. Stop `listen` before running `dev run` on the same identity, so that only
-one of them is answering.
+use `dev run`.
+
+The request body is printed **base64-encoded**, so it is not garbled. The shape differs
+by mode: with no handler flag each request shows `method`, `url` and `body`; under
+`--invoke` it shows `data` and `contentType`.
+
+**`listen` leaves the tunnel open when you stop it**, and says so. Before running
+`dev run` on the same App ID, run `diagrid dev stop --id <app-id> -p <project>` and wait
+for the tunnel to close (section 3).
 
 ## 7. When it does not work
 
 | Symptom | Cause | Do |
 | --- | --- | --- |
-| `dev run` waits, then the tunnel never opens | The App ID is not `ready` yet. `dev run` also waits on the other App IDs in the project, so an unhealthy one can stall it | `catalyst_get_app` / `catalyst_list_apps`; wait for `ready` rather than restarting |
+| `dev run` exits with `App <id> not ready` | It gave up waiting for the App ID (section 3) | Read the App ID with `catalyst_get_app`. Once it is `ready`, run `dev run` again. If it has sat in `processing` for over 10 minutes, report it as a platform problem; do not delete and re-create it |
+| `App ID "<other>" must be in ready status in order to scaffold dev session configuration`, naming an App ID this run does not use | Older CLI versions require **every** App ID in the project to be `ready`, and stop the app they just started | `catalyst_list_apps` to find the one that is not `ready`. Wait for it, or ask the user before deleting it if it is theirs and unused |
 | The `Agent` or `MCPServer` is in error after a `dev run` | `dev run` created a plain App ID of that name first | With the user's agreement, stop the tunnel, delete the App ID (`catalyst_delete_resource`) and apply the resource again |
-| An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID | Stop it, make the change, start it again |
+| An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID, or is still closing | Stop it, wait until `catalyst_list_app_tunnels` no longer lists it, make the change, start it again |
 | The MCP server answers 4xx to every tunneled request | It rejects the tunnel's `Host` header | Relax its host check for local development (section 5, step 1) |
 | The upstream sees `/mcp/mcp` | The proxy path repeated the spec URL's path | Post to the bare `/v1.0/diagrid/mcp/<name>` |
+| `catalyst_list_app_tunnels` shows a tunnel `ready`, yet nothing arrives | The record outlived its `dev run` | Check that `dev run` is still running; start it again |
+| A workflow that calls `dapr.internal.mcp.<name>.*` stays running with nothing after `ExecutionStarted` | The workflow path does not reach an MCP server behind a tunnel | Call the server through `/v1.0/diagrid/mcp/<name>` instead (section 5) |
 | The caller's discovery is empty, or the call returns 404 | No grant for that caller | `catalyst_get_access_policy`, then `catalyst_grant_access` |
 | CLI commands land in a different organization | The CLI and the MCP server are signed in to different organizations | Compare `diagrid whoami` with `catalyst_whoami` (section 2) |
 
