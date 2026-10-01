@@ -296,11 +296,17 @@ Use only these routes, appended to that host:
 | --- | --- |
 | App | `/apps/details/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
-| Agent | `/agents/:appId/:id` |
+| Agent | `/agents/:appId/:agentId` |
 | MCP server | `/mcp-servers/:id` |
 | Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
+
+An agent's `:agentId` is not its name. It is the `agent_id` on the agent's registry record,
+from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+`O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
+opens a page that cannot find the agent. An agent with no registry record yet takes its
+app ID in both places: `/agents/:appId/:appId`.
 
 Two pages you may expect do not exist. There is **no project detail view** — only the
 list, and `/admin/projects/:id/users` — and there is **no quota page** for a project or an
