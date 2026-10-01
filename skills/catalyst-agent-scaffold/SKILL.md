@@ -104,9 +104,9 @@ pip install "diagrid[langgraph]"
 
 The 11 frameworks are `langgraph`, `crewai`, `adk`, `strands`, `pydantic_ai`,
 `openai_agents`, `claude_agents`, `langchain`, `smolagents`, `deepagents` and
-`holmesgpt`. Three traps: the extras use **underscores** where the framework's own name
-uses a hyphen, `holmesgpt` conflicts with the others and needs its own environment, and
-the console script is **`diagridpy`**, not `diagrid`. Python 3.11 or later, below 3.14.
+`holmesgpt`. Two traps: the extras use **underscores** where the framework's own name
+uses a hyphen, and `holmesgpt` conflicts with the others and needs its own environment.
+Python 3.11 or later, below 3.14.
 
 Import the runner from the framework's module: `DaprWorkflowAgentRunner` for most,
 `DaprWorkflowGraphRunner` for LangGraph, `DaprWorkflowDeepAgentRunner` for Deep Agents,
