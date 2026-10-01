@@ -40,6 +40,19 @@ TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORECASE)
 # `diagridio/y`, `diagrid.io`, `marketplace update diagrid`). Prose says "Diagrid" with a capital. Matched over the
 # whole file, not per line, so a command split across a wrap is still found.
 CLI_INVOCATION = re.compile(r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+[A-Za-z-]+")
+# Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
+# followed by an ordinary word (`// diagrid site embed`). There only a real CLI subcommand
+# after `diagrid` counts, so prose passes and `'diagrid login'` fails. Markdown and the
+# other text files keep the strict CLI_INVOCATION above.
+CLI_SUBCOMMANDS = (
+    "login", "dev", "mcp", "project", "appid", "app", "agent", "workflow", "call", "listen",
+    "apply", "component", "subscription", "web", "diagnose", "version", "update", "org",
+    "region", "tokenbudget", "audit",
+)
+CLI_INVOCATION_CODE = re.compile(
+    r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+(?:" + "|".join(CLI_SUBCOMMANDS) + r")(?![\w-])"
+)
+WEB_CODE_SUFFIXES = frozenset({".js", ".mjs", ".ts", ".html"})
 CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 
 LOCAL_SERVER = re.compile(r"\bmcp\s+(?:serve|install)\b|\blocal\s+MCP\s+servers?\b", re.IGNORECASE)
@@ -158,8 +171,9 @@ def check(root: Path) -> list[Finding]:
             )
 
     for path in tool_files:
+        is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in path.relative_to(root).parts[:1]
         findings += _scan(
-            path, root, CLI_INVOCATION,
+            path, root, CLI_INVOCATION_CODE if is_web_code else CLI_INVOCATION,
             "`{match}` is a CLI invocation. Skills drive Catalyst only through `catalyst_*` tools; "
             "say the capability is not available over MCP yet instead.",
         )

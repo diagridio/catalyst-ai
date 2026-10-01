@@ -20,9 +20,21 @@ Or `npm install @diagrid/catalyst-ai-install` and `import '@diagrid/catalyst-ai-
 | `theme` | `auto`, `light`, `dark` | `auto` |
 | `source` | any text, echoed in the copy event (`docs`, `console`, `website`) | empty |
 
-`theme="auto"` reads `--catalyst-ai-fg`, `--catalyst-ai-bg`, `--catalyst-ai-muted`,
-`--catalyst-ai-border`, `--catalyst-ai-accent` and `--catalyst-ai-font` from the host page,
-and falls back to `prefers-color-scheme`.
+## Styling
+
+Set these custom properties on the element or any ancestor. They override the built-in
+palette in every theme (`auto`, `light` and `dark`); anything you leave unset keeps the
+theme's own colour. `theme="auto"` follows `prefers-color-scheme`.
+
+| variable | what it sets |
+| --- | --- |
+| `--catalyst-ai-fg` | text colour |
+| `--catalyst-ai-bg` | background colour |
+| `--catalyst-ai-muted` | secondary text (intro, descriptions, inactive tabs) |
+| `--catalyst-ai-border` | borders and dividers |
+| `--catalyst-ai-accent` | selected tab, focus ring, hover |
+| `--catalyst-ai-code` | background of the code blocks |
+| `--catalyst-ai-font` | font family (size is fixed at 14px) |
 
 ## Copy event
 

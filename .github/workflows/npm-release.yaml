@@ -4,6 +4,8 @@ name: Release npm package
 # version; it must already be in web/install/package.json on main (land the bump in an
 # ordinary PR first, then dispatch it). The workflow checks the generated data, runs the
 # tests, packs, publishes with provenance, then tags `install-v$VERSION`.
+# Re-running after a partial failure is safe: a tag that already points at the released
+# commit is skipped, and a version already on npm is not published again.
 #
 # ## ONE-TIME prerequisite (not in this repo)
 #
@@ -16,7 +18,16 @@ name: Release npm package
 #   2. On npmjs.com, open @diagrid/catalyst-ai-install > Settings > Trusted Publisher
 #      and add: GitHub Actions, organisation `diagridio`, repository `catalyst-ai`,
 #      workflow `npm-release.yaml`, environment `npm`.
-#   3. In this repository, create the GitHub environment `npm`.
+#   3. In this repository, create the GitHub environment `npm` and configure it. The
+#      environment is the only gate between a workflow_dispatch and the npm scope, so it
+#      MUST have:
+#        - required reviewers (someone other than the person dispatching), and
+#        - a deployment-branch rule limited to `main`.
+#      Without both, anyone with write access can publish. A workflow cannot check this
+#      (reading environment settings needs admin rights, which GITHUB_TOKEN lacks), so it
+#      is documentation only: verify it in Settings > Environments > npm. The jobs do
+#      refuse to run off `main`, and the publish job refuses to run on a different commit
+#      than the one `verify` tested.
 #
 # The `id-token: write` permission on the publish job is what npm exchanges for a
 # short-lived credential, and `--provenance` attaches a signed attestation.
@@ -49,8 +60,19 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Record the commit under test
+        id: sha
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          test "$sha" = "$GITHUB_SHA"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
@@ -104,7 +126,7 @@ jobs:
 
   publish:
     needs: verify
-    if: ${{ !inputs.dry_run }}
+    if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: npm
     timeout-minutes: 10
@@ -112,9 +134,35 @@ jobs:
       id-token: write # npm trusted publishing and provenance
       contents: write # pushing the tag
     steps:
+      # The commit verify tested, not whatever main has moved to since.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ${{ needs.verify.outputs.sha }}
           fetch-depth: 0
+
+      - name: Assert this is the commit verify tested
+        env:
+          VERIFIED_SHA: ${{ needs.verify.outputs.sha }}
+        run: |
+          set -euo pipefail
+          head=$(git rev-parse HEAD)
+          if [ -z "$VERIFIED_SHA" ] || [ "$head" != "$VERIFIED_SHA" ] || [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::error::checked out $head, verify tested '$VERIFIED_SHA', dispatched $GITHUB_SHA"; exit 1
+          fi
+
+      - name: Check the tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # A tag at another commit is a real conflict; one at this commit is a re-run.
+          if git rev-parse -q --verify "refs/tags/install-v$VERSION" >/dev/null; then
+            tagged=$(git rev-list -n1 "install-v$VERSION")
+            if [ "$tagged" != "$(git rev-parse HEAD)" ]; then
+              echo "::error::tag install-v$VERSION already exists at $tagged, not at this commit"; exit 1
+            fi
+            echo "tag already points at this commit; the tag step will be skipped"
+          fi
 
       # Node 24 ships npm 11, which trusted publishing needs (>= 11.5.1). Node 22's
       # npm 10 cannot do it and would reach `npm publish` with no credential.
@@ -136,17 +184,17 @@ jobs:
           if ! printf '%s\n%s\n' "11.5.1" "$(npm --version)" | sort -V -C; then
             echo "::error::npm $(npm --version) is too old for trusted publishing (needs >= 11.5.1)"; exit 1
           fi
-          if git rev-parse -q --verify "refs/tags/install-v$VERSION" >/dev/null; then
-            echo "::error::tag install-v$VERSION already exists"; exit 1
-          fi
           dist_tag=latest
           case "$VERSION" in *-*) dist_tag=next ;; esac
-          # Idempotent: a re-run after a failed tag step skips the publish.
-          if npm view "@diagrid/catalyst-ai-install@$VERSION" version >/dev/null 2>&1; then
+          # Idempotent: a re-run after a failed tag step skips the publish. Only a clean
+          # E404 means "not on npm"; any other failure (network, auth) must not fall through.
+          if out=$(npm view "@diagrid/catalyst-ai-install@$VERSION" version 2>&1); then
             echo "already published, skipping"
-          else
+          elif printf '%s' "$out" | grep -q 'E404'; then
             npm publish "./dist-packs/diagrid-catalyst-ai-install-$VERSION.tgz" \
               --provenance --access public --tag "$dist_tag"
+          else
+            echo "::error::could not tell whether $VERSION is on npm: $out"; exit 1
           fi
 
       # Publish before tagging: npm published with no tag is one `git tag` from
@@ -156,6 +204,9 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/install-v$VERSION" >/dev/null; then
+            echo "tag install-v$VERSION already points at this commit, skipping"; exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "install-v$VERSION" -m "@diagrid/catalyst-ai-install $VERSION"

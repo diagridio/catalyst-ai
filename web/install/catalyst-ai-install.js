@@ -10,7 +10,8 @@
 // source (free text, echoed in the event, e.g. docs, console, website).
 //
 // Host styling: --catalyst-ai-fg, --catalyst-ai-bg, --catalyst-ai-muted,
-// --catalyst-ai-border, --catalyst-ai-accent, --catalyst-ai-font.
+// --catalyst-ai-border, --catalyst-ai-accent, --catalyst-ai-code, --catalyst-ai-font.
+// They override the built-in palette for every theme, including light and dark.
 
 import installData from './data.js';
 
@@ -52,7 +53,7 @@ const STYLE = `
   --muted: var(--catalyst-ai-muted, var(--p-muted));
   --border: var(--catalyst-ai-border, var(--p-border));
   --accent: var(--catalyst-ai-accent, var(--p-accent));
-  --code: var(--p-code);
+  --code: var(--catalyst-ai-code, var(--p-code));
   display: block; color: var(--fg); background: var(--bg);
   font: 14px/1.5 var(--catalyst-ai-font, system-ui, -apple-system, 'Segoe UI', sans-serif);
   border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
@@ -62,10 +63,6 @@ const STYLE = `
     --p-fg: #e7eaf0; --p-bg: #14171c; --p-muted: #9aa5b4; --p-border: #2c333d;
     --p-accent: #a592ff; --p-code: #1d222a;
   }
-}
-:host([theme="light"]), :host([theme="dark"]) {
-  --fg: var(--p-fg); --bg: var(--p-bg); --muted: var(--p-muted);
-  --border: var(--p-border); --accent: var(--p-accent);
 }
 :host([theme="dark"]) {
   --p-fg: #e7eaf0; --p-bg: #14171c; --p-muted: #9aa5b4; --p-border: #2c333d;
@@ -124,6 +121,8 @@ export class CatalystAiInstallElement extends Base {
   #selected = null;
   #timer = 0;
   #root = null;
+  #tabs = [];
+  #panel = null;
 
   connectedCallback() {
     this.#render();
@@ -133,10 +132,14 @@ export class CatalystAiInstallElement extends Base {
     clearTimeout(this.#timer);
   }
 
-  attributeChangedCallback(name) {
-    if (name === 'client') this.#selected = null;
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) return;
     if (name === 'theme' || name === 'variant') this.#normalise(name);
-    if (this.isConnected && name !== 'source') this.#render();
+    // Before connection (upgrade) connectedCallback renders once with the final attributes.
+    // theme and variant are pure CSS and source is read on copy, so only client re-renders.
+    if (name !== 'client') return;
+    this.#selected = null;
+    if (this.isConnected) this.#render();
   }
 
   #normalise(name) {
@@ -161,26 +164,30 @@ export class CatalystAiInstallElement extends Base {
     this.setAttribute('source', value);
   }
 
+  /** Build the shell once, then only update it: the tab that has focus is never replaced. */
   #render() {
-    // attributeChangedCallback can run before connectedCallback during upgrade.
     const root = (this.#root ??= this.shadowRoot ?? this.attachShadow({ mode: 'open' }));
     const active = resolveClient(installData.clients, this.#selected ?? this.getAttribute('client'));
-    const tabs = installData.clients.map((c) =>
+    if (!this.#panel) this.#build(root);
+    this.#show(active);
+  }
+
+  #build(root) {
+    this.#tabs = installData.clients.map((c) =>
       el('button', {
         role: 'tab',
         type: 'button',
         id: `tab-${c.id}`,
         'data-client': c.id,
-        'aria-selected': String(c.id === active.id),
         'aria-controls': 'panel',
-        tabindex: c.id === active.id ? '0' : '-1',
         text: c.label,
       }),
     );
+    const tabs = this.#tabs;
     const tablist = el('div', { role: 'tablist', 'aria-label': 'Choose your client' }, tabs);
     tablist.addEventListener('click', (e) => {
       const tab = e.target.closest?.('[role="tab"]');
-      if (tab) this.#select(tab.dataset.client, false);
+      if (tab) this.#select(tab.dataset.client, true);
     });
     tablist.addEventListener('keydown', (e) => {
       const index = tabs.indexOf(e.target);
@@ -190,32 +197,40 @@ export class CatalystAiInstallElement extends Base {
         this.#select(tabs[next].dataset.client, true);
       }
     });
-
-    const steps = el(
-      'ol',
-      {},
-      active.steps.map((s) =>
-        el('li', {}, [
-          el('p', { class: 'title', text: s.title }),
-          el('p', { class: 'desc', text: s.description }),
-          ...s.items.map((it) => this.#row(active, it, s.items.length > 1)),
-        ]),
-      ),
-    );
-    const panel = el('div', { role: 'tabpanel', id: 'panel', 'aria-labelledby': `tab-${active.id}` }, [steps]);
-    const status = el('div', { class: 'status', role: 'status', 'aria-live': 'polite' });
-
+    this.#panel = el('div', { role: 'tabpanel', id: 'panel' });
     root.replaceChildren(
       el('style', { text: STYLE }),
       el('p', { class: 'intro', text: 'Connect your assistant to Diagrid Catalyst. Pick your client.' }),
       tablist,
-      panel,
-      status,
+      this.#panel,
+      el('div', { class: 'status', role: 'status', 'aria-live': 'polite' }),
+    );
+  }
+
+  #show(active) {
+    for (const tab of this.#tabs) {
+      const on = tab.dataset.client === active.id;
+      tab.setAttribute('aria-selected', String(on));
+      tab.setAttribute('tabindex', on ? '0' : '-1');
+    }
+    this.#panel.setAttribute('aria-labelledby', `tab-${active.id}`);
+    this.#panel.replaceChildren(
+      el(
+        'ol',
+        {},
+        active.steps.map((s) =>
+          el('li', {}, [
+            el('p', { class: 'title', text: s.title }),
+            el('p', { class: 'desc', text: s.description }),
+            ...s.items.map((it) => this.#row(active, it, s.items.length > 1)),
+          ]),
+        ),
+      ),
     );
   }
 
   #row(client, it, showLabel = false) {
-    const code = el('pre', { tabindex: '0', text: it.text });
+    const code = el('pre', { tabindex: '0', role: 'region', 'aria-label': it.label, text: it.text });
     const button = el('button', { class: 'copy', type: 'button', 'aria-label': `Copy ${it.label}`, text: 'Copy' });
     button.addEventListener('click', () => this.#copy(client.id, it, code, button));
     const row = el('div', { class: 'row' }, [code, button]);
@@ -225,7 +240,7 @@ export class CatalystAiInstallElement extends Base {
   #select(id, focus) {
     this.#selected = id;
     this.#render();
-    if (focus) this.#root.getElementById(`tab-${id}`)?.focus();
+    if (focus) this.#tabs.find((t) => t.dataset.client === id)?.focus();
   }
 
   async #copy(clientId, it, code, button) {
