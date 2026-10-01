@@ -8,7 +8,10 @@ register, and a real Catalyst question fires the right skill and gets a grounded
 In **Codex** and **GitHub Copilot** the install and all 10 skills are verified, and Codex
 is confirmed to put them in front of the model; neither has yet answered a Catalyst
 question here, for reasons that are
-[nothing to do with the skills](#what-is-and-is-not-verified-per-client).
+[nothing to do with the skills](#what-is-and-is-not-verified-per-client). Those client
+checks were made at 0.3.2, with ten skills. The eleventh, `catalyst-agent-harness`, arrived
+in 0.6.0: CI installs it with the real installer, but no client has been re-measured with
+it yet.
 
 > **Early release.** The skills drive Catalyst only through the remote Catalyst MCP
 > server. There is no CLI to install and no separate login: you add the server and sign
@@ -27,13 +30,13 @@ claude plugin install catalyst-ai@diagrid
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.4.0 or later
-claude plugin details catalyst-ai@diagrid    # expect 10 skills
+claude plugin list                           # expect Version: 0.6.0 or later
+claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
 `list` reports the version you actually have. `details` reports the version the
 marketplace is offering, reading the installed copy only when the two agree — so on its
-own it can show you 10 skills while your session loads 9. If either looks wrong, jump to
+own it can show you 11 skills while your session loads 10. If either looks wrong, jump to
 [If your install is behind](#if-your-install-is-behind).
 
 #### Then sign in to the Catalyst MCP server
@@ -127,11 +130,11 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-This writes all ten skills to `.agents/skills/`, and Copilot's own listing confirms it
+This writes all eleven skills to `.agents/skills/`, and Copilot's own listing confirms it
 reads them:
 
 ```bash
-copilot skill list        # all 10 under "Project skills"
+copilot skill list        # all 11 under "Project skills"
 ```
 
 Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
@@ -147,8 +150,9 @@ npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
 there by design, so seeing no `.codex/` created is correct rather than a failed install.
-Codex reads them: `codex debug prompt-input` renders the model-visible prompt, and all ten
-appear in its `<skills_instructions>` block with their descriptions intact, byte for byte.
+Codex reads them: `codex debug prompt-input` renders the model-visible prompt, and at 0.3.2
+all ten appeared in its `<skills_instructions>` block with their descriptions intact, byte
+for byte.
 Codex's own guidance text says automatic skill selection is allowed by default, so you
 shouldn't have to name a skill — though nobody has yet confirmed that from a real session.
 
@@ -159,6 +163,8 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
 | GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
+
+Measured at 0.3.2, when there were ten skills.
 
 If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
@@ -201,6 +207,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
 | `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
+| `catalyst-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
 | `catalyst-operate` | Inspect a running project, read-only |
@@ -211,7 +218,8 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
 
-**Cost:** roughly **1030 tokens always-on** across all ten (~103 each), added to every
+**Cost:** roughly **1030 tokens always-on** across the ten skills measured at 0.3.2 (~103
+each) — about 1130 with the eleventh, extrapolated rather than measured — added to every
 session whether or not a skill fires. Each skill costs a few thousand more only when it
 actually fires. That figure is **per model** — `claude plugin details` resolves a tokenizer
 from your active model, so the same ten descriptions cost ~103 each on Sonnet 5 and Opus 5
@@ -281,7 +289,7 @@ installed" and changes nothing:
 ```bash
 claude plugin marketplace update diagrid
 claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.4.0 or later
+claude plugin list                           # expect Version: 0.6.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -293,7 +301,7 @@ reported success and repaired nothing. Deleting the directory is the only fix:
 ```bash
 rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
 claude plugin install catalyst-ai@diagrid
-claude plugin details catalyst-ai@diagrid    # expect 10 skills
+claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
 CI now fails any change to plugin content that doesn't bump the version, so the second one
