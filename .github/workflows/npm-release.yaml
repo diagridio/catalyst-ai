@@ -1,0 +1,162 @@
+name: Release npm package
+
+# Manual publish of `@diagrid/catalyst-ai-install` (web/install/) to npm. You pick the
+# version; it must already be in web/install/package.json on main (land the bump in an
+# ordinary PR first, then dispatch it). The workflow checks the generated data, runs the
+# tests, packs, publishes with provenance, then tags `install-v$VERSION`.
+#
+# ## ONE-TIME prerequisite (not in this repo)
+#
+# Publishing uses npm trusted publishing: no NPM_TOKEN and no stored credential.
+# Someone with publish rights on the @diagrid npm scope must, once:
+#
+#   1. Make sure the package exists. npm only lets you configure a trusted publisher on
+#      a package that already exists, so the very first version (0.1.0) may need one
+#      manual `npm publish --access public` by a maintainer. It will have no provenance.
+#   2. On npmjs.com, open @diagrid/catalyst-ai-install > Settings > Trusted Publisher
+#      and add: GitHub Actions, organisation `diagridio`, repository `catalyst-ai`,
+#      workflow `npm-release.yaml`, environment `npm`.
+#   3. In this repository, create the GitHub environment `npm`.
+#
+# The `id-token: write` permission on the publish job is what npm exchanges for a
+# short-lived credential, and `--provenance` attaches a signed attestation.
+# A dry run needs none of this: it checks, tests and packs, and publishes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.1.1). Must match web/install/package.json on main."
+        required: true
+        type: string
+      dry_run:
+        description: "Check, test and pack only: no publish, no tag"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+# One release at a time, never cancelled midway.
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    # Everything that can fail runs here, with no publishing rights.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+
+      - name: Validate the version input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # Whole-string `case` first: grep anchors per line, so a multi-line value
+          # would pass on one line and then reach the shell commands below.
+          case "$VERSION" in
+            *[!0-9A-Za-z.-]* ) echo "::error::version contains characters outside [0-9A-Za-z.-]"; exit 1 ;;
+          esac
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$VERSION' is not a valid semver version (e.g. 0.1.1)"; exit 1
+          fi
+          actual=$(node -p "require('./web/install/package.json').version")
+          if [ "$actual" != "$VERSION" ]; then
+            echo "::error::web/install/package.json is $actual, expected $VERSION. Land the bump on main first."; exit 1
+          fi
+
+      - name: Generated data is current and matches the README
+        run: python3 scripts/build_install_data.py --check
+
+      - name: MCP surface gate
+        run: python3 scripts/check_mcp_surface.py
+
+      - name: Test
+        working-directory: web/install
+        run: npm test
+
+      - name: Pack
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist-packs
+          (cd web/install && npm pack --pack-destination "$GITHUB_WORKSPACE/dist-packs")
+          ls -la dist-packs
+          test -f "dist-packs/diagrid-catalyst-ai-install-$VERSION.tgz"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: npm-pack-${{ inputs.version }}
+          path: dist-packs/
+          retention-days: 14
+
+  publish:
+    needs: verify
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    environment: npm
+    timeout-minutes: 10
+    permissions:
+      id-token: write # npm trusted publishing and provenance
+      contents: write # pushing the tag
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      # Node 24 ships npm 11, which trusted publishing needs (>= 11.5.1). Node 22's
+      # npm 10 cannot do it and would reach `npm publish` with no credential.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: npm-pack-${{ inputs.version }}
+          path: dist-packs
+
+      - name: Publish
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s\n%s\n' "11.5.1" "$(npm --version)" | sort -V -C; then
+            echo "::error::npm $(npm --version) is too old for trusted publishing (needs >= 11.5.1)"; exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/install-v$VERSION" >/dev/null; then
+            echo "::error::tag install-v$VERSION already exists"; exit 1
+          fi
+          dist_tag=latest
+          case "$VERSION" in *-*) dist_tag=next ;; esac
+          # Idempotent: a re-run after a failed tag step skips the publish.
+          if npm view "@diagrid/catalyst-ai-install@$VERSION" version >/dev/null 2>&1; then
+            echo "already published, skipping"
+          else
+            npm publish "./dist-packs/diagrid-catalyst-ai-install-$VERSION.tgz" \
+              --provenance --access public --tag "$dist_tag"
+          fi
+
+      # Publish before tagging: npm published with no tag is one `git tag` from
+      # consistent; a tag with nothing on npm needs a deletion.
+      - name: Tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "install-v$VERSION" -m "@diagrid/catalyst-ai-install $VERSION"
+          git push origin "install-v$VERSION"

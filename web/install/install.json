@@ -1,0 +1,243 @@
+{
+  "schema": 1,
+  "mcpUrl": "https://mcp.cloud.r1.diagrid.io/mcp",
+  "commands": [
+    {
+      "id": "try-workflow",
+      "name": "/catalyst-ai:try-workflow",
+      "description": "Try Catalyst in one step. A durable workflow crashes mid-run and resumes where it stopped, driven through the Catalyst MCP tools.",
+      "prompt": "I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `default`.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start the sample in the background with its environment loaded from it.\n4. Run one workflow to completion. Then start one through the sample's crash endpoint, show me with `catalyst_get_workflow_run` that it's RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart the app. When the run completes, show me from its history that finished steps ran once and only the step the crash cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>."
+    },
+    {
+      "id": "try-agent",
+      "name": "/catalyst-ai:try-agent",
+      "description": "Try Catalyst in one step. A durable AI agent (LangGraph, no API key) crashes mid-run and resumes where it stopped, driven through the Catalyst MCP tools.",
+      "prompt": "I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app. The sample runs on a built-in offline model, so no API key is needed.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts and take `agents/langgraph`. With `catalyst_apply`, make sure agent `schedule-planner` exists in project `default`. Catalyst provides its state, pub/sub and registry, so don't apply the sample's local `resources/` files.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start `crash_test.py` on port 8001 in the background with its environment loaded from it.\n4. Start a run with `POST /crash/run` and `kill_after_seconds`, so the agent dies mid-run. Show me with `catalyst_get_workflow_run` that the run is RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart it the same way. When the run completes, show me from its history that the steps finished before the crash ran once and only the one it cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/schedule-planner/<instance-id>?project=default."
+    }
+  ],
+  "clients": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "steps": [
+        {
+          "id": "install",
+          "title": "Install the plugin",
+          "description": "Adds the skills and the Catalyst MCP server.",
+          "items": [
+            {
+              "id": "marketplace-add",
+              "label": "marketplace add",
+              "lang": "bash",
+              "text": "claude plugin marketplace add diagridio/catalyst-ai"
+            },
+            {
+              "id": "plugin-install",
+              "label": "plugin install",
+              "lang": "bash",
+              "text": "claude plugin install catalyst-ai@diagrid"
+            }
+          ]
+        },
+        {
+          "id": "sign-in",
+          "title": "Sign in once",
+          "description": "In Claude Code, run /mcp, pick plugin:catalyst-ai:catalyst and finish the browser sign-in.",
+          "items": [
+            {
+              "id": "mcp",
+              "label": "/mcp",
+              "lang": "text",
+              "text": "/mcp"
+            }
+          ]
+        },
+        {
+          "id": "try",
+          "title": "Try it",
+          "description": "One line each, nothing to paste.",
+          "items": [
+            {
+              "id": "try-workflow",
+              "label": "/catalyst-ai:try-workflow",
+              "lang": "text",
+              "text": "/catalyst-ai:try-workflow"
+            },
+            {
+              "id": "try-agent",
+              "label": "/catalyst-ai:try-agent",
+              "lang": "text",
+              "text": "/catalyst-ai:try-agent"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "steps": [
+        {
+          "id": "skills",
+          "title": "Install the skills",
+          "description": "Writes the skills to .agents/skills/, which Codex reads.",
+          "items": [
+            {
+              "id": "skills",
+              "label": "install skills",
+              "lang": "bash",
+              "text": "npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes"
+            }
+          ]
+        },
+        {
+          "id": "mcp-add",
+          "title": "Add the Catalyst MCP server",
+          "description": "Codex uses its registered OAuth client ID.",
+          "items": [
+            {
+              "id": "mcp-add",
+              "label": "mcp add",
+              "lang": "bash",
+              "text": "codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex"
+            }
+          ]
+        },
+        {
+          "id": "mcp-login",
+          "title": "Sign in",
+          "description": "Opens the browser sign-in.",
+          "items": [
+            {
+              "id": "mcp-login",
+              "label": "mcp login",
+              "lang": "bash",
+              "text": "codex mcp login catalyst"
+            }
+          ]
+        },
+        {
+          "id": "prompt",
+          "title": "Paste a starter prompt",
+          "description": "This client has no slash command, so paste the whole prompt into a chat.",
+          "items": [
+            {
+              "id": "prompt-try-workflow",
+              "label": "try-workflow prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `default`.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start the sample in the background with its environment loaded from it.\n4. Run one workflow to completion. Then start one through the sample's crash endpoint, show me with `catalyst_get_workflow_run` that it's RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart the app. When the run completes, show me from its history that finished steps ran once and only the step the crash cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>."
+            },
+            {
+              "id": "prompt-try-agent",
+              "label": "try-agent prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app. The sample runs on a built-in offline model, so no API key is needed.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts and take `agents/langgraph`. With `catalyst_apply`, make sure agent `schedule-planner` exists in project `default`. Catalyst provides its state, pub/sub and registry, so don't apply the sample's local `resources/` files.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start `crash_test.py` on port 8001 in the background with its environment loaded from it.\n4. Start a run with `POST /crash/run` and `kill_after_seconds`, so the agent dies mid-run. Show me with `catalyst_get_workflow_run` that the run is RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart it the same way. When the run completes, show me from its history that the steps finished before the crash ran once and only the one it cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/schedule-planner/<instance-id>?project=default."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "copilot-cli",
+      "label": "Copilot CLI",
+      "steps": [
+        {
+          "id": "skills",
+          "title": "Install the skills",
+          "description": "Writes the skills to .agents/skills/, which Copilot reads.",
+          "items": [
+            {
+              "id": "skills",
+              "label": "install skills",
+              "lang": "bash",
+              "text": "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes"
+            }
+          ]
+        },
+        {
+          "id": "mcp-config",
+          "title": "Add the Catalyst MCP server",
+          "description": "Put this in ~/.copilot/mcp-config.json. The oauthClientId is Copilot CLI's registered client ID.",
+          "items": [
+            {
+              "id": "mcp-config",
+              "label": "~/.copilot/mcp-config.json",
+              "lang": "json",
+              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "id": "sign-in",
+          "title": "Sign in",
+          "description": "Run /mcp inside Copilot and choose Authenticate on the catalyst server.",
+          "items": [
+            {
+              "id": "mcp",
+              "label": "/mcp",
+              "lang": "text",
+              "text": "/mcp"
+            }
+          ]
+        },
+        {
+          "id": "prompt",
+          "title": "Paste a starter prompt",
+          "description": "This client has no slash command, so paste the whole prompt into a chat.",
+          "items": [
+            {
+              "id": "prompt-try-workflow",
+              "label": "try-workflow prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `default`.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start the sample in the background with its environment loaded from it.\n4. Run one workflow to completion. Then start one through the sample's crash endpoint, show me with `catalyst_get_workflow_run` that it's RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart the app. When the run completes, show me from its history that finished steps ran once and only the step the crash cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>."
+            },
+            {
+              "id": "prompt-try-agent",
+              "label": "try-agent prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app. The sample runs on a built-in offline model, so no API key is needed.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts and take `agents/langgraph`. With `catalyst_apply`, make sure agent `schedule-planner` exists in project `default`. Catalyst provides its state, pub/sub and registry, so don't apply the sample's local `resources/` files.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start `crash_test.py` on port 8001 in the background with its environment loaded from it.\n4. Start a run with `POST /crash/run` and `kill_after_seconds`, so the agent dies mid-run. Show me with `catalyst_get_workflow_run` that the run is RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart it the same way. When the run completes, show me from its history that the steps finished before the crash ran once and only the one it cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/schedule-planner/<instance-id>?project=default."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vscode",
+      "label": "VS Code",
+      "steps": [
+        {
+          "id": "mcp-config",
+          "title": "Add the Catalyst MCP server",
+          "description": "Put this in .vscode/mcp.json. VS Code opens the browser sign-in on first use.",
+          "items": [
+            {
+              "id": "mcp-config",
+              "label": ".vscode/mcp.json",
+              "lang": "json",
+              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "id": "prompt",
+          "title": "Paste a starter prompt",
+          "description": "This client has no slash command, so paste the whole prompt into a chat.",
+          "items": [
+            {
+              "id": "prompt-try-workflow",
+              "label": "try-workflow prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `default`.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start the sample in the background with its environment loaded from it.\n4. Run one workflow to completion. Then start one through the sample's crash endpoint, show me with `catalyst_get_workflow_run` that it's RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart the app. When the run completes, show me from its history that finished steps ran once and only the step the crash cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>."
+            },
+            {
+              "id": "prompt-try-agent",
+              "label": "try-agent prompt",
+              "lang": "text",
+              "text": "I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app. The sample runs on a built-in offline model, so no API key is needed.\n1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.\n2. Clone https://github.com/diagridio/catalyst-quickstarts and take `agents/langgraph`. With `catalyst_apply`, make sure agent `schedule-planner` exists in project `default`. Catalyst provides its state, pub/sub and registry, so don't apply the sample's local `resources/` files.\n3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start `crash_test.py` on port 8001 in the background with its environment loaded from it.\n4. Start a run with `POST /crash/run` and `kill_after_seconds`, so the agent dies mid-run. Show me with `catalyst_get_workflow_run` that the run is RUNNING and waiting, not failed, and wait until I type continue.\n5. Restart it the same way. When the run completes, show me from its history that the steps finished before the crash ran once and only the one it cut off ran again.\n6. Explain in at most three sentences why it survived, then offer one next step and wait for my pick. End with this run's console link: https://catalyst.diagrid.io/workflows/schedule-planner/<instance-id>?project=default."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -330,7 +330,13 @@ python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills,
 python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
+python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
+(cd web/install && npm test)
 ```
+
+`web/install/` is the npm package `@diagrid/catalyst-ai-install`, a `<catalyst-ai-install>` web
+component for docs and the website. Its data is generated: after changing `commands/` or the
+install steps here, run `python3 scripts/build_install_data.py` and commit the result.
 
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every

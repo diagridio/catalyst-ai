@@ -73,13 +73,18 @@ class Finding:
         return f"{self.path}:{self.line}: {self.message}"
 
 
-def _text_files(root: Path, *parts: str) -> list[Path]:
+WEB_SUFFIXES = {".md", ".json", ".txt", ".yaml", ".yml", ".js", ".mjs", ".ts", ".html", ".css"}
+
+
+def _text_files(root: Path, *parts: str, suffixes: frozenset[str] | set[str] = frozenset({".md", ".json", ".txt", ".yaml", ".yml"})) -> list[Path]:
     base = root.joinpath(*parts)
     if base.is_file():
         return [base]
     if not base.is_dir():
         return []
-    return sorted(p for p in base.rglob("*") if p.is_file() and p.suffix in {".md", ".json", ".txt", ".yaml", ".yml"})
+    return sorted(
+        p for p in base.rglob("*") if p.is_file() and p.suffix in suffixes and "node_modules" not in p.parts
+    )
 
 
 def shipped_tools(root: Path) -> set[str] | None:
@@ -128,7 +133,15 @@ def check(root: Path) -> list[Finding]:
         findings.append(Finding(str(CONTRACT), 0, "missing or empty, so tool names cannot be checked"))
         tools = set()
 
-    tool_files = _text_files(root, "skills") + _text_files(root, "commands") + _text_files(root, "evals") + _text_files(root, "README.md")
+    # web/ holds the install component (web/install/) and its demo and embed snippet. It
+    # ships to npm and to diagrid.io, so it is held to the same surface, in code too.
+    tool_files = (
+        _text_files(root, "skills")
+        + _text_files(root, "commands")
+        + _text_files(root, "evals")
+        + _text_files(root, "README.md")
+        + _text_files(root, "web", suffixes=WEB_SUFFIXES)
+    )
     for path in tool_files:
         text = path.read_text(encoding="utf-8")
         for match in TOOL_REFERENCE.finditer(text):
