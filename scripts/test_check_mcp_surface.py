@@ -131,6 +131,11 @@ def main() -> int:
         "body differs",
     )
     expect("a command with no eval fails", starter_eval_drift(tree({"commands/try-x.md": command})), "has no eval")
+    expect(
+        "a starter eval with no command fails",
+        starter_eval_drift(tree({"evals/starter-y-loads-a-skill/prompt.md": "---\nname: e\n---\n\nx\n", "commands/other.md": "x\n"})),
+        "does not exist",
+    )
     expect("the real repo's starter evals match", starter_eval_drift(REPO), "")
 
     if failures:

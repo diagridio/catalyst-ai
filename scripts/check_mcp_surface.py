@@ -236,6 +236,10 @@ def starter_eval_drift(root: Path) -> list[Finding]:
                     f"body differs from {command.relative_to(root)}. Copy the command's body into it verbatim.",
                 )
             )
+    for prompt in sorted((root / "evals").glob("starter-*-loads-a-skill/prompt.md")):
+        name = prompt.parent.name.removeprefix("starter-").removesuffix("-loads-a-skill")
+        if not (root / "commands" / f"try-{name}.md").is_file():
+            found.append(Finding(str(prompt.relative_to(root)), 0, f"grades commands/try-{name}.md, which does not exist"))
     return found
 
 
