@@ -160,6 +160,39 @@ jobs:
       - name: Check the MCP surface
         run: python3 scripts/check_mcp_surface.py
 
+  install-component:
+    # web/install/ is the npm package `@diagrid/catalyst-ai-install`. Its data is
+    # GENERATED from commands/ and checked against the README, so a command or an
+    # install step that changes without regenerating would put stale instructions
+    # in front of people on diagrid.io. `--check` fails on that drift. The node tests
+    # re-check it independently and assert the data shape.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Generated install data is current and matches the README
+        run: python3 scripts/build_install_data.py --check
+
+      - name: Test the component package
+        working-directory: web/install
+        run: npm test
+
+      - name: The package packs only the intended files
+        working-directory: web/install
+        run: |
+          npm pack --dry-run --json | node -e '
+            const files = JSON.parse(require("fs").readFileSync(0, "utf8"))[0].files.map((f) => f.path).sort();
+            const want = ["LICENSE","README.md","catalyst-ai-install.d.ts","catalyst-ai-install.js","data.d.ts","data.js","install.json","package.json"];
+            if (JSON.stringify(files) !== JSON.stringify(want)) { console.error("unexpected pack list:", files); process.exit(1); }
+            console.log("packs:", files.join(", "));
+          '
+
   version:
     # A change to plugin content that does not move `version` ships to nobody.
     # Claude Code caches an installed plugin under its declared version at
@@ -187,7 +220,9 @@ jobs:
         run: python3 scripts/test_check_version_bump.py
 
       - name: Require a version bump for plugin changes
-        run: python3 scripts/check_version_bump.py "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python3 scripts/check_version_bump.py "origin/$BASE_REF"
 
   manifests:
     runs-on: ubuntu-latest
@@ -196,4 +231,6 @@ jobs:
       - name: Validate the plugin and marketplace manifests
         # Kept as a weak extra signal, not as the gate — see the note above. It
         # does catch a malformed manifest, which the Python linter does not read.
-        run: npx --yes @anthropic-ai/claude-code plugin validate . --strict
+        # Pinned, as check_install.py pins `skills`, so an upstream release cannot
+        # change this job's verdict without a change in this repo.
+        run: npx --yes @anthropic-ai/claude-code@2.1.286 plugin validate . --strict

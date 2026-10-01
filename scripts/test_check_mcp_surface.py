@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from check_mcp_surface import check  # noqa: E402
+from check_mcp_surface import REPO, check, missing_roots, starter_eval_drift  # noqa: E402
 
 CONTRACT = "# tools\ncatalyst_whoami\ncatalyst_get_app\n"
 
@@ -55,6 +55,8 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("unknown tool in the README", {"README.md": "catalyst_frobnicate\n"}, True, "catalyst_frobnicate"),
     ("CLI invocation in a skill", {"skills/a/SKILL.md": "Run `diagrid project list`.\n"}, True, "CLI invocation"),
     ("CLI invocation in an eval", {"evals/e/graders/g.md": "diagrid workflow get\n"}, True, "CLI invocation"),
+    ("unknown tool in a command", {"commands/try.md": "Call `catalyst_frobnicate`.\n"}, True, "catalyst_frobnicate"),
+    ("CLI invocation in a command", {"commands/try.md": "Run `diagrid project list`.\n"}, True, "CLI invocation"),
     ("CLI invocation in the README", {"README.md": "diagrid login\n"}, True, "CLI invocation"),
     ("mcp serve", {"skills/a/SKILL.md": "diagrid mcp serve\n"}, True, "local MCP server"),
     ("mcp install", {"README.md": "then mcp install it\n"}, True, "local MCP server"),
@@ -70,6 +72,17 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("a mixed-case tool name", {"skills/a/SKILL.md": "Call `Catalyst_Get_App`.\n"}, True, "Catalyst_Get_App"),
     ("a tool name with digits", {"skills/a/SKILL.md": "Call `catalyst_get_app2`.\n"}, True, "catalyst_get_app2"),
     ("an all-caps error kind passes", {"skills/a/SKILL.md": "`CATALYST_NOT_ENABLED` means no entitlement.\n"}, False, ""),
+    ("clean web component passes", {"web/install/c.js": "const u = 'https://mcp.cloud.r1.diagrid.io/mcp'; // catalyst_whoami\n", "web/install/package.json": '{"name": "@diagrid/catalyst-ai-install"}\n'}, False, ""),
+    ("prose after diagrid in web code passes", {"web/install/c.js": "// diagrid site embed\nconst t = 'see the diagrid docs';\n"}, False, ""),
+    ("prose after diagrid in the web demo passes", {"web/demo.html": "<p>on the diagrid site embed it</p>\n"}, False, ""),
+    ("CLI invocation in web html", {"web/demo.html": "<code>diagrid project list</code>\n"}, True, "CLI invocation"),
+    ("prose after diagrid in a README under web stays strict", {"web/install/README.md": "run diagrid site embed\n"}, True, "CLI invocation"),
+    ("CLI invocation in the web component", {"web/install/c.js": "const t = 'diagrid login';\n"}, True, "CLI invocation"),
+    ("local MCP server in the web demo", {"web/demo.html": "<p>Start the local MCP server.</p>\n"}, True, "local MCP server"),
+    ("staging host in the web component", {"web/install/data.js": "x = 'https://mcp.cloud.staging.diagrid.dev/mcp'\n"}, True, "non-production"),
+    ("unlisted host in the embed snippet", {"web/embed/diagrid-io.html": "<a href='https://api.r1.diagrid.io'>\n"}, True, "not an allowed host"),
+    ("unknown tool in web data", {"web/install/install.json": '{"t": "catalyst_frobnicate"}\n'}, True, "catalyst_frobnicate"),
+    ("web node_modules is skipped", {"web/install/node_modules/x/i.js": "diagrid login\n"}, False, ""),
     ("a yaml file is scanned", {".github/workflows/x.yaml": "x"}, False, ""),
     ("an unlisted diagrid host in a skill", {"skills/a/SKILL.md": "https://api.r1.diagrid.io/v1\n"}, True, "not an allowed host"),
     ("a bare unlisted diagrid host in an eval", {"evals/e/prompt.md": "call api.r1.diagrid.io\n"}, True, "not an allowed host"),
@@ -93,10 +106,42 @@ def main() -> int:
     if not check(missing):
         failures.append("a tree with no contract must fail")
 
+    extra = 1
+
+    def expect(name: str, found: list, needle: str) -> None:
+        nonlocal extra
+        extra += 1
+        text = "\n".join(str(f) for f in found)
+        if needle and needle not in text:
+            failures.append(f"{name}: expected a finding mentioning {needle!r}, got {text or 'none'}")
+        if not needle and found:
+            failures.append(f"{name}: expected a pass, got {text}")
+
+    expect("a tree without commands/ and evals/ fails", missing_roots(tree({"skills/a/SKILL.md": "x\n", "README.md": "x\n"})), "commands")
+    expect("the real repo has every scanned root", missing_roots(REPO), "")
+    command = "---\ndescription: d\n---\n\nDo the thing.\n"
+    expect(
+        "a matching starter eval passes",
+        starter_eval_drift(tree({"commands/try-x.md": command, "evals/starter-x-loads-a-skill/prompt.md": "---\nname: e\n---\n\nDo the thing.\n"})),
+        "",
+    )
+    expect(
+        "a drifted starter eval fails",
+        starter_eval_drift(tree({"commands/try-x.md": command, "evals/starter-x-loads-a-skill/prompt.md": "---\nname: e\n---\n\nDo another thing.\n"})),
+        "body differs",
+    )
+    expect("a command with no eval fails", starter_eval_drift(tree({"commands/try-x.md": command})), "has no eval")
+    expect(
+        "a starter eval with no command fails",
+        starter_eval_drift(tree({"evals/starter-y-loads-a-skill/prompt.md": "---\nname: e\n---\n\nx\n", "commands/other.md": "x\n"})),
+        "does not exist",
+    )
+    expect("the real repo's starter evals match", starter_eval_drift(REPO), "")
+
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
         return 1
-    print(f"{len(CASES) + 1} cases passed")
+    print(f"{len(CASES) + extra} cases passed")
     return 0
 
 

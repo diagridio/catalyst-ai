@@ -203,8 +203,8 @@ The same trap applies twice more:
   failure and the `output` agrees. Do not certify a run clean on a missing field.
 - Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
-  can still answer "which secret does this use". An absent `apiToken` never means the app
-  has no token. No read tool returns an app's token; only `catalyst_get_app_connection`
+  can still answer "which secret does this use". An absent `apiToken` never means the app,
+  agent or MCP server has no token. No read tool returns its token; only `catalyst_get_connection`
   does (see `catalyst-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's
@@ -262,11 +262,17 @@ Use only these routes, appended to that host:
 | --- | --- |
 | App | `/apps/details/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
-| Agent | `/agents/:appId/:id` |
+| Agent | `/agents/:appId/:agentId` |
 | MCP server | `/mcp-servers/:id` |
 | Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
+
+An agent's `:agentId` is not its name. It is the `agent_id` on the agent's registry record,
+from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+`O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
+opens a page that cannot find the agent. An agent with no registry record yet takes its
+app ID in both places: `/agents/:appId/:appId`.
 
 Two pages you may expect do not exist. There is **no project detail view** — only the
 list, and `/admin/projects/:id/users` — and there is **no quota page** for a project or
@@ -290,6 +296,7 @@ with a route from the table above and an identifier whose form you are sure of.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.

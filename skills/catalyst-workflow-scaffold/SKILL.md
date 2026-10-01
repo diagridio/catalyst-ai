@@ -105,8 +105,8 @@ instead and let the old instances drain. Workflow versioning is not solved for y
    with `dry_run`, show the user, then apply). A write role is needed: if
    `catalyst_apply` is not in the tool list, say so and stop.
 2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
-   start the process with the connection values from `catalyst_get_app_connection` in its
-   environment, and how to keep the token out of chat, files and history. Follow it
+   start the process with the connection values from `catalyst_get_connection` in its
+   environment. Follow it
    rather than improvising.
 
 **A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
@@ -190,6 +190,7 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
   rather than inventing a substitute that behaves differently.
 - **Do not name a package version you have not resolved.** Check the registry, or state

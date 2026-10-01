@@ -215,7 +215,7 @@ back:
 **Ready is not one field.** Catalyst's own readiness check requires the identity's status to
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
-nothing works". No read tool returns the API token; only `catalyst_get_app_connection`
+nothing works". No read tool returns the API token; only `catalyst_get_connection`
 does (see `catalyst-develop` section 3).
 
 The status vocabulary is `ready`, `pending`, `processing`, `provisioning`, `updating`,
@@ -246,8 +246,8 @@ has served or sent anything. Invoking the app directly, publishing a test messag
 reading state back are not available over MCP yet; say so rather than claiming you
 checked them.
 
-An `App`'s API token is the credential for that identity. No read tool returns it; only
-`catalyst_get_app_connection` does (see `catalyst-develop` section 3). Do not ask the user
+The API token of an app, agent or MCP server is the credential for that identity. No read tool returns it; only
+`catalyst_get_connection` does (see `catalyst-develop` section 3). Do not ask the user
 to paste one, and do not write one into a summary, a file or a commit.
 
 ## 6. Hand back a link so the user can see it
@@ -263,12 +263,18 @@ Use only these routes, appended to that host:
 | Resource | Route |
 | --- | --- |
 | App | `/apps/details/:id` |
-| Agent | `/agents/:appId/:id` |
+| Agent | `/agents/:appId/:agentId` |
 | MCP server | `/mcp-servers/:id` |
 | Workflow run | `/workflows/:appId/:runId`, optionally `/:tab` |
 | Metrics for one app, agent or MCP server | `/metrics/appids/:id`, by identity |
 | Metrics for the project | `/metrics`, or `/metrics/appids` |
 | Project list | `/admin/projects` |
+
+An agent's `:agentId` is not its name. It is the `agent_id` on the agent's registry record,
+from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+`O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
+opens a page that cannot find the agent. An agent with no registry record yet takes its
+app ID in both places: `/agents/:appId/:appId`.
 
 Two pages you may expect do not exist. There is **no project detail view** — only the
 list, and `/admin/projects/:id/users` — and there is **no quota page**. Linking to either
@@ -305,6 +311,12 @@ rejected. Send one only when the user has explicitly asked for a new project.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Name the organization before the first write.** Before the session's first
+  `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
+  or deletes something, call `catalyst_whoami` and tell the user which organization the
+  change lands in. A user with more than one organization cannot otherwise tell where it
+  went. If it fails, follow `catalyst-setup` and write nothing.
 - **Check headroom before designing, not after building.** `catalyst_get_usage`.
   Identities, connections and subscriptions are capped per region across the whole
   organization, so a second project adds no headroom for them.

@@ -105,19 +105,21 @@ pip install "diagrid[langgraph]"
 
 The 11 frameworks are `langgraph`, `crewai`, `adk`, `strands`, `pydantic_ai`,
 `openai_agents`, `claude_agents`, `langchain`, `smolagents`, `deepagents` and
-`holmesgpt`. Three traps: the extras use **underscores** where the framework's own name
-uses a hyphen, `holmesgpt` conflicts with the others and needs its own environment, and
-the console script is **`diagridpy`**, not `diagrid`. Python 3.11 or later, below 3.14.
+`holmesgpt`. Two traps: the extras use **underscores** where the framework's own name
+uses a hyphen, and `holmesgpt` conflicts with the others and needs its own environment.
+Python 3.11 or later, below 3.14.
 
 Import the runner from the framework's module: `DaprWorkflowAgentRunner` for most,
 `DaprWorkflowGraphRunner` for LangGraph, `DaprWorkflowDeepAgentRunner` for Deep Agents,
 `DaprWorkflowHolmesRunner` for HolmesGPT. Then `runner.serve(...)` exposes the app.
 
-Components are discovered **by name**, not by configuration. Ship the app's own
-components as `agent-memory`, `agent-pubsub`, `agent-registry`, `agent-configuration` and
+Components are discovered **by name**, not by configuration. Outside Catalyst, ship the
+app's own components as `agent-memory`, `agent-pubsub`, `agent-registry`, `agent-configuration` and
 `agent-runtime`, or discovery silently finds nothing and the failure looks like a
 connectivity problem. These are the app's components, distinct from the project's managed
-`pubsub` and `kvstore`.
+`pubsub` and `kvstore`. On Catalyst, apply the `Agent` resource and let the platform
+provide its state, pub/sub and registry. The platform creates `agent-registry` and refuses
+one created by hand. A sample's local `resources/` files are for running without Catalyst.
 
 To start from a working tree rather than a blank file, `diagridpy init <name> --framework
 <framework>` clones a template. It covers fewer frameworks than the extras list, so check
@@ -159,7 +161,7 @@ and do the same for throughput limits.
 - Make sure the `App` and the `Agent` exist (`catalyst_get_app`, `catalyst_get_agent`).
 - Start the agent process with the connection values in its environment:
   `catalyst-develop` section 3 is the one place that says how, using
-  `catalyst_get_app_connection`, and how to keep the token out of chat, files and history.
+  `catalyst_get_connection`.
 - Send a prompt, wait for it to be mid-run, kill the process, start it again.
 - The run must resume rather than restart. If it restarts, the agent is not durable and
   the scaffold is not finished — usually the workflow store or a component name.
@@ -191,10 +193,16 @@ transcript. The console for the production server is `https://catalyst.diagrid.i
 
 | To show | Route |
 | --- | --- |
-| An agent | `/agents/<appId>/<id>` |
+| An agent | `/agents/<appId>/<agentId>` |
 | The app it runs in | `/apps/details/<appId>` |
 | A run of the agent's workflow | `/workflows/<appId>/<runId>` |
 | An MCP server | `/mcp-servers/<id>` |
+
+An agent's `<agentId>` is not its name. It is the `agent_id` on the agent's registry record,
+from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+`O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
+opens a page that cannot find the agent. An agent with no registry record yet takes its
+app ID in both places: `/agents/<appId>/<appId>`.
 
 There is **no project detail page** and **no quota page**. Do not link to either.
 
@@ -215,6 +223,7 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field

@@ -7,7 +7,7 @@ compile:
 
 * A `catalyst_*` tool name that is not in contracts/catalyst-mcp-tools.txt. The
   model calls it, gets "unknown tool" and improvises. lint_skills.py already
-  checks this for skills/; this gate adds evals/ and README.md, which it does
+  checks this for skills/; this gate adds commands/, evals/ and README.md, which it does
   not read, and is the one place the rule is stated for the whole repo.
 * A `diagrid <subcommand>` CLI invocation. There is no CLI path any more: no
   install, no login, no version pin. A skill that tells a model to run one is
@@ -40,6 +40,19 @@ TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORECASE)
 # `diagridio/y`, `diagrid.io`, `marketplace update diagrid`). Prose says "Diagrid" with a capital. Matched over the
 # whole file, not per line, so a command split across a wrap is still found.
 CLI_INVOCATION = re.compile(r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+[A-Za-z-]+")
+# Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
+# followed by an ordinary word (`// diagrid site embed`). There only a real CLI subcommand
+# after `diagrid` counts, so prose passes and `'diagrid login'` fails. Markdown and the
+# other text files keep the strict CLI_INVOCATION above.
+CLI_SUBCOMMANDS = (
+    "login", "dev", "mcp", "project", "appid", "app", "agent", "workflow", "call", "listen",
+    "apply", "component", "subscription", "web", "diagnose", "version", "update", "org",
+    "region", "tokenbudget", "audit",
+)
+CLI_INVOCATION_CODE = re.compile(
+    r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+(?:" + "|".join(CLI_SUBCOMMANDS) + r")(?![\w-])"
+)
+WEB_CODE_SUFFIXES = frozenset({".js", ".mjs", ".ts", ".html"})
 CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 
 LOCAL_SERVER = re.compile(r"\bmcp\s+(?:serve|install)\b|\blocal\s+MCP\s+servers?\b", re.IGNORECASE)
@@ -73,13 +86,18 @@ class Finding:
         return f"{self.path}:{self.line}: {self.message}"
 
 
-def _text_files(root: Path, *parts: str) -> list[Path]:
+WEB_SUFFIXES = {".md", ".json", ".txt", ".yaml", ".yml", ".js", ".mjs", ".ts", ".html", ".css"}
+
+
+def _text_files(root: Path, *parts: str, suffixes: frozenset[str] | set[str] = frozenset({".md", ".json", ".txt", ".yaml", ".yml"})) -> list[Path]:
     base = root.joinpath(*parts)
     if base.is_file():
         return [base]
     if not base.is_dir():
         return []
-    return sorted(p for p in base.rglob("*") if p.is_file() and p.suffix in {".md", ".json", ".txt", ".yaml", ".yml"})
+    return sorted(
+        p for p in base.rglob("*") if p.is_file() and p.suffix in suffixes and "node_modules" not in p.parts
+    )
 
 
 def shipped_tools(root: Path) -> set[str] | None:
@@ -128,7 +146,15 @@ def check(root: Path) -> list[Finding]:
         findings.append(Finding(str(CONTRACT), 0, "missing or empty, so tool names cannot be checked"))
         tools = set()
 
-    tool_files = _text_files(root, "skills") + _text_files(root, "evals") + _text_files(root, "README.md")
+    # web/ holds the install component (web/install/) and its demo and embed snippet. It
+    # ships to npm and to diagrid.io, so it is held to the same surface, in code too.
+    tool_files = (
+        _text_files(root, "skills")
+        + _text_files(root, "commands")
+        + _text_files(root, "evals")
+        + _text_files(root, "README.md")
+        + _text_files(root, "web", suffixes=WEB_SUFFIXES)
+    )
     for path in tool_files:
         text = path.read_text(encoding="utf-8")
         for match in TOOL_REFERENCE.finditer(text):
@@ -145,8 +171,9 @@ def check(root: Path) -> list[Finding]:
             )
 
     for path in tool_files:
+        is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in path.relative_to(root).parts[:1]
         findings += _scan(
-            path, root, CLI_INVOCATION,
+            path, root, CLI_INVOCATION_CODE if is_web_code else CLI_INVOCATION,
             "`{match}` is a CLI invocation. Skills drive Catalyst only through `catalyst_*` tools; "
             "say the capability is not available over MCP yet instead.",
         )
@@ -169,8 +196,55 @@ def check(root: Path) -> list[Finding]:
     return findings
 
 
+# The directories check() reads. One that is missing or empty yields no files and
+# so no findings: a rename would switch the gate off with CI still green.
+SCANNED_ROOTS = ("skills", "commands", "evals", "README.md")
+
+
+def missing_roots(root: Path) -> list[Finding]:
+    return [
+        Finding(name, 0, "missing or empty, so nothing in it is checked. Update SCANNED_ROOTS if it moved.")
+        for name in SCANNED_ROOTS
+        if not _text_files(root, name)
+    ]
+
+
+def _body(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if text.startswith("---\n"):
+        _, _, text = text[4:].partition("\n---\n")
+    return text
+
+
+def starter_eval_drift(root: Path) -> list[Finding]:
+    """Each commands/try-<x>.md is graded by evals/starter-<x>-loads-a-skill.
+
+    The eval's prompt must be the command's body, or it grades a prompt no user
+    sends and can pass while the shipped command fails to load a skill.
+    """
+    found: list[Finding] = []
+    for command in sorted((root / "commands").glob("try-*.md")):
+        name = command.stem.removeprefix("try-")
+        prompt = root / "evals" / f"starter-{name}-loads-a-skill" / "prompt.md"
+        if not prompt.is_file():
+            found.append(Finding(str(command.relative_to(root)), 0, f"has no eval at {prompt.relative_to(root)}"))
+        elif _body(prompt) != _body(command):
+            found.append(
+                Finding(
+                    str(prompt.relative_to(root)),
+                    0,
+                    f"body differs from {command.relative_to(root)}. Copy the command's body into it verbatim.",
+                )
+            )
+    for prompt in sorted((root / "evals").glob("starter-*-loads-a-skill/prompt.md")):
+        name = prompt.parent.name.removeprefix("starter-").removesuffix("-loads-a-skill")
+        if not (root / "commands" / f"try-{name}.md").is_file():
+            found.append(Finding(str(prompt.relative_to(root)), 0, f"grades commands/try-{name}.md, which does not exist"))
+    return found
+
+
 def main() -> int:
-    findings = check(REPO)
+    findings = missing_roots(REPO) + check(REPO) + starter_eval_drift(REPO)
     if findings:
         print("MCP surface check FAILED:\n", file=sys.stderr)
         for finding in findings:

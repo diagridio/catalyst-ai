@@ -10,7 +10,7 @@ is confirmed to put them in front of the model; neither has yet answered a Catal
 question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client). Those client
 checks were made at 0.3.2, with ten skills. The eleventh, `catalyst-agent-harness`, arrived
-in 0.5.0: CI installs it with the real installer, but no client has been re-measured with
+in 0.6.0: CI installs it with the real installer, but no client has been re-measured with
 it yet.
 
 > **Early release.** The skills drive Catalyst only through the remote Catalyst MCP
@@ -30,7 +30,7 @@ claude plugin install catalyst-ai@diagrid
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.5.0 or later
+claude plugin list                           # expect Version: 0.6.0 or later
 claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
@@ -117,10 +117,10 @@ VS Code opens a browser for authorization on the first connection. See the
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
 ```bash
-npx skills add diagridio/catalyst-ai -a github-copilot
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
 ```
 
-Use **repeated `-a` flags** if you pass more than one. The comma form
+Use **repeated `--agent` flags** if you pass more than one. The comma form
 (`-a codex,github-copilot`) is what the upstream README documents, and it prints
 `Invalid agents:`, installs nothing and exits **1** — so it fails honestly, and a step
 checking the exit code catches it. Re-measured on 1.5.22 and 1.5.23; an earlier version
@@ -145,7 +145,7 @@ will quietly leave out a client you haven't installed yet.
 ### Codex
 
 ```bash
-npx skills add diagridio/catalyst-ai -a codex
+npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
 ```
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
@@ -173,7 +173,17 @@ this needs a human rather than an installer's exit code.
 
 ## Then just ask
 
-The point is that you don't learn commands. Try:
+New to Catalyst? In Claude Code, type one of these to see a crash-and-recover run end to
+end. Each is a single line, so there's nothing to paste:
+
+- `/catalyst-ai:try-workflow`: a durable workflow crashes mid-run and resumes where it
+  stopped.
+- `/catalyst-ai:try-agent`: the same for a durable AI agent (LangGraph, no API key).
+
+In other clients, paste the matching prompt from [`commands/`](commands/). It's the same
+text.
+
+After that, you don't learn commands. Try:
 
 > Set up Diagrid Catalyst, then show me what's in my project.
 
@@ -226,7 +236,7 @@ Being explicit, because the gap matters and you'll notice it:
 | Determinism and idempotency review | ✅ works now |
 | Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
-| Running your app locally against Catalyst | 🆕 through `catalyst_get_app_connection`, which is not served yet |
+| Running your app, agent or MCP server locally against Catalyst | ✅ works now, through `catalyst_get_connection` |
 | Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, streaming requests, cluster diagnostics | ⛔ not available over MCP yet |
 
@@ -260,8 +270,11 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
-- **The app's API token is kept out of files, `.env`, commits, logs and chat.** The
-  connection values go only into the environment of the process that runs your app.
+- **Connection values are for local dev only.** A deployed app gets its own from the
+  platform. They go inline on the launch command, into a gitignored `.env` in the app's
+  folder, or through your tool's environment option, and never into chat, a pull request
+  or a commit.
+- **The skills use the Catalyst MCP tools for everything in Catalyst.**
 
 ## If your install is behind
 
@@ -276,7 +289,7 @@ installed" and changes nothing:
 ```bash
 claude plugin marketplace update diagrid
 claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.5.0 or later
+claude plugin list                           # expect Version: 0.6.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -325,7 +338,13 @@ python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills,
 python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
+python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
+(cd web/install && npm test)
 ```
+
+`web/install/` is the npm package `@diagrid/catalyst-ai-install`, a `<catalyst-ai-install>` web
+component for docs and the website. Its data is generated: after changing `commands/` or the
+install steps here, run `python3 scripts/build_install_data.py` and commit the result.
 
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every

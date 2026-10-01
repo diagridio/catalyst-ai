@@ -231,6 +231,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Assume at least once.** An activity that is correct only if it runs once is a bug,
   not a risk to monitor.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every

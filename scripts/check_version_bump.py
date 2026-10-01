@@ -31,7 +31,7 @@ MANIFEST = ".claude-plugin/plugin.json"
 
 # Paths whose contents reach an installed plugin. A change under any of these is
 # visible to users and therefore needs a new cache key.
-VERSIONED_PREFIXES = ("skills/", ".claude-plugin/")
+VERSIONED_PREFIXES = ("skills/", "commands/", ".claude-plugin/")
 
 
 def git(*args: str, cwd: Path | None = None) -> str:

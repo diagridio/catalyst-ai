@@ -1,6 +1,6 @@
 ---
 name: catalyst-develop
-description: Iterate on code locally while it runs against live Diagrid Catalyst infrastructure — the edit, rerun, observe loop. Covers the app identity, the local app connection, the environment a worker needs, triggering runs, and a worker that never connects.
+description: Run an app or agent locally against Diagrid Catalyst — get its connection with catalyst_get_connection, start it, trigger runs, and crash and restart it to watch a workflow resume. Use for local runs, a crash-and-recover demo, or a worker that never connects.
 ---
 
 # The local development loop
@@ -18,7 +18,7 @@ missing or refuse with `NOT_AUTHENTICATED`, the `catalyst-setup` skill covers it
 | Frequency | Step | How |
 | --- | --- | --- |
 | Once per app | Make sure the App ID exists, with its components | `catalyst_get_app`, else `catalyst_apply` (section 2) |
-| Every run of the process | Get the connection values and start the process with them | `catalyst_get_app_connection` (section 3) |
+| Every run of the process | Get the connection values and start the process with them | `catalyst_get_connection` (section 3) |
 | Every iteration | Trigger a run and read what happened | `catalyst_start_workflow`, `catalyst_get_workflow_run` (section 4) |
 
 What survives an iteration: the app and its identity, its API token, the components, the
@@ -44,10 +44,15 @@ own code, it's the `appId` on its registry record.
    on.
 2. If it does not exist, create it with `catalyst_apply`: read
    `catalyst_get_resource_schema` for the `App` kind first, run with `dry_run` and show
-   the user, then apply. Apply the project's components first, then the app, then the
-   subscriptions scoped to it in a second call (see `catalyst-deploy` for the full
-   ordering), so the components exist when its sidecar boots. An app with no endpoint is the correct shape for a pure
-   workflow worker, which dials Catalyst outbound.
+   the user, then apply. The project's managed `pubsub` and `kvstore` are already
+   there. Apply a component only if the app needs one beyond them,
+   and apply it before the app, then any subscriptions scoped to the app in a second
+   call (see `catalyst-deploy` for the full ordering), so they exist when its sidecar
+   boots. An agent needs none: apply its `Agent` resource and Catalyst provides its
+   state, pub/sub and registry (`catalyst-agent-scaffold`). A sample's local
+   `resources/` files are for running without Catalyst, so leave them out. An app with
+   no endpoint is the correct shape for a pure workflow worker, which dials Catalyst
+   outbound.
 3. Read it back and wait for `ready`. `updating` right after a local connection attaches
    is normal; give it time before calling it broken.
 
@@ -60,31 +65,37 @@ The app runs as the user's own process with three values in its environment. Cat
 hands them out through one tool.
 
 1. Make sure the App ID exists (section 2).
-2. Call `catalyst_get_app_connection` for that project and App ID. It returns
+2. Call `catalyst_get_connection` for that project and App ID. For an agent or an MCP
+   server, pass the App ID behind it: one tool serves all three. It returns
    `DAPR_API_TOKEN`, `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT`. It is a
    write-consent tool and its calls are audited, so the client may ask the user to
    approve it.
-3. Start the app process with those three values set **only in that process's
-   environment**, for example, run in the background:
+3. Start the process (the app, agent or MCP server) with those three values in its
+   environment, in whichever of these ways your shell tool allows. Run it yourself, in
+   the background:
+   - **Inline on the command:**
 
-   ```
-   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app> uv run main.py
-   ```
+     ```
+     DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
+     ```
+
+   - **A `.env` file in the app's folder.** The quickstart samples don't read `.env`
+     themselves, so load it into the process's environment when you start it: with
+     `uv run --env-file .env main.py`, or with `set -a; . ./.env; set +a` in the same shell
+     before the run command. Make sure `.env` is listed in `.gitignore`, and add it if it
+     isn't.
+   - **Your tool's own environment option**, if it has one.
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port
    or server flags if it has any (a web app started with `uv run uvicorn main:app
    --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
-   no inbound port. Alternatively, export the values only in the shell that runs the
-   app.
-4. **Handle the token as a secret, and be honest about where it goes.** It passes through
-   the tool result and through the launch command you run, so this session can see it.
-   Keep it out of files, `.env`, commits, logs and your own chat prose, and never repeat
-   it back to the user. When you describe the command, show the placeholders, as above.
-   If the user objects to the value passing through the session, offer to give them the
-   launch command with placeholders to run in their own terminal, and stop there.
+   no inbound port.
+4. **These are local-dev values, not production secrets.** A deployed app gets its own
+   injected by the platform. Never paste `DAPR_API_TOKEN` into the chat, a pull request,
+   an issue or a commit. Beyond that it needs no special handling.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
-6. If `catalyst_get_app_connection` is missing or refused, say that it is unavailable to
+6. If `catalyst_get_connection` is missing or refused, say that it is unavailable to
    this role or server, and stop. There is no other route to these values.
 
 Two things about the worker process itself:
@@ -117,12 +128,33 @@ the input if the workflow wants one. It assigns the instance id and hands it bac
 status, its history, or stopping it. Losing it means listing runs and guessing which one
 was yours, which is ambiguous the moment two runs start in the same second.
 
+**Show the run's console link at every step.** That means when the run starts, whenever
+you wait for the user (a crash, an approval, "type continue"), and when it ends. Use the
+link the tool response gives. If it gives none, build it from the run:
+`https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>`. This
+works for an agent's runs too, with the agent's App ID.
+
 Read the result with `catalyst_get_workflow_run`: it returns the execution graph, so you
 see which step the run is on or failed at. `catalyst_list_workflow_runs` finds runs when
 you lost the id.
 
 Stopping a run is a separate matter and is deliberately not in this skill — it is
 irreversible and belongs with diagnosis rather than iteration (`catalyst-debug`).
+
+### Watch a run survive a crash
+
+This is the quickest way to see what durability buys:
+
+1. Start a run, then kill the process mid-run. Use the sample's crash endpoint if it has
+   one, otherwise stop the process.
+2. `catalyst_get_workflow_run` now shows the run **RUNNING and waiting for a worker**, not
+   failed. The steps that finished are already in its history.
+3. Restart the process with the same connection values (section 3, step 5).
+4. When the run completes, its history shows that every step that finished before the
+   crash ran once, and only the step the crash cut off ran again.
+
+That re-run is expected, because activities run at least once. Never say "nothing ran
+twice". An activity with a side effect must be safe to repeat (`catalyst-activity-idempotency`).
 
 ## 5. Read the output while you develop
 
@@ -167,7 +199,7 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 
 | Symptom | Cause | Do |
 | --- | --- | --- |
-| `catalyst_get_app_connection` missing or refused | Not available to this role or server | Say so and stop |
+| `catalyst_get_connection` missing or refused | Not available to this role or server | Say so and stop |
 | `catalyst_get_app` says the app does not exist | Wrong name or project | Check the name with `catalyst_list_apps` |
 | The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `catalyst_list_components` and then `catalyst-debug` |
 | The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `catalyst_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
@@ -188,11 +220,17 @@ Two quieter failure modes with no error to search for:
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Name the organization before the first write.** Before the session's first
+  `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
+  or deletes something, call `catalyst_whoami` and tell the user which organization the
+  change lands in. A user with more than one organization cannot otherwise tell where it
+  went. If it fails, follow `catalyst-setup` and write nothing.
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
-- **Keep the token out of files, `.env`, commits, logs and chat prose**, and never repeat
-  it to the user. Show placeholders when describing the command; if the user objects to
-  the value passing through the session, hand them a placeholder command to run themselves.
+- **Set the connection values inline, in a gitignored `.env`, or through your tool's
+  environment option**, and never paste `DAPR_API_TOKEN` into chat, a pull request, an
+  issue or a commit.
 - **Do not fall back to anything else when a tool is missing or refused.** Say it is
   unavailable to this role or server, and stop.
 - **Say which source a line came from.** Your process, the run and the sidecar log fail

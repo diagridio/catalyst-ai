@@ -1,7 +1,7 @@
 {
   "name": "catalyst-ai",
   "description": "Build and operate Diagrid Catalyst by prompting: Dapr Workflows, Durable Agents, and the running system.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "Diagrid",
     "url": "https://diagrid.io"
@@ -9,6 +9,7 @@
   "homepage": "https://github.com/diagridio/catalyst-ai",
   "license": "Apache-2.0",
   "skills": "./skills/",
+  "commands": "./commands/",
   "mcpServers": {
     "catalyst": {
       "type": "http",
