@@ -1,6 +1,6 @@
 ---
 name: catalyst-develop
-description: Iterate on code locally while it runs against live Diagrid Catalyst infrastructure — the edit, rerun, observe loop. Covers the app identity, the local app connection, the environment a worker needs, triggering runs, and a worker that never connects.
+description: Run an app or agent locally against Diagrid Catalyst — get its connection with catalyst_get_connection, start it, trigger runs, and crash and restart it to watch a workflow resume. Use for local runs, a crash-and-recover demo, or a worker that never connects.
 ---
 
 # The local development loop
