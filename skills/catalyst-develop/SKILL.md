@@ -65,22 +65,27 @@ hands them out through one tool.
    `DAPR_API_TOKEN`, `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT`. It is a
    write-consent tool and its calls are audited, so the client may ask the user to
    approve it.
-3. Start the process (the app, agent or MCP server) with those three values set **only in that process's
-   environment**, for example, run in the background:
+3. Start the process (the app, agent or MCP server) with those three values in its
+   environment, in whichever of these ways your shell tool allows. Run it yourself, in
+   the background:
+   - **Inline on the command:**
 
-   ```
-   env DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
-   ```
+     ```
+     DAPR_API_TOKEN=<token> DAPR_GRPC_ENDPOINT=<grpc> DAPR_HTTP_ENDPOINT=<http> APP_ID=<app-id> uv run main.py
+     ```
+
+   - **A `.env` file in the app's folder** that the app loads (for example
+     `uv run --env-file .env main.py`). Make sure `.env` is listed in `.gitignore`, and
+     add it if it isn't.
+   - **Your tool's own environment option**, if it has one.
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port
    or server flags if it has any (a web app started with `uv run uvicorn main:app
    --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
-   no inbound port. Alternatively, export the values only in the shell that runs the
-   app.
+   no inbound port.
 4. **These are local-dev values, not production secrets.** A deployed app gets its own
-   injected by the platform. Passing them in the launch command or an exported shell
-   variable is fine. Just don't commit them: keep them out of tracked files and out of
-   any `.env` that is checked in.
+   injected by the platform. Never paste `DAPR_API_TOKEN` into the chat, a pull request,
+   an issue or a commit. Beyond that it needs no special handling.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
 6. If `catalyst_get_connection` is missing or refused, say that it is unavailable to
@@ -187,10 +192,12 @@ Two quieter failure modes with no error to search for:
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
-- **Do not commit the connection values.** For local dev, the launch command or the shell
-  environment is the right place for them.
+- **Set the connection values inline, in a gitignored `.env`, or through your tool's
+  environment option**, and never paste `DAPR_API_TOKEN` into chat, a pull request, an
+  issue or a commit.
 - **Do not fall back to anything else when a tool is missing or refused.** Say it is
   unavailable to this role or server, and stop.
 - **Say which source a line came from.** Your process, the run and the sidecar log fail

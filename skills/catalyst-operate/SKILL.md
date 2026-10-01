@@ -290,6 +290,7 @@ with a route from the table above and an identifier whose form you are sure of.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.

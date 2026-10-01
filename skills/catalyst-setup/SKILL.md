@@ -113,6 +113,7 @@ yet.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
 - **Do not create a project.** Every organization gets a project named `default` with

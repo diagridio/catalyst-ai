@@ -271,6 +271,7 @@ Alongside it, state plainly:
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Never generate code from a diagram without emitting the IR first.** The IR is what
   makes the translation reviewable, and it is the only artefact that survives.
 - **Never generate code from IR that failed validation.** Report the failed `check_id`s

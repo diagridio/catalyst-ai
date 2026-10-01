@@ -214,6 +214,7 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field

@@ -238,6 +238,7 @@ only mechanism that catches a determinism regression before deployment does.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Judge the action sequence, not the vocabulary.** A hazardous call that cannot reach a
   branch, a loop bound or an activity input is not the same finding as one that can.
 - **Never invent an SDK name.** If a context accessor is not verified above, read it from

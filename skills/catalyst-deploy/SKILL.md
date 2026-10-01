@@ -305,6 +305,7 @@ rejected. Send one only when the user has explicitly asked for a new project.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Check headroom before designing, not after building.** `catalyst_get_usage`.
   Identities, connections and subscriptions are capped per region across the whole
   organization, so a second project adds no headroom for them.

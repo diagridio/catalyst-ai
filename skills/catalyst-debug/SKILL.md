@@ -337,6 +337,7 @@ Then the fix, separately, and as a proposal if it mutates anything.
 
 ## Rules
 
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Never report an absent field as an empty value.** See section 3. It is the one error
   here the user cannot catch.
 - **Stay in one project unless asked otherwise, and say which.** A question with no

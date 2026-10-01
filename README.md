@@ -253,8 +253,10 @@ hours, and they all fail *silently* or with an unhelpful error.
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
 - **Connection values are for local dev only.** A deployed app gets its own from the
-  platform. They go into the launch command or the shell that runs your app, and are
-  never committed.
+  platform. They go inline on the launch command, into a gitignored `.env` in the app's
+  folder, or through your tool's environment option, and never into chat, a pull request
+  or a commit.
+- **The skills use the Catalyst MCP tools for everything in Catalyst.**
 
 ## If your install is behind
 
