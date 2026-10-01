@@ -228,7 +228,7 @@ Being explicit, because the gap matters and you'll notice it:
 | Determinism and idempotency review | ✅ works now |
 | Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
-| Running your app, agent or MCP server locally against Catalyst | 🆕 through `catalyst_get_connection`, which is not served yet |
+| Running your app, agent or MCP server locally against Catalyst | ✅ works now, through `catalyst_get_connection` |
 | Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, streaming requests, cluster diagnostics | ⛔ not available over MCP yet |
 
