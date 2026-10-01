@@ -10,8 +10,7 @@ real call to Catalyst. Anything less is not connected, however healthy it looks.
 
 These skills drive Catalyst only through the Catalyst MCP server, the `catalyst_*` tools.
 Setup is therefore two things: the server is added to the client, and the user has signed
-in to it with the client's own OAuth flow. There is nothing to install and no separate
-login command.
+in to it with the client's own OAuth flow. There is nothing to install.
 
 ## 1. Check the connection first
 
