@@ -20,16 +20,17 @@ sign-in is the fastest way to make a working setup stop working.
 Call `catalyst_whoami`. Clients prefix tool names (in Claude Code it appears as
 `mcp__plugin_catalyst-ai_catalyst__catalyst_whoami`), so match the ending.
 
-- **It returns an organization.** Connected. Report the organization and the project you
-  will work in, and stop.
+- **It returns an organization.** Connected. Confirm it the way section 5 says, and stop.
 - **The tool is not there, or it returns `NOT_AUTHENTICATED`.** The server is missing or
   not signed in. Go to section 2.
 
 ## 2. Add the server and sign in
 
-The server is `https://mcp.cloud.r1.diagrid.io/mcp`, a remote (streamable HTTP) MCP
-server. It signs in with OAuth in the browser. There is no API key and nothing for the
-user to paste.
+The Catalyst MCP server is a remote (streamable HTTP) MCP server. It signs in with OAuth
+in the browser. There is no API key and nothing for the user to paste.
+
+Only clients without the plugin need its address, and the table below carries it. Give
+the user the command or config for their client; do not quote the address on its own.
 
 | Client | Do |
 | --- | --- |
@@ -53,11 +54,11 @@ plugin, they have two copies of every tool. Ask them to remove their own entry.
 
 ## 3. Know what the connection depends on
 
-- **The URL must be exact.** The `r1` in `mcp.cloud.r1.diagrid.io` is required; a URL
-  without it does not resolve.
+- **The address must be exact.** Copy it from the table in section 2 rather than typing
+  it from memory; a near-miss does not resolve.
 - **A token only works on the server it was issued for.** A token from another server is
-  refused as `NOT_AUTHENTICATED`. If sign-in succeeded but calls are refused, check the
-  server URL first.
+  refused as `NOT_AUTHENTICATED`. If sign-in succeeded but calls are refused, check that
+  the client's entry matches section 2 before anything else.
 - **The tool list depends on the user's role and on the scopes they granted.** Write
   tools, such as `catalyst_apply`, or starting or terminating a workflow run, are left out
   of the list entirely unless the role can write and the sign-in granted `catalyst:write`.
@@ -74,7 +75,7 @@ user for an API key, which is never the right next step.
 
 | Kind | What it means | Do |
 | --- | --- | --- |
-| `NOT_AUTHENTICATED` | No token, or it does not verify | Ask the user to sign in to the MCP server again (section 2). Do not ask for a token. If they just did, check the server URL (section 3) |
+| `NOT_AUTHENTICATED` | No token, or it does not verify | Ask the user to sign in to the MCP server again (section 2). Do not ask for a token. If they just did, check the client's entry (section 3) |
 | `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user which organization |
 | `ORG_MISMATCH` | A supplied org disagrees with the sign-in | Stop. Report both values. Do not retry with either |
 | `ORG_UNAVAILABLE` | Organization blocked or being deleted | Terminal. Tell the user to contact Diagrid support. Do not retry |
@@ -93,15 +94,19 @@ at all: a permanent refusal retried looks to the user like a hang.
 
 ## 5. Confirm, out loud
 
-Report three things, from a real call and not from configuration:
+Report two things, from a real call and not from configuration:
 
-- the organization, by name
+- the organization, by name. It is `data.attributes.name` under `getCurrentOrgWithDetails`
+  in the `catalyst_whoami` answer. If it has no name, give the organization ID instead,
+  and do not explain why the name is missing.
 - the project you will work in
-- the MCP server URL you are connected to
 
-If any of the three is unknown, say which, and say what you tried. A confident
-"connected!" that turns out to be wrong costs more than an honest "the server is added but
-not signed in".
+Then add one line on write access: whether the write tools are present. Keep it to that.
+Do not name the server, its address, the API host or any other endpoint; the user is
+asking whether they are connected, not where to.
+
+If either is unknown, say which, and say what you tried. A confident "connected!" that
+turns out to be wrong costs more than an honest "the server is added but not signed in".
 
 ## What is not available over MCP yet
 
