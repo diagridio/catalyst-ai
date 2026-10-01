@@ -167,7 +167,17 @@ this needs a human rather than an installer's exit code.
 
 ## Then just ask
 
-The point is that you don't learn commands. Try:
+New to Catalyst? In Claude Code, type one of these to see a crash-and-recover run end to
+end. Each is a single line, so there's nothing to paste:
+
+- `/catalyst-ai:try-workflow`: a durable workflow crashes mid-run and resumes where it
+  stopped.
+- `/catalyst-ai:try-agent`: the same for a durable AI agent (LangGraph, no API key).
+
+In other clients, paste the matching prompt from [`commands/`](commands/). It's the same
+text.
+
+After that, you don't learn commands. Try:
 
 > Set up Diagrid Catalyst, then show me what's in my project.
 

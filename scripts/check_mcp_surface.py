@@ -128,7 +128,7 @@ def check(root: Path) -> list[Finding]:
         findings.append(Finding(str(CONTRACT), 0, "missing or empty, so tool names cannot be checked"))
         tools = set()
 
-    tool_files = _text_files(root, "skills") + _text_files(root, "evals") + _text_files(root, "README.md")
+    tool_files = _text_files(root, "skills") + _text_files(root, "commands") + _text_files(root, "evals") + _text_files(root, "README.md")
     for path in tool_files:
         text = path.read_text(encoding="utf-8")
         for match in TOOL_REFERENCE.finditer(text):
