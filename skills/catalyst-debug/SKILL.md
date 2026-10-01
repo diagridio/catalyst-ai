@@ -1,6 +1,6 @@
 ---
 name: catalyst-debug
-description: Diagnose why something in Diagrid Catalyst is broken or stuck, then stop, kill, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
+description: Diagnose why something in Diagrid Catalyst is broken or stuck, then pause, terminate, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
 ---
 
 # Diagnose a Catalyst failure
