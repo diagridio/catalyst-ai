@@ -220,7 +220,9 @@ jobs:
         run: python3 scripts/test_check_version_bump.py
 
       - name: Require a version bump for plugin changes
-        run: python3 scripts/check_version_bump.py "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python3 scripts/check_version_bump.py "origin/$BASE_REF"
 
   manifests:
     runs-on: ubuntu-latest
@@ -229,4 +231,6 @@ jobs:
       - name: Validate the plugin and marketplace manifests
         # Kept as a weak extra signal, not as the gate — see the note above. It
         # does catch a malformed manifest, which the Python linter does not read.
-        run: npx --yes @anthropic-ai/claude-code plugin validate . --strict
+        # Pinned, as check_install.py pins `skills`, so an upstream release cannot
+        # change this job's verdict without a change in this repo.
+        run: npx --yes @anthropic-ai/claude-code@2.1.286 plugin validate . --strict

@@ -196,8 +196,55 @@ def check(root: Path) -> list[Finding]:
     return findings
 
 
+# The directories check() reads. One that is missing or empty yields no files and
+# so no findings: a rename would switch the gate off with CI still green.
+SCANNED_ROOTS = ("skills", "commands", "evals", "README.md")
+
+
+def missing_roots(root: Path) -> list[Finding]:
+    return [
+        Finding(name, 0, "missing or empty, so nothing in it is checked. Update SCANNED_ROOTS if it moved.")
+        for name in SCANNED_ROOTS
+        if not _text_files(root, name)
+    ]
+
+
+def _body(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if text.startswith("---\n"):
+        _, _, text = text[4:].partition("\n---\n")
+    return text
+
+
+def starter_eval_drift(root: Path) -> list[Finding]:
+    """Each commands/try-<x>.md is graded by evals/starter-<x>-loads-a-skill.
+
+    The eval's prompt must be the command's body, or it grades a prompt no user
+    sends and can pass while the shipped command fails to load a skill.
+    """
+    found: list[Finding] = []
+    for command in sorted((root / "commands").glob("try-*.md")):
+        name = command.stem.removeprefix("try-")
+        prompt = root / "evals" / f"starter-{name}-loads-a-skill" / "prompt.md"
+        if not prompt.is_file():
+            found.append(Finding(str(command.relative_to(root)), 0, f"has no eval at {prompt.relative_to(root)}"))
+        elif _body(prompt) != _body(command):
+            found.append(
+                Finding(
+                    str(prompt.relative_to(root)),
+                    0,
+                    f"body differs from {command.relative_to(root)}. Copy the command's body into it verbatim.",
+                )
+            )
+    for prompt in sorted((root / "evals").glob("starter-*-loads-a-skill/prompt.md")):
+        name = prompt.parent.name.removeprefix("starter-").removesuffix("-loads-a-skill")
+        if not (root / "commands" / f"try-{name}.md").is_file():
+            found.append(Finding(str(prompt.relative_to(root)), 0, f"grades commands/try-{name}.md, which does not exist"))
+    return found
+
+
 def main() -> int:
-    findings = check(REPO)
+    findings = missing_roots(REPO) + check(REPO) + starter_eval_drift(REPO)
     if findings:
         print("MCP surface check FAILED:\n", file=sys.stderr)
         for finding in findings:
