@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from check_mcp_surface import check  # noqa: E402
+from check_mcp_surface import REPO, check, missing_roots, starter_eval_drift  # noqa: E402
 
 CONTRACT = "# tools\ncatalyst_whoami\ncatalyst_get_app\n"
 
@@ -106,10 +106,37 @@ def main() -> int:
     if not check(missing):
         failures.append("a tree with no contract must fail")
 
+    extra = 1
+
+    def expect(name: str, found: list, needle: str) -> None:
+        nonlocal extra
+        extra += 1
+        text = "\n".join(str(f) for f in found)
+        if needle and needle not in text:
+            failures.append(f"{name}: expected a finding mentioning {needle!r}, got {text or 'none'}")
+        if not needle and found:
+            failures.append(f"{name}: expected a pass, got {text}")
+
+    expect("a tree without commands/ and evals/ fails", missing_roots(tree({"skills/a/SKILL.md": "x\n", "README.md": "x\n"})), "commands")
+    expect("the real repo has every scanned root", missing_roots(REPO), "")
+    command = "---\ndescription: d\n---\n\nDo the thing.\n"
+    expect(
+        "a matching starter eval passes",
+        starter_eval_drift(tree({"commands/try-x.md": command, "evals/starter-x-loads-a-skill/prompt.md": "---\nname: e\n---\n\nDo the thing.\n"})),
+        "",
+    )
+    expect(
+        "a drifted starter eval fails",
+        starter_eval_drift(tree({"commands/try-x.md": command, "evals/starter-x-loads-a-skill/prompt.md": "---\nname: e\n---\n\nDo another thing.\n"})),
+        "body differs",
+    )
+    expect("a command with no eval fails", starter_eval_drift(tree({"commands/try-x.md": command})), "has no eval")
+    expect("the real repo's starter evals match", starter_eval_drift(REPO), "")
+
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
         return 1
-    print(f"{len(CASES) + 1} cases passed")
+    print(f"{len(CASES) + extra} cases passed")
     return 0
 
 
