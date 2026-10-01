@@ -68,6 +68,11 @@ def add_skill(root: Path) -> None:
     (root / "skills" / "two" / "SKILL.md").write_text("---\nname: two\ndescription: d\n---\n\nB.\n")
 
 
+def add_command(root: Path) -> None:
+    (root / "commands").mkdir(exist_ok=True)
+    (root / "commands" / "try.md").write_text("---\ndescription: d\n---\n\nB.\n")
+
+
 def bump(root: Path, v: str = "0.2.0") -> None:
     (root / ".claude-plugin" / "plugin.json").write_text(manifest(v))
 
@@ -77,6 +82,10 @@ def main() -> int:
         # The defect this exists for: new skill, version untouched. Users who
         # already installed 0.1.0 would never see it.
         case("a new skill without a version bump", add_skill, "reject"),
+
+        # Plugin commands are installed and cached with the skills.
+        case("a new command without a version bump", add_command, "reject"),
+        case("a new command with a version bump", lambda r: (add_command(r), bump(r)), "pass"),
 
         # Editing an existing skill is just as invisible as adding one.
         case(
