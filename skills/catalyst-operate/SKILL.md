@@ -290,9 +290,7 @@ with a route from the table above and an identifier whose form you are sure of.
 
 ## Rules
 
-- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
-  CLI and its sign-in, even when it is signed in to a different organization. Never run
-  it to read or change Catalyst state, and don't ask the user about it.
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.

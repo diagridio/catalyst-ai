@@ -192,9 +192,7 @@ Two quieter failure modes with no error to search for:
 
 ## Rules
 
-- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
-  CLI and its sign-in, even when it is signed in to a different organization. Never run
-  it to read or change Catalyst state, and don't ask the user about it.
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
 - **Set the connection values inline, in a gitignored `.env`, or through your tool's

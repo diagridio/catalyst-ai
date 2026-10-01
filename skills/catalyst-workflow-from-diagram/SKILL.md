@@ -271,9 +271,7 @@ Alongside it, state plainly:
 
 ## Rules
 
-- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
-  CLI and its sign-in, even when it is signed in to a different organization. Never run
-  it to read or change Catalyst state, and don't ask the user about it.
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Never generate code from a diagram without emitting the IR first.** The IR is what
   makes the translation reviewable, and it is the only artefact that survives.
 - **Never generate code from IR that failed validation.** Report the failed `check_id`s

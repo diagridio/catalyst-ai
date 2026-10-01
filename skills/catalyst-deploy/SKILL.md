@@ -305,9 +305,7 @@ rejected. Send one only when the user has explicitly asked for a new project.
 
 ## Rules
 
-- **Use only the Catalyst MCP tools for Catalyst.** Ignore any locally installed Diagrid
-  CLI and its sign-in, even when it is signed in to a different organization. Never run
-  it to read or change Catalyst state, and don't ask the user about it.
+- **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Check headroom before designing, not after building.** `catalyst_get_usage`.
   Identities, connections and subscriptions are capped per region across the whole
   organization, so a second project adds no headroom for them.
