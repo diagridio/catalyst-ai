@@ -130,6 +130,21 @@ you lost the id.
 Stopping a run is a separate matter and is deliberately not in this skill — it is
 irreversible and belongs with diagnosis rather than iteration (`catalyst-debug`).
 
+### Watch a run survive a crash
+
+This is the quickest way to see what durability buys:
+
+1. Start a run, then kill the process mid-run. Use the sample's crash endpoint if it has
+   one, otherwise stop the process.
+2. `catalyst_get_workflow_run` now shows the run **RUNNING and waiting for a worker**, not
+   failed. The steps that finished are already in its history.
+3. Restart the process with the same connection values (section 3, step 5).
+4. When the run completes, its history shows that every step that finished before the
+   crash ran once, and only the step the crash cut off ran again.
+
+That re-run is expected, because activities run at least once. Never say "nothing ran
+twice". An activity with a side effect must be safe to repeat (`catalyst-activity-idempotency`).
+
 ## 5. Read the output while you develop
 
 Three different sources, and picking the wrong one is why bugs look invisible.
