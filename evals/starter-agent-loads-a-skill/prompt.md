@@ -1,5 +1,13 @@
 ---
-description: Try Catalyst in one step. A durable AI agent (LangGraph, no API key) crashes mid-run and resumes where it stopped, driven through the Catalyst MCP tools.
+name: starter-agent-loads-a-skill
+description: The docs' durable-agent starter prompt names the catalyst_* tools explicitly. A Catalyst skill must still load, so its guidance reaches the model.
+tags: [routing]
+plugins: ["../.."]
+max_turns: 6
+allowed_tools: [Read, Glob, Grep, Skill]
+expected_outcome: >
+  Loads a catalyst-* skill (setup or develop, or a scaffold) before acting on the
+  starter prompt, rather than going straight to the tools the prompt names.
 ---
 
 I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app. The sample runs on a built-in offline model, so no API key is needed.
