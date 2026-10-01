@@ -252,8 +252,9 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
   `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
   have produced plenty.
-- **The app's API token is kept out of files, `.env`, commits, logs and chat.** The
-  connection values go only into the environment of the process that runs your app.
+- **Connection values are for local dev only.** A deployed app gets its own from the
+  platform. They go into the launch command or the shell that runs your app, and are
+  never committed.
 
 ## If your install is behind
 
