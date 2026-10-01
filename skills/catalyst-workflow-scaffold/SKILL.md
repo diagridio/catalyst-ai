@@ -161,7 +161,7 @@ A tool that refuses is likewise not a workflow that failed. Report the refusal.
 ## 7. Hand back a link, not a claim
 
 Once the app exists and a run has started, give the user a console link so they can
-see it for themselves. The console for the production server is `https://catalyst.diagrid.io`. Only these routes
+see it for themselves. The console for the production server is `https://catalyst.r1.diagrid.io`. Only these routes
 exist:
 
 | To show | Route |

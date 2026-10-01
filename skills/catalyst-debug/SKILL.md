@@ -287,7 +287,7 @@ not retry at all, because a permanent refusal retried presents to the user as a 
 Give the user a link to the resource you are talking about, so they can look at what you
 looked at. This is what makes a withheld field an honest answer rather than a dead end.
 
-The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
+The console for the production server is `https://catalyst.r1.diagrid.io`. If you cannot build a link you trust, give
 the identifiers in plain text.
 
 Use only these routes, appended to that host:

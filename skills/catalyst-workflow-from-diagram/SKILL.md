@@ -251,7 +251,7 @@ shared at this organization's data-sharing level, or you will send someone to de
 working code. Only an organization administrator can raise the level to `full`. Never
 forge a data-sharing header, and never ask an administrator to raise the level so you can
 finish an answer. The console shows the run under the user's own access:
-`https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
+`https://catalyst.r1.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
 
 ## 9. Hand back the diagram you implemented
 
