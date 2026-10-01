@@ -55,6 +55,8 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("unknown tool in the README", {"README.md": "catalyst_frobnicate\n"}, True, "catalyst_frobnicate"),
     ("CLI invocation in a skill", {"skills/a/SKILL.md": "Run `diagrid project list`.\n"}, True, "CLI invocation"),
     ("CLI invocation in an eval", {"evals/e/graders/g.md": "diagrid workflow get\n"}, True, "CLI invocation"),
+    ("unknown tool in a command", {"commands/try.md": "Call `catalyst_frobnicate`.\n"}, True, "catalyst_frobnicate"),
+    ("CLI invocation in a command", {"commands/try.md": "Run `diagrid project list`.\n"}, True, "CLI invocation"),
     ("CLI invocation in the README", {"README.md": "diagrid login\n"}, True, "CLI invocation"),
     ("mcp serve", {"skills/a/SKILL.md": "diagrid mcp serve\n"}, True, "local MCP server"),
     ("mcp install", {"README.md": "then mcp install it\n"}, True, "local MCP server"),

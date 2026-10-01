@@ -7,7 +7,7 @@ compile:
 
 * A `catalyst_*` tool name that is not in contracts/catalyst-mcp-tools.txt. The
   model calls it, gets "unknown tool" and improvises. lint_skills.py already
-  checks this for skills/; this gate adds evals/ and README.md, which it does
+  checks this for skills/; this gate adds commands/, evals/ and README.md, which it does
   not read, and is the one place the rule is stated for the whole repo.
 * A `diagrid <subcommand>` CLI invocation. There is no CLI path any more: no
   install, no login, no version pin. A skill that tells a model to run one is
