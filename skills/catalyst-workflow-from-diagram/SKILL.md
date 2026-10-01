@@ -218,8 +218,7 @@ Then run it against Catalyst:
 - Make sure the app exists: `catalyst_get_app`, else `catalyst_apply` an `App` (read
   `catalyst_get_resource_schema` first and run with `dry_run`). A write role is needed.
 - Start the worker with the connection values in its environment. `catalyst-develop`
-  section 3 is the one place that says how, using `catalyst_get_connection`, and how
-  to keep the token out of chat, files and history.
+  section 3 is the one place that says how, using `catalyst_get_connection`.
 
 **Give the app no endpoint and no port.** What a diagram translates into is a workflow
 worker: it dials Catalyst outbound and polls for work items, so there is no inbound

@@ -106,7 +106,7 @@ instead and let the old instances drain. Workflow versioning is not solved for y
    `catalyst_apply` is not in the tool list, say so and stop.
 2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
    start the process with the connection values from `catalyst_get_connection` in its
-   environment, and how to keep the token out of chat, files and history. Follow it
+   environment. Follow it
    rather than improvising.
 
 **A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work

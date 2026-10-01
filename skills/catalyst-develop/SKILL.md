@@ -77,12 +77,10 @@ hands them out through one tool.
    --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
    no inbound port. Alternatively, export the values only in the shell that runs the
    app.
-4. **Handle the token as a secret, and be honest about where it goes.** It passes through
-   the tool result and through the launch command you run, so this session can see it.
-   Keep it out of files, `.env`, commits, logs and your own chat prose, and never repeat
-   it back to the user. When you describe the command, show the placeholders, as above.
-   If the user objects to the value passing through the session, offer to give them the
-   launch command with placeholders to run in their own terminal, and stop there.
+4. **These are local-dev values, not production secrets.** A deployed app gets its own
+   injected by the platform. Passing them in the launch command or an exported shell
+   variable is fine. Just don't commit them: keep them out of tracked files and out of
+   any `.env` that is checked in.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
 6. If `catalyst_get_connection` is missing or refused, say that it is unavailable to
@@ -191,9 +189,8 @@ Two quieter failure modes with no error to search for:
 
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
-- **Keep the token out of files, `.env`, commits, logs and chat prose**, and never repeat
-  it to the user. Show placeholders when describing the command; if the user objects to
-  the value passing through the session, hand them a placeholder command to run themselves.
+- **Do not commit the connection values.** For local dev, the launch command or the shell
+  environment is the right place for them.
 - **Do not fall back to anything else when a tool is missing or refused.** Say it is
   unavailable to this role or server, and stop.
 - **Say which source a line came from.** Your process, the run and the sidecar log fail

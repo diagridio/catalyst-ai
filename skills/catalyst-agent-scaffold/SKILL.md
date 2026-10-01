@@ -158,7 +158,7 @@ and do the same for throughput limits.
 - Make sure the `App` and the `Agent` exist (`catalyst_get_app`, `catalyst_get_agent`).
 - Start the agent process with the connection values in its environment:
   `catalyst-develop` section 3 is the one place that says how, using
-  `catalyst_get_connection`, and how to keep the token out of chat, files and history.
+  `catalyst_get_connection`.
 - Send a prompt, wait for it to be mid-run, kill the process, start it again.
 - The run must resume rather than restart. If it restarts, the agent is not durable and
   the scaffold is not finished — usually the workflow store or a component name.
