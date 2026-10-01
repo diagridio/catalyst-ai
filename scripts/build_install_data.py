@@ -58,7 +58,7 @@ def prompts_step(commands: list[dict[str, Any]]) -> dict[str, Any]:
         "prompt",
         "Paste a starter prompt",
         "This client has no slash command, so paste the whole prompt into a chat.",
-        *[item(f"prompt-{c['id']}", f"{c['id']} prompt", c["prompt"], lang="text") for c in commands],
+        *[item(f"prompt-{c['id']}", c["id"].removeprefix("try-").capitalize() + " starter", c["prompt"], lang="text") for c in commands],
     )
 
 
@@ -120,7 +120,7 @@ def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "skills",
                         "install skills",
                         "npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes",
-                        readme=["npx skills add diagridio/catalyst-ai", "-a codex"],
+                        readme=["npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes"],
                     ),
                 ),
                 step(
@@ -150,7 +150,7 @@ def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "skills",
                         "install skills",
                         "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes",
-                        readme=["npx skills add diagridio/catalyst-ai", "-a github-copilot"],
+                        readme=["npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes"],
                     ),
                 ),
                 step(

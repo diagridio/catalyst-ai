@@ -84,6 +84,7 @@ const STYLE = `
 [role="tabpanel"] { padding: 14px 16px 16px; }
 ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .title { font-weight: 600; margin: 0; }
+.label { font-size: 0.85em; margin: 0.5em 0 0.25em; opacity: 0.8; }
 .desc { margin: 2px 0 6px; color: var(--muted); }
 .row { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; }
 pre {
@@ -197,7 +198,7 @@ export class CatalystAiInstallElement extends Base {
         el('li', {}, [
           el('p', { class: 'title', text: s.title }),
           el('p', { class: 'desc', text: s.description }),
-          ...s.items.map((it) => this.#row(active, it)),
+          ...s.items.map((it) => this.#row(active, it, s.items.length > 1)),
         ]),
       ),
     );
@@ -213,11 +214,12 @@ export class CatalystAiInstallElement extends Base {
     );
   }
 
-  #row(client, it) {
+  #row(client, it, showLabel = false) {
     const code = el('pre', { tabindex: '0', text: it.text });
     const button = el('button', { class: 'copy', type: 'button', 'aria-label': `Copy ${it.label}`, text: 'Copy' });
     button.addEventListener('click', () => this.#copy(client.id, it, code, button));
-    return el('div', { class: 'row' }, [code, button]);
+    const row = el('div', { class: 'row' }, [code, button]);
+    return showLabel ? el('div', {}, [el('p', { class: 'label', text: it.label }), row]) : row;
   }
 
   #select(id, focus) {

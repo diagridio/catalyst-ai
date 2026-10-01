@@ -114,10 +114,10 @@ VS Code opens a browser for authorization on the first connection. See the
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
 ```bash
-npx skills add diagridio/catalyst-ai -a github-copilot
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
 ```
 
-Use **repeated `-a` flags** if you pass more than one. The comma form
+Use **repeated `--agent` flags** if you pass more than one. The comma form
 (`-a codex,github-copilot`) is what the upstream README documents, and it prints
 `Invalid agents:`, installs nothing and exits **1** — so it fails honestly, and a step
 checking the exit code catches it. Re-measured on 1.5.22 and 1.5.23; an earlier version
@@ -142,7 +142,7 @@ will quietly leave out a client you haven't installed yet.
 ### Codex
 
 ```bash
-npx skills add diagridio/catalyst-ai -a codex
+npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
 ```
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
