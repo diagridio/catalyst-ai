@@ -216,6 +216,11 @@ Two quieter failure modes with no error to search for:
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Name the organization before the first write.** Before the session's first
+  `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
+  or deletes something, call `catalyst_whoami` and tell the user which organization the
+  change lands in. A user with more than one organization cannot otherwise tell where it
+  went. If it fails, follow `catalyst-setup` and write nothing.
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
 - **Set the connection values inline, in a gitignored `.env`, or through your tool's

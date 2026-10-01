@@ -312,6 +312,11 @@ rejected. Send one only when the user has explicitly asked for a new project.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Name the organization before the first write.** Before the session's first
+  `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
+  or deletes something, call `catalyst_whoami` and tell the user which organization the
+  change lands in. A user with more than one organization cannot otherwise tell where it
+  went. If it fails, follow `catalyst-setup` and write nothing.
 - **Check headroom before designing, not after building.** `catalyst_get_usage`.
   Identities, connections and subscriptions are capped per region across the whole
   organization, so a second project adds no headroom for them.
