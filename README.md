@@ -3,16 +3,17 @@
 Build and operate [Diagrid Catalyst](https://diagrid.io) by prompting — Dapr Workflows,
 Durable Agents, and the running system.
 
-**Verified end to end in Claude Code** — installs in under 5 seconds, all 10 skills
-register, and a real Catalyst question fires the right skill and gets a grounded answer.
-In **Codex** and **GitHub Copilot** the install and all 10 skills are verified, and Codex
+**Verified end to end in Claude Code** — installs in under 5 seconds, every skill
+registers, and a real Catalyst question fires the right skill and gets a grounded answer.
+In **Codex** and **GitHub Copilot** the install and every skill are verified, and Codex
 is confirmed to put them in front of the model; neither has yet answered a Catalyst
 question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client).
 
-> **Early release.** The skills drive Catalyst only through the remote Catalyst MCP
-> server. There is no CLI to install and no separate login: you add the server and sign
-> in once. Read [What works today](#what-works-today) for what is and is not available
+> **Early release.** The skills drive Catalyst through the remote Catalyst MCP server:
+> you add the server and sign in once. The one exception is an app tunnel, which lets
+> Catalyst call into a process on your machine. No MCP tool opens one, so
+> `catalyst-app-tunnels` installs the Diagrid CLI and uses it for that alone. Read [What works today](#what-works-today) for what is and is not available
 > over MCP yet.
 
 ## Install
@@ -27,13 +28,13 @@ claude plugin install catalyst-ai@diagrid
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.4.0 or later
-claude plugin details catalyst-ai@diagrid    # expect 10 skills
+claude plugin list                           # expect Version: 0.6.0 or later
+claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
 `list` reports the version you actually have. `details` reports the version the
 marketplace is offering, reading the installed copy only when the two agree — so on its
-own it can show you 10 skills while your session loads 9. If either looks wrong, jump to
+own it can show you 11 skills while your session loads 10. If either looks wrong, jump to
 [If your install is behind](#if-your-install-is-behind).
 
 #### Then sign in to the Catalyst MCP server
@@ -127,11 +128,11 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-This writes all ten skills to `.agents/skills/`, and Copilot's own listing confirms it
+This writes all eleven skills to `.agents/skills/`, and Copilot's own listing confirms it
 reads them:
 
 ```bash
-copilot skill list        # all 10 under "Project skills"
+copilot skill list        # all 11 under "Project skills"
 ```
 
 Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
@@ -147,7 +148,7 @@ npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
 there by design, so seeing no `.codex/` created is correct rather than a failed install.
-Codex reads them: `codex debug prompt-input` renders the model-visible prompt, and all ten
+Codex reads them: `codex debug prompt-input` renders the model-visible prompt, and all of them
 appear in its `<skills_instructions>` block with their descriptions intact, byte for byte.
 Codex's own guidance text says automatic skill selection is allowed by default, so you
 shouldn't have to name a skill — though nobody has yet confirmed that from a real session.
@@ -159,6 +160,9 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
 | GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
+
+These were measured with the first ten skills. `catalyst-app-tunnels` has not been
+re-measured on these clients yet.
 
 If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
@@ -202,6 +206,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
 | `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
+| `catalyst-app-tunnels` | Let Catalyst call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
 | `catalyst-operate` | Inspect a running project, read-only |
 | `catalyst-debug` | Diagnose why something isn't working |
@@ -211,7 +216,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
 
-**Cost:** roughly **1030 tokens always-on** across all ten (~103 each), added to every
+**Cost:** roughly **1130 tokens always-on** across all eleven (~103 each, estimated from the first ten), added to every
 session whether or not a skill fires. Each skill costs a few thousand more only when it
 actually fires. That figure is **per model** — `claude plugin details` resolves a tokenizer
 from your active model, so the same ten descriptions cost ~103 each on Sonnet 5 and Opus 5
@@ -228,9 +233,11 @@ Being explicit, because the gap matters and you'll notice it:
 | Determinism and idempotency review | ✅ works now |
 | Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
-| Running your app, agent or MCP server locally against Catalyst | ✅ works now, through `catalyst_get_connection` |
+| Running your app, agent or MCP server locally, calling out to Catalyst | ✅ works now, through `catalyst_get_connection` |
+| Letting Catalyst call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`catalyst-app-tunnels`) |
+| An agent calling an MCP server on your machine through Catalyst's workflow path (`dapr.internal.mcp.*` child workflows) | ⛔ the workflow path does not reach a tunneled MCP server yet; the skill points agents at Catalyst's HTTP MCP endpoint, which works |
 | Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
-| Invoking an app, publishing, reading or writing state, streaming requests, cluster diagnostics | ⛔ not available over MCP yet |
+| Invoking an app, publishing, reading or writing state, cluster diagnostics | ⛔ not available over MCP yet |
 
 If something is not available over MCP yet, the skills say so in one line rather than
 improvising a route. If a write tool is missing, your role is read-only, not the
@@ -266,7 +273,9 @@ hours, and they all fail *silently* or with an unhelpful error.
   platform. They go inline on the launch command, into a gitignored `.env` in the app's
   folder, or through your tool's environment option, and never into chat, a pull request
   or a commit.
-- **The skills use the Catalyst MCP tools for everything in Catalyst.**
+- **The skills use the Catalyst MCP tools for everything in Catalyst**, except opening an
+  app tunnel. Never a public tunnel (cloudflared, ngrok) for that: it bypasses the App
+  ID's identity and access policy.
 
 ## If your install is behind
 
@@ -281,7 +290,7 @@ installed" and changes nothing:
 ```bash
 claude plugin marketplace update diagrid
 claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.4.0 or later
+claude plugin list                           # expect Version: 0.6.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -293,7 +302,7 @@ reported success and repaired nothing. Deleting the directory is the only fix:
 ```bash
 rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
 claude plugin install catalyst-ai@diagrid
-claude plugin details catalyst-ai@diagrid    # expect 10 skills
+claude plugin details catalyst-ai@diagrid    # expect 11 skills
 ```
 
 CI now fails any change to plugin content that doesn't bump the version, so the second one
@@ -347,7 +356,9 @@ substrings that each shipped somewhere and broke.
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
 surface. Every `catalyst_*` name must appear in `contracts/catalyst-mcp-tools.txt`, which
 is a copy of what the server's `tools/list` returns; update it when the server's tool list
-changes. The gate also fails on any invocation of the old command-line tool, on anything
+changes. The gate also fails on any invocation of the Diagrid CLI, except the tunnel
+commands (install check, sign-in and the two tunnel commands) inside
+`skills/catalyst-app-tunnels/` and `evals/tunnel-*/`, on anything
 that points at a server other than the remote one, and on any host under Diagrid's
 domains that is not on its allowlist (the MCP server, the console, the docs and downloads
 hosts, and the main site).

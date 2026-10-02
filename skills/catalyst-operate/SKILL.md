@@ -123,9 +123,9 @@ Three limits in that table are deliberate, not oversights:
   writes, the server also has `catalyst_apply`, `catalyst_delete_resource` and workflow-run
   actions (see `catalyst-deploy` and `catalyst-debug`). This skill uses none of them.
   Anything the user wants changed goes to those skills, with their consent.
-- **Some reads have no tool.** Invoking an app, publishing to a topic, reading or writing
-  state, and streaming inbound requests are not available over MCP yet. Say that in one
-  line; do not substitute a guess.
+- **Some reads have no tool.** Invoking an app, publishing to a topic, and reading or
+  writing state are not available over MCP yet. Say that in one line; do not substitute
+  a guess. Streaming inbound requests needs an app tunnel (`catalyst-app-tunnels`).
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
 Where a tool asks for or returns `appId`, it means that identity's name. Read it from the

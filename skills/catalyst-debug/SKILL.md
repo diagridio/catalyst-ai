@@ -200,12 +200,14 @@ down this list. The backing identity, with its own status and messages, is under
 4. **Whether a workflow app works end to end.** `catalyst_start_workflow` (a write) then
    `catalyst_get_workflow_run` separates the platform from the application.
 
-Probing the app directly, publishing a test message, reading state back and streaming
-inbound requests are not available over MCP yet. Say so rather than implying you ruled
-them out.
+Probing the app directly, publishing a test message and reading state back are not
+available over MCP yet. Say so rather than implying you ruled them out. Seeing inbound
+requests as they arrive needs an app tunnel (`catalyst-app-tunnels`).
 
 A missing tunnel is an ordinary answer, not an error: `catalyst_list_app_tunnels` showing
-none means no one is running that App ID from a local machine.
+none means no one is running that App ID from a local machine. For an app meant to run
+locally and be called by Catalyst (an invocation target, a subscriber, an agent endpoint,
+the MCP server behind an `MCPServer`), no tunnel is the cause.
 
 ## 5. An agent that is not responding
 
