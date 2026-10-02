@@ -62,6 +62,12 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
   projects.
 - **`--app-port` is what opens the tunnel.** Without it the process gets outbound access
   only, exactly as with `catalyst_get_connection`.
+- **Give `--app-port` only to a process that serves on that port.** Catalyst
+  health-checks the app through the tunnel, and until a check answers it starts no
+  workflows or actors and delivers nothing to the app. A workflow worker or a pure caller
+  with an app port and no server behind it fails every workflow start with
+  `failed to create workflow instance: context canceled`. Leave the flag off for those
+  (section 1).
 - **The command after `--` is started for you**, with `DAPR_APP_ID`,
   `DAPR_HTTP_ENDPOINT`, `DAPR_GRPC_ENDPOINT` and `DAPR_API_TOKEN` already in its
   environment, so `catalyst_get_connection` is not needed. Leave the command off to
@@ -248,6 +254,7 @@ for the tunnel to close (section 3).
 | An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID, or is still closing | Stop it, wait until `catalyst_list_app_tunnels` no longer lists it, make the change, start it again |
 | The MCP server answers 4xx to every tunneled request | It rejects the tunnel's `Host` header | Relax its host check for local development (section 5, step 1) |
 | The upstream sees `/mcp/mcp` | The proxy path repeated the spec URL's path | Post to the bare `/v1.0/diagrid/mcp/<name>` |
+| Every workflow start fails with `failed to create workflow instance: context canceled` | `dev run` has `--app-port`, and nothing listens on that port, so the app's health check never passes | Run it again without `--app-port` if nothing calls into the process (section 1); otherwise start the server on that port |
 | `catalyst_list_app_tunnels` shows a tunnel `ready`, yet nothing arrives | The record outlived its `dev run` | Check that `dev run` is still running; start it again |
 | A workflow that calls `dapr.internal.mcp.<name>.*` stays running with nothing after `ExecutionStarted` | The workflow path does not reach an MCP server behind a tunnel | Call the server through `/v1.0/diagrid/mcp/<name>` instead (section 5) |
 | The caller's discovery is empty, or the call returns 404 | No grant for that caller | `catalyst_get_access_policy`, then `catalyst_grant_access` |
@@ -262,7 +269,7 @@ for the tunnel to close (section 3).
   machine.
 - **Create the `Agent` or `MCPServer` before running `dev run` on its name.**
 - **Tunnel the identity being called**: the MCP server's own identity, the target app's.
-  Never the caller's.
+  Never the caller's, and never a workflow worker's.
 - **Name the organization before the first write** (`catalyst_whoami`), and use the
   existing project: `default` unless the user named another.
 - **Never ask the user for a token.** `diagrid login` and `dev run` handle credentials,

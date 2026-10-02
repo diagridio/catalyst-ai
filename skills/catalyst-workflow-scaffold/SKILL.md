@@ -111,7 +111,10 @@ instead and let the old instances drain. Workflow versioning is not solved for y
 
 **A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
 items, so there is no inbound endpoint to expose and nothing should be listening. An app
-with no registered endpoint is the correct shape for a worker.
+with no registered endpoint is the correct shape for a worker. Give it one anyway (an app
+endpoint, or `--app-port` on a tunnel) and Catalyst health-checks the app there, finds
+nothing, and starts no workflows: every start fails with
+`failed to create workflow instance: context canceled`.
 
 Do not invent an HTTP server to satisfy a port you do not need. It is a common first-run
 failure and it fails confusingly — the worker registers the workflow and every activity
