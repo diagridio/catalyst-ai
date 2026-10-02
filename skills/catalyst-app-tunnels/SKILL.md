@@ -198,10 +198,12 @@ not tunnel the caller.
    granted tools. A granted tool call shows up in the MCP server's own log. A tool left
    out of the grant is refused with 403, and never reaches the server.
 
-**Use the HTTP endpoint above for an MCP server behind a tunnel.** Some agent frameworks
-call MCP tools as workflows instead (`dapr.internal.mcp.<name>.*` child workflows). That
-path does not go through the tunnel today. Its calls never reach the server on this
-machine, and the parent workflow waits forever rather than failing. So if the agent's
+**Use the HTTP endpoint above for an MCP server behind a tunnel.** Some SDKs and
+frameworks call MCP tools as workflows instead (`dapr.internal.mcp.<name>.*` child
+workflows, which is what the Dapr Python SDK's `DaprMCPClient` does). That is not
+the path to build an agent on anywhere, and it does not go through the tunnel. Its calls
+never reach the server on this machine, and the parent workflow waits forever rather than
+failing. So if the agent's
 code schedules those workflows, tell the user it cannot use an MCP server on this
 machine yet, and point it at the HTTP endpoint instead. The HTTP proxy working proves
 nothing about the workflow path.

@@ -185,10 +185,40 @@ raise the level so you can finish an answer.
 
 So never report a missing payload as "the agent produced no output". Say it was not
 shared at this organization's data-sharing level, name the level, and link the console
-run (section 9). A tool that refuses is likewise not an agent that failed; report the
+run (section 10). A tool that refuses is likewise not an agent that failed; report the
 refusal.
 
-## 9. Hand back a link, not a claim
+## 9. Give it MCP tools through its own sidecar
+
+An agent calls the tools of a Catalyst `MCPServer` through **its own sidecar's MCP
+proxy**. That is the path Catalyst supports, and the one where the server's access policy
+is enforced:
+
+- **Discovery:** `GET $DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp` with
+  `dapr-api-token: $DAPR_API_TOKEN` lists the servers this identity is granted, each with
+  a `connect.path`.
+- **Calls:** point any streamable HTTP MCP client at `$DAPR_HTTP_ENDPOINT` + that
+  `connect.path` (`/v1.0/diagrid/mcp/<mcpserver-name>`), with the same header. There is
+  no Catalyst-specific MCP SDK. The framework's own MCP client or the `mcp` package works
+  unchanged.
+- **Access is deny-all until granted.** Use `catalyst_grant_access` with
+  `target_kind: mcp_server`, and grant only the tools the user asked for. A
+  caller's `tools/list` then shows only the granted tools, and a call to any other tool
+  is refused with 403. To verify a grant, make exactly those two calls as the
+  agent's identity.
+
+Where the adapter has no MCP wiring of its own, wrap each MCP call in one of the agent's
+tools, so the runner records it like any other tool call and a replayed run does not call
+it twice.
+
+**Do not call MCP tools as workflows, even though the Dapr SDK ships that path.** The
+Dapr Python SDK's `DaprMCPClient` (`dapr.ext.workflow`) calls MCP tools as
+`dapr.internal.mcp.<server>.ListTools` and `CallTool.<tool>` child workflows. That is not
+the path to build an agent on: it does not go through app tunnels, and a call that cannot
+reach its server leaves the parent workflow running forever instead of failing. If the
+user's code already uses it, say so and move it to the proxy.
+
+## 10. Hand back a link, not a claim
 
 Once the agent exists, give the user a console link rather than asking them to trust the
 transcript. The console for the production server is `https://catalyst.diagrid.io`. Only these routes exist:

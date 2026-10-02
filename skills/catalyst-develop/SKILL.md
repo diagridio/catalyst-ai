@@ -111,6 +111,10 @@ Two things about the worker process itself:
   three values do not open one. The `catalyst-app-tunnels` skill covers it. Never use a
   public tunnel instead. `catalyst_list_app_tunnels` lists the tunnels open on the
   project, so you can see whether Catalyst currently reaches a local process.
+- **An app or agent that calls an MCP server** calls it through its own sidecar, at
+  `$DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp/<mcpserver-name>` with its `DAPR_API_TOKEN`. It
+  never calls the server's own URL, and never calls `dapr.internal.mcp.*` workflows
+  (`DaprMCPClient` in the Dapr SDK). `catalyst-agent-scaffold` section 9 has the details.
 
 If the process cannot connect, read the app back (`catalyst_get_app`) before changing
 code. Status and the per-identity messages under `status.appIds` say whether the platform
