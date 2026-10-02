@@ -181,9 +181,9 @@ managed workflow store and the Workflows API is unavailable there. That is a pro
 setting, not a broken run.
 
 If every start fails with `failed to create workflow instance: context canceled`, read
-the app (`catalyst_get_app`). An app endpoint, or `--app-port` on an app tunnel,
-with no server answering there keeps the app's health check failing, and Catalyst starts
-no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
+the app (`catalyst_get_app`). An app tunnel opened with `--app-port`, or an app
+endpoint with its health check enabled, with no server answering there keeps the app's
+health check failing, and Catalyst starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
 `catalyst-develop` section 7 has the fix.
 
 ## 4. An app, agent or MCP server that is not ready

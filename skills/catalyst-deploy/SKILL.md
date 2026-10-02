@@ -136,9 +136,9 @@ endpoint and an endpoint token; an `Agent` takes an endpoint and archive setting
 
 An endpoint is optional. Created without one you get an identity that Catalyst can
 route *from* but not *to*, which is exactly what an app running as a pure worker wants.
-Set one only when the app runs a server there for Catalyst to call. Catalyst
-health-checks the endpoint, and while nothing answers it the app's workflows, actors and
-message delivery stay blocked.
+Set one only when the app runs a server there for Catalyst to call. With the app's
+health check enabled, while nothing answers it the app's workflows, actors and message
+delivery stay blocked.
 
 ### The agent resource
 
