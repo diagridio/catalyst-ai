@@ -39,7 +39,8 @@ server on this machine", only the MCP server is tunneled; the agent is a caller.
 ## 2. Install the CLI and sign in
 
 1. Check whether it is installed: `diagrid version`.
-2. If not, install it with
+2. If not, **ask the user before installing it**, as you would before any download that
+   runs on their machine. The installer is
    `curl -o- https://downloads.diagrid.io/cli/install.sh | bash`. On Windows, point the
    user at the PowerShell installer at `https://downloads.diagrid.io/cli/install.ps1`.
 3. `diagrid login` opens a browser to sign in. This is a **separate sign-in** from the
@@ -67,27 +68,31 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
   tunnel a process the user already started on that port. **When that command exits,
   `dev run` exits too**, so an app that crashes on startup takes the tunnel down with
   it; read the app's output first.
-- The app's own settings (an LLM key, say) go in with `-e NAME=value`, repeatable, or by
-  loading a gitignored `.env` in the command itself:
+- The app's own settings go in two ways. **Secrets** (an LLM key, say) go in a
+  gitignored `.env` that the command itself loads:
   `-- sh -c 'set -a; . ./.env; set +a; exec <command>'`. Never let a `.env` override the
-  four values `dev run` injects.
+  four values `dev run` injects. `-e NAME=value`, repeatable, is for **non-secret**
+  values only: it puts the value in the command line, the process list and the
+  transcript.
 - **`--yes`** skips the confirmation prompt, which a background shell cannot answer.
 - It runs in the foreground until stopped. Start it in the background with your shell
-  tool and keep its output; that output is where tunnel and app errors appear. `-a` is
-  the short form of `--id` in every `dev` command and in `listen`.
+  tool and keep its output; that output is where tunnel and app errors appear. Note its
+  process ID, which is how you stop it (below). `-a` is the short form of `--id` in
+  `dev run`, `dev stop` and `listen`; `dev scaffold` takes no `--id`.
 - `--rm-appids` deletes the App IDs that this run created when it stops. It suits a
   throwaway app; never use it on an App ID that existed before.
 
 **Stopping a tunnel.** Ending the process does not always close the tunnel:
 
-- Stop `dev run` with Ctrl-C (SIGINT) in its own shell. That stops the app it started
-  and closes the tunnel.
+- Stop `dev run` with SIGINT: `kill -INT <pid>` on the `dev run` process you started in
+  the background (not on the app it started), or Ctrl-C if the user runs it in their own
+  terminal. That stops the app it started and closes the tunnel.
 - If it was killed instead (SIGKILL, a background-task time limit, a crash of the app),
   the tunnel record stays `ready` with nothing behind it. Run
   `diagrid dev stop --id <app-id> -p <project>` to close it (in `dev stop`, `-p` is the
   project).
-- `dev stop` can leave the app that `dev run` started still running on its port. Check
-  the port with `lsof -i :<port>` afterwards and stop the leftover.
+- On older CLIs, `dev stop` can leave the app that `dev run` started still running on
+  its port. Check the port with `lsof -i :<port>` afterwards and stop the leftover.
 - After a stop, the tunnel takes up to a minute to finish closing. Until
   `catalyst_list_app_tunnels` no longer lists the App ID, an apply or a grant on it is
   still refused, and a new `listen` on it can fail with `local app connection not found`.
@@ -106,7 +111,8 @@ What it does to the platform:
   For a resource that already exists, `dev run` prints that the App ID is managed by it
   and skips provisioning. That is correct.
 - **The tunnel needs the App ID to be `ready`, and `dev run` gives up after about 100
-  seconds** with `App <id> not ready`, without starting the command. Right after
+  seconds** with an error containing `not ready` (`app <id> not ready`, which newer CLIs
+  follow with the status and its messages), without starting the command. Right after
   creation, readiness can take a minute or two. So when an Agent or MCP server is new,
   read its App ID with `catalyst_get_app` until it is `ready`, then start `dev run`. If
   `dev run` already gave up, run it again once the App ID is `ready`. Once the tunnel
@@ -236,7 +242,7 @@ for the tunnel to close (section 3).
 
 | Symptom | Cause | Do |
 | --- | --- | --- |
-| `dev run` exits with `App <id> not ready` | It gave up waiting for the App ID (section 3) | Read the App ID with `catalyst_get_app`. Once it is `ready`, run `dev run` again. If it has sat in `processing` for over 10 minutes, report it as a platform problem; do not delete and re-create it |
+| `dev run` exits with an error containing `not ready` | It gave up waiting for the App ID (section 3) | Read the App ID with `catalyst_get_app`. Once it is `ready`, run `dev run` again. If it has sat in `processing` for over 10 minutes, report it as a platform problem; do not delete and re-create it |
 | `App ID "<other>" must be in ready status in order to scaffold dev session configuration`, naming an App ID this run does not use | Older CLI versions require **every** App ID in the project to be `ready`, and stop the app they just started | `catalyst_list_apps` to find the one that is not `ready`. Wait for it, or ask the user before deleting it if it is theirs and unused |
 | The `Agent` or `MCPServer` is in error after a `dev run` | `dev run` created a plain App ID of that name first | With the user's agreement, stop the tunnel, delete the App ID (`catalyst_delete_resource`) and apply the resource again |
 | An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID, or is still closing | Stop it, wait until `catalyst_list_app_tunnels` no longer lists it, make the change, start it again |

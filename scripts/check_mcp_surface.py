@@ -62,12 +62,13 @@ CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 # letting Catalyst call into a process on the user's machine (service invocation,
 # pub/sub delivery, an MCPServer whose upstream runs locally) needs `diagrid dev run`
 # or `diagrid listen`. Only the tunnel skill and its evals may name them, and only the
-# subcommands that installing, signing in and tunnelling need. Every other subcommand
-# still fails there, so the skill cannot drift into doing with the CLI what a
-# `catalyst_*` tool already does.
+# subcommands that installing, signing in and tunnelling need. `dev` passes only as
+# `dev run`, `dev stop` or `dev scaffold`. Every other subcommand still fails there, so
+# the skill cannot drift into doing with the CLI what a `catalyst_*` tool already does.
 TUNNEL_SKILL = Path("skills") / "catalyst-app-tunnels"
 TUNNEL_EVAL_PREFIX = "tunnel-"
-TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "dev", "listen"})
+TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "listen"})
+TUNNEL_DEV_SUBCOMMAND = re.compile(r"`?\s+(?:run|stop|scaffold)(?![\w-])")
 
 
 def is_tunnel_material(rel: Path) -> bool:
@@ -78,7 +79,10 @@ def is_tunnel_material(rel: Path) -> bool:
 
 
 def tunnel_subcommand(match: re.Match[str]) -> bool:
-    return match.group(0).split()[-1] in TUNNEL_SUBCOMMANDS
+    subcommand = match.group(0).split()[-1]
+    if subcommand == "dev":
+        return TUNNEL_DEV_SUBCOMMAND.match(match.string, match.end()) is not None
+    return subcommand in TUNNEL_SUBCOMMANDS
 
 LOCAL_SERVER = re.compile(r"\bmcp\s+(?:serve|install)\b|\blocal\s+MCP\s+servers?\b", re.IGNORECASE)
 
