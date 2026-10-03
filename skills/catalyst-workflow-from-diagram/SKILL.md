@@ -280,8 +280,8 @@ Alongside it, state plainly:
   `unrecognized_item` and a question, not a best guess.
 - **Never turn a dashed line into control flow.** It is a message or a data
   association, on every input path.
-- **Do not create a project.** Use `default`. If it is genuinely absent, say so and
-  stop rather than substituting something that behaves differently.
+- **Do not create a project.** Use `default`. If it is gone, ask which existing project
+  to use, and send someone with no project to the console to create one.
 - **Do not stop at code that compiles.** Start one run and read its history back.
 - **Do not silently redraw the process.** No merged boxes, no renamed activities, no
   tidied-up branches.

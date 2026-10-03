@@ -194,8 +194,8 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
-  rather than inventing a substitute that behaves differently.
+- **Do not create a project.** Use `default`. If it is gone, ask which existing project
+  to use, and send someone with no project to the console to create one.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the
