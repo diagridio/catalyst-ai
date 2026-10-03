@@ -299,8 +299,8 @@ with a route from the table above and an identifier whose form you are sure of.
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
   blocked, with its arguments, and ask them to approve it or allow it in their client's
-  permissions; then retry that same call. Do not route around it through the CLI, a
-  script or another tool.
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.
