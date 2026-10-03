@@ -272,6 +272,10 @@ Alongside it, state plainly:
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **Never generate code from a diagram without emitting the IR first.** The IR is what
   makes the translation reviewable, and it is the only artefact that survives.
 - **Never generate code from IR that failed validation.** Report the failed `check_id`s

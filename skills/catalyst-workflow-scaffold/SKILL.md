@@ -194,6 +194,10 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
   rather than inventing a substitute that behaves differently.
 - **Do not name a package version you have not resolved.** Check the registry, or state
