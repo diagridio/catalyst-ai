@@ -297,6 +297,9 @@ with a route from the table above and an identifier whose form you are sure of.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.

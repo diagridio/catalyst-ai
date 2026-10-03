@@ -272,6 +272,9 @@ Alongside it, state plainly:
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Never generate code from a diagram without emitting the IR first.** The IR is what
   makes the translation reviewable, and it is the only artefact that survives.
 - **Never generate code from IR that failed validation.** Report the failed `check_id`s

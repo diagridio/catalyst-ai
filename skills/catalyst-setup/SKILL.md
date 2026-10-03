@@ -121,6 +121,9 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
 - **Do not create a project.** Every organization gets a project named `default` with

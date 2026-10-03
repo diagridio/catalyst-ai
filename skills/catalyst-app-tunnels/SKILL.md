@@ -265,6 +265,9 @@ for the tunnel to close (section 3).
 - **The CLI is for tunnels only:** `diagrid version`, `login`, `whoami`, `dev` and
   `listen`. Create, grant, read and delete through the `catalyst_*` tools, as every other
   skill does.
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Never use a public tunnel or a public URL** to let Catalyst reach a process on this
   machine.
 - **Create the `Agent` or `MCPServer` before running `dev run` on its name.**

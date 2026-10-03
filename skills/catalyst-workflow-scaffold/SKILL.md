@@ -194,6 +194,9 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
   rather than inventing a substitute that behaves differently.
 - **Do not name a package version you have not resolved.** Check the registry, or state

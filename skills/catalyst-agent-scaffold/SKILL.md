@@ -256,6 +256,9 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field

@@ -352,6 +352,9 @@ Then the fix, separately, and as a proposal if it mutates anything.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Never report an absent field as an empty value.** See section 3. It is the one error
   here the user cannot catch.
 - **Stay in one project unless asked otherwise, and say which.** A question with no

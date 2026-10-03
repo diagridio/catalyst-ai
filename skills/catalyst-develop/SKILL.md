@@ -230,6 +230,9 @@ Two quieter failure modes with no error to search for:
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, ask the user to approve that call.** A
+  permission prompt or an automatic safety check can stop a write. Do not route around
+  it through the CLI, a script or another tool.
 - **Name the organization before the first write.** Before the session's first
   `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
   or deletes something, call `catalyst_whoami` and tell the user which organization the
