@@ -185,13 +185,14 @@ Do not report these. Flagging them trains the reader to ignore the real findings
 
 At the default `metadata` data-sharing level, workflow and activity **`input`, `output`
 and `customStatus` are removed from the response — absent, not empty.** The payload
-exists; it is withheld.
+exists; AI tools are not allowed to read it.
 
 This matters more here than anywhere else, because diagnosing a divergence is exactly
 when someone wants to see payloads. Reporting "the activity returned nothing" or "the
 workflow was started with no input" when the value was elided is a false statement the
-user has no way to detect. Say instead: *the payload is not available at this
-data-sharing level.* Then reason from what is available:
+user has no way to detect. Say instead, in plain words: *I can't see the payload,
+because your organization's setting doesn't let AI tools read it.* Then reason from what
+is available:
 
 - event types and order, `event_id`, `timestamp`
 - activity, timer and external-event `name`
@@ -202,11 +203,14 @@ data-sharing level.* Then reason from what is available:
 - `failure_details_error_message`, `failure_details_stack_trace`,
   `failure_details_is_non_retriable`
 
-When the diagnosis turns on a payload you cannot see, say the payload was not shared at
-this organization's data-sharing level, name the level, and **hand the user a link to the
+When the diagnosis turns on a payload you cannot see, tell the user three things: what
+you can't see, why (the organization's setting for what AI tools may read), and what they
+can do. Example: "I can't see what this activity took in, because your organization
+doesn't let AI tools read that data. The console shows it in full, and an admin of your
+organization can ask Diagrid to change the setting." **Hand the user a link to the
 run** so they can read it themselves: `https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
-Only an organization administrator can raise the level, and that is their decision: never
-forge a data-sharing header, and never ask for it so you can finish an answer. The project
+Mention the admin route once, as an option: never forge a data-sharing header, and never
+ask for the setting to change so you can finish an answer. The project
 is a query parameter with two spellings and **no cross-fallback between them** —
 `?project=` is matched against the name-like project id (`default`), `?projectId=` against
 the numeric uid (the `prj-` prefix is optional). A numeric uid passed as `?project=`
@@ -243,7 +247,7 @@ only mechanism that catches a determinism regression before deployment does.
   branch, a loop bound or an activity input is not the same finding as one that can.
 - **Never invent an SDK name.** If a context accessor is not verified above, read it from
   the SDK. A plausible wrong name costs more than an admission.
-- **Do not report a withheld payload as an absent one.** Name the data-sharing level.
+- **Do not report a hidden payload as an empty one.** Say the organization's setting hides it.
 - **Do not use the is-replaying flag for anything but logging.**
 - **Do not edit a deployed workflow body to fix determinism** without deciding what
   happens to in-flight instances first.

@@ -38,7 +38,7 @@ no other route to create a resource.
 - **Replace means replace.** To change an existing resource, read it with its get tool,
   change it, and send it back whole: a field left out is dropped.
 - **Settings read back without a value are refused, not erased.** At the default
-  `metadata` data-sharing level a read withholds inline setting values, such as a
+  `metadata` data-sharing level a read hides inline setting values, such as a
   component's `spec.metadata`. Sent back as they are, the call fails with *"nothing was
   applied"* and lists each setting. Ask the user for each value, or better, point the
   setting at a secret with `secretKeyRef` so the value never passes through the

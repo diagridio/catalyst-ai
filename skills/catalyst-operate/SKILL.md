@@ -113,12 +113,13 @@ Three limits in that table are deliberate, not oversights:
 
 - **`catalyst_get_logs` refuses at the default data-sharing level.** Log lines carry
   whatever the application chose to send, so at `metadata` the tool returns
-  `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
-  policy, not a fault: do not retry it. Say so, name the level, and stop. Only an org
-  admin raising the level to `full` changes the answer. The tool reads the sidecar's API
-  request log, which is each Dapr call with its status and error, not the application's
-  own standard output. Reading the application's own output is not available over MCP
-  yet.
+  `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal comes
+  from the organization's setting, so do not retry it. Tell the user in plain words that
+  you can't read the logs because their organization's setting doesn't let AI tools read
+  them, add the admin route (section 4) once per reply, and do not try another route.
+  The tool reads the sidecar's API request log, which is each Dapr call with its
+  status and error, not the application's own standard output. Reading the application's
+  own output is not available over MCP yet.
 - **This skill only reads, even where the MCP server can write.** For a role that allows
   writes, the server also has `catalyst_apply`, `catalyst_delete_resource` and workflow-run
   actions (see `catalyst-deploy` and `catalyst-debug`). This skill uses none of them.
@@ -182,8 +183,9 @@ Catalyst enforces an organization-wide data-sharing level on every MCP response 
 it leaves the platform. The default level is `metadata`, and it shares names, statuses,
 timestamps, durations and error messages. It **removes** business data — a workflow run's
 `input`, `output` and `customStatus`, and inline component setting values. Removed means
-gone from the document, with nothing left in its place. `full` is the other level, and
-only an organization administrator can raise it.
+gone from the document, with nothing left in its place. `full` is the other level. Diagrid
+sets the level for each organization and there is no console page for it. It only limits
+AI tools: people still see the full run in the Catalyst console.
 
 Never write "the workflow produced no output", "the input was empty" or anything else
 that turns a missing field into a factual claim about the run. The user cannot detect
@@ -191,7 +193,7 @@ that error from your answer, and it sends them looking for a bug in code that wo
 
 | Response | Say |
 | --- | --- |
-| Field absent | "`output` was not shared at this organization's data-sharing level." |
+| Field absent | Say what you can't see and why, in plain words (see below). |
 | Field present, empty or null | "The run completed with an empty output." |
 | Field present with a value | Report the value. |
 
@@ -207,11 +209,18 @@ The same trap applies twice more:
   agent or MCP server has no token. No read tool returns its token; only `catalyst_get_connection`
   does (see `catalyst-develop` section 3).
 
-Tell the user the field was withheld and why: "it was not shared at this organization's
-data-sharing level (`metadata`)". Name the level. The payload cannot be read through this
-session at that level, and only an organization administrator can raise it to `full`;
-raising it is their decision, so do not ask an administrator to change it so that you can
-finish an answer, and never try to route around the level. It is a deliberate control.
+Tell the user three things: what you can't see, why (the organization's setting for what
+AI tools may read), and what they can do. Example:
+"I can't see this run's output. Your organization lets AI tools like me read a run's
+names, statuses, timings and errors, but not the data it takes in or returns. That
+doesn't mean the output was empty. You can open the run in the Catalyst console to see
+it: <link>. If you want AI tools to read this data too, an admin of your organization
+can ask Diagrid to change the setting."
+Avoid "data-sharing level", "metadata level" and "withheld" with the user unless they used
+them first. The payload cannot be read through this session at that level. Mention the
+admin route once per reply, as an option, even when several things are hidden: do not
+ask for the setting to change so that you can finish an answer, and never try to route
+around it. It is a deliberate control.
 If the user wants the payload, the console link in section 6 is where they can read it
 themselves.
 
@@ -243,14 +252,15 @@ exceptions are the pub/sub and KV counts in section 1, which are 1 everywhere.
 
 For anything metrics cannot answer — a specific error, an ordering question — go to
 `catalyst_get_logs`, which shows each Dapr API call an app made through its sidecar with
-its status and any error. It works only at `full` data sharing; at the default level say
-so and stop. The application's own standard output is not available over MCP yet.
+its status and any error. It works only at `full` data sharing; at the default level tell
+the user you can't read logs because of their organization's setting, and stop. The
+application's own standard output is not available over MCP yet.
 
 ## 6. Link to the console
 
 When you name a resource, give the user a link to it. It matters most where the
-data-sharing level removed a payload: "the input was withheld at this organization's
-data-sharing level, and here it is in the console" is a useful answer where both a lie
+setting hid a payload: "I can't see the input because of your organization's setting for
+what AI tools may read, and here it is in the console" is a useful answer where both a lie
 and a shrug are not.
 
 The console for the production server is `https://catalyst.diagrid.io`. If you cannot build a link you trust, give
