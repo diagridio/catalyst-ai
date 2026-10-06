@@ -136,8 +136,7 @@ managed KV store, the workflow store and agent infrastructure already attached. 
 infrastructure comes with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, ask
-which project to use rather than creating one. The managed components have fixed names,
+recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, If `default` is gone, do not reuse another project just because it exists: one with agent or pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send a `Project` manifest only once the user agrees. The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
 ## 7. Fit the topology to one pub/sub

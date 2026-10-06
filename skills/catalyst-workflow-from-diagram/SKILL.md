@@ -189,7 +189,7 @@ with the managed pub/sub, the managed KV store, the workflow store and agent
 infrastructure already attached. Workflow history lives in that managed store, so a
 hand-rolled project is the most common reason a freshly generated workflow starts and
 then cannot be found. Confirm `default` exists with `catalyst_list_projects` rather than
-assuming it; if it is absent, ask which project to use rather than making one.
+assuming it; If it is absent, do not reuse another project just because it exists: one with agent or pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send a `Project` manifest only once the user agrees.
 
 The generated project needs **no local state-store component and no Docker**. The
 managed workflow store is already there, which is most of what makes this shorter than

@@ -62,7 +62,7 @@ most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
-assuming; if it is gone, ask which project to use instead of creating one. There is no
+assuming; if it is gone, If `default` is gone, do not reuse another project just because it exists: one with agent or pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send a `Project` manifest only once the user agrees. There is no
 current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
@@ -194,8 +194,8 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not create a project.** Use `default`. If it is genuinely absent, say so and stop
-  rather than inventing a substitute that behaves differently.
+- **Do not create a project.** Use `default`. If it is genuinely absent, say so and offer
+  to create a new project; never reuse a misconfigured one.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the
