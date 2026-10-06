@@ -352,6 +352,11 @@ Then the fix, separately, and as a proposal if it mutates anything.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
+  Client approval does not replace asking the user for consent before a change.
 - **Never report an absent field as an empty value.** See section 3. It is the one error
   here the user cannot catch.
 - **Stay in one project unless asked otherwise, and say which.** A question with no

@@ -257,6 +257,10 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field

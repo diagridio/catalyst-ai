@@ -240,6 +240,10 @@ only mechanism that catches a determinism regression before deployment does.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **Judge the action sequence, not the vocabulary.** A hazardous call that cannot reach a
   branch, a loop bound or an activity input is not the same finding as one that can.
 - **Never invent an SDK name.** If a context accessor is not verified above, read it from

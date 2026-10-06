@@ -232,6 +232,10 @@ than reconstructing it in the body, so it is visible to a reviewer.
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve it or allow it in their client's
+  permissions; then retry that same call once. If they decline, stop and say so. Do not
+  route around a block through the CLI, a script or an equivalent tool.
 - **Assume at least once.** An activity that is correct only if it runs once is a bug,
   not a risk to monitor.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every
