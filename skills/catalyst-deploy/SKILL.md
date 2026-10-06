@@ -298,19 +298,21 @@ heading. If you cannot tell which form you hold, omit the parameter.
 
 **A link that 404s or lands on the wrong project is worse than no link.**
 
-## 7. Do not create a project
+## 7. Use `default`; create a project only if it is absent
 
 Every organization gets one named `default`, with managed pub/sub, a managed KV store, the
 workflow store and agent infrastructure already attached. Deploy into it.
 
 It is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm with `catalyst_list_projects`; if it is genuinely
-gone, ask which project to use rather than inventing one. A hand-made project that behaves
-differently is indistinguishable from a broken one to the person asking for help.
+gone, do not reuse another project just because it exists: one with agent or pub/sub
+infrastructure turned off breaks the deploy. Offer to create a new project and wait for the
+user's agreement. A hand-made project that behaves differently is indistinguishable from a
+broken one to the person asking for help.
 
 Be careful with a `Project` manifest in a `catalyst_apply` batch: it creates the project
 it names, so check its `metadata.name`. A `project` argument that differs from it is
-rejected. Send one only when the user has explicitly asked for a new project.
+rejected. Send one only when the user has agreed to a new project.
 
 ## Rules
 
@@ -341,7 +343,8 @@ rejected. Send one only when the user has explicitly asked for a new project.
   not a resource that works, and `ready` without an API token is not ready.
 - **Report a status verbatim.** The vocabulary is not closed, and paraphrasing a platform
   error loses the detail that mattered.
-- **Do not create a project.** Use `default`, and check the `metadata.name` of any
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's
+  agreement.** Check the `metadata.name` of any
   `Project` manifest in a batch.
 - **Ask before any delete.** `catalyst_delete_resource` cannot be undone.
 - **Do not print secrets.** Never paste a secret value, or an API token if you are ever
