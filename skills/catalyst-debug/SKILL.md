@@ -68,10 +68,11 @@ into two.
 - **`catalyst_get_logs` works only at `full` data sharing.** It returns the sidecar's API
   request log, each Dapr call an app made with its status and error, not the
   application's own standard output. At the default `metadata` level the tool returns
-  `DATA_SHARING_RESTRICTED`. That is policy, not a fault: do not retry it. Say the logs
-  were not shared at this organization's data-sharing level, name the level, and continue
-  with status and metrics. Reading the application's own output is not available over MCP
-  yet.
+  `DATA_SHARING_RESTRICTED`. Retrying will not change it. Tell the user in plain words:
+  "I can't read this app's logs. Your organization doesn't let AI tools read logs. I'll
+  keep going with the app's status and metrics." Then continue with status and metrics.
+  Add the admin route (section 3) once per reply, not once per hidden item. Reading the
+  application's own output is not available over MCP yet.
 - **Apps, agents and MCP servers are each backed by an identity** (an "App ID" in some
   APIs). Where a tool asks for or returns `appId`, it means that identity's name. Read it
   from the resource's `status.appIds` (the get tools include it). For an agent registered
@@ -97,7 +98,9 @@ leaves the platform. At the default `metadata` level you still get everything a 
 usually needs — names, statuses, timestamps, durations and **error messages**. What is
 **removed** is business data: a run's `input`, `output` and `customStatus`, and inline
 component setting values. Removed means gone from the document, with nothing in its
-place. Only an organization administrator can raise the level to `full`.
+place. The level is set by Diagrid for each organization, and there is no console page
+for changing it. It only limits what AI tools receive: people still see the full run in
+the Catalyst console.
 
 Never write "the workflow produced no output", "it returned nothing" or "the input was
 empty" on the strength of a missing field. The user cannot detect that mistake from your
@@ -105,7 +108,7 @@ answer, and it sends them hunting for a bug in code that worked correctly.
 
 | Response | Say |
 | --- | --- |
-| Field absent | "`output` was not shared at this organization's data-sharing level." |
+| Field absent | Say what you can't see and why, in plain words (see below). |
 | Field present, empty or null | "The run completed with an empty output." |
 | Field present with a value | Report the value. |
 
@@ -120,12 +123,19 @@ on failure and `output` agrees. And secrets are scrubbed at every level, `full` 
 `apiToken` never means the app has no token. Secret *references* survive, so "which secret
 does this use" is still answerable.
 
-Say the field was withheld, name the level, and stop there. The payload cannot be read
-through this session at that level. Only an organization administrator can raise it, and
-that is their decision: do not ask for it so that you can finish an answer, never forge a
-data-sharing header, and do not try to route around the level. It is a deliberate control,
-not an obstacle. Hand the user a console link to the run (section 8) so they can read it
-themselves.
+Tell the user three things: what you can't see, why (the organization's setting for what
+AI tools may read), and what they can do. Example:
+"I can't see this run's output. Your organization lets AI tools like me read a run's
+names, statuses, timings and errors, but not the data it takes in or returns. That
+doesn't mean the output was empty. You can open the run in the Catalyst console to see
+it: <link>. If you want AI tools to read this data too, an admin of your organization
+can ask Diagrid to change the setting."
+Do not say "data-sharing level", "metadata level" or "withheld" to the user unless they
+used those words first. The payload cannot be read through this session at that level.
+Mention the admin route once per reply, as an option, even when several things are
+hidden: never ask for the setting to change so that you can finish an answer, never forge
+a data-sharing header, and do not try to route around it. It is a deliberate control.
+Hand the user a console link to the run (section 8) so they can read it themselves.
 
 ### When the failure is in the orchestration, not the activity
 
@@ -248,7 +258,7 @@ What to check:
    enough to tell whether it points at the secret you think it does.
 2. If the organization shares at `full`, `catalyst_get_logs` for the scoped app carries
    the sidecar's failing calls with the underlying broker or store error. At the default
-   level say it was not shared and rely on step 1.
+   level tell the user you can't read the logs (the organization's setting) and rely on step 1.
 3. If this is a second pub/sub or a second KV store in one project, read the limit before
    concluding anything. It is 1 per project on **every** plan, so the create normally fails
    no matter how often you retry — but the per-project limits carry a per-organization
@@ -286,7 +296,7 @@ not retry at all, because a permanent refusal retried presents to the user as a 
 
 | Kind | What to do |
 | --- | --- |
-| `denied` | The whole response was withheld at this level. Report that, name the level, and link the console (section 8). Only an organization administrator can raise the level, and asking for that is not your move. |
+| `denied` | The whole response was withheld at this level. Tell the user in plain words that you can't see it because of their organization's setting for what AI tools may read, and link the console (section 8). The admin route is an option you mention once, never something you ask for. |
 | `no-policy` | A server-side gap — the operation has no reviewed data-sharing policy. Not something the caller can work around. Report it as a platform gap. |
 | `unfilterable` | The response could not be parsed, usually because it was truncated at the size limit. Ask for fewer results per page. |
 
@@ -341,7 +351,8 @@ Four things, in this order:
 
 1. **The cause**, in one sentence, at the level the user can act on.
 2. **The evidence** — the field or log line, quoted, with the call that produced it.
-3. **What you could not see**, named: fields withheld by the data-sharing level, calls
+3. **What you could not see**, named in plain words, with the reason (the
+   organization's setting for what AI tools may read): fields AI tools cannot read, calls
    that refused, resources you had no access to. Silence here reads as "nothing else was
    relevant", which is a claim you have not checked.
 4. **Where to look** — a console link built as in section 8, or the identifiers in plain

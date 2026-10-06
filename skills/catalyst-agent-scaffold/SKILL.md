@@ -180,13 +180,22 @@ behind its own `MCPServer`, and the agent is granted access to its tools.
 **An absent field is not an empty one.** An agent's turn runs as a workflow, and workflow
 payloads are withheld by default — withheld by deleting the key, not by returning an
 empty value. Over MCP tools, `input`, `output` and `customStatus` are all removed at the
-default `metadata` data-sharing level, and only an organization administrator can raise
-the level to `full`. Never forge a data-sharing header, and never ask an administrator to
-raise the level so you can finish an answer.
+default `metadata` data-sharing level. The level is set by Diagrid for each organization;
+there is no console page for it. Never forge a data-sharing header, and never ask an
+administrator to change the setting so you can finish an answer.
 
-So never report a missing payload as "the agent produced no output". Say it was not
-shared at this organization's data-sharing level, name the level, and link the console
-run (section 10). A tool that refuses is likewise not an agent that failed; report the
+So never report a missing payload as "the agent produced no output". Tell the user in
+plain words what you can't see, that the organization's setting for what AI tools may
+read is the reason, and that they can open the run in the console (section 10). Mention
+once, as an option, that an admin of their organization can ask Diagrid to change the
+setting. Example:
+"I can't see this agent run's output. Your organization lets AI tools like me read a
+run's names, statuses, timings and errors, but not the data it takes in or returns. That
+doesn't mean the output was empty. You can open the run in the Catalyst console to see
+it: <link>. If you want AI tools to read this data too, an admin of your organization
+can ask Diagrid to change the setting."
+Avoid "data-sharing level", "metadata level" and "withheld" with the user unless they
+used them first. A tool that refuses is likewise not an agent that failed; report the
 refusal.
 
 ## 9. Give it MCP tools through its own sidecar
@@ -269,7 +278,7 @@ that 404s or lands on the wrong project is worse than no link.**
 - **Do not offer an upgrade as the fix for the single pub/sub or KV store.** It is 1 on
   every plan, so no plan change buys a second one. Read the live quota rather than
   asserting the 1 — see section 7.
-- **Never report a withheld field as an empty result.**
+- **Never report a hidden field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
 
