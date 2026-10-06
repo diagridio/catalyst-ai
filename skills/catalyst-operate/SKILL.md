@@ -283,7 +283,7 @@ an app. Linking to either one 404s.
 
 | What you are holding | Parameter | Example |
 | --- | --- | --- |
-| A name-like id | `?project=<name>` | `?project=default` |
+| A name-like id | `?project=<name>` | `?project=default` (use the project in use, not always `default`) |
 | A numeric uid | `?projectId=<uid>` | `?projectId=165`, `prj-` prefix optional |
 
 Neither falls back to the other, and `projectId` wins when both are present. Put a

@@ -113,9 +113,12 @@ turns out to be wrong costs more than an honest "the server is added but not sig
 Call `catalyst_list_projects`. If `default` is there, use it and stop. If it is not, do not
 reuse another project that is misconfigured (agent infrastructure off, no workflow store).
 Offer the user a new project and say what it needs: managed pub/sub, a KV store, a workflow
-store and agent infrastructure, all attached. Then wait. Send a `Project` manifest through
-`catalyst_apply` only after the user has agreed, and confirm the project exists with
-`catalyst_list_projects` before working in it.
+store and agent infrastructure, all attached. Then wait. Read
+`catalyst_get_resource_schema` for `Project` first, and set the managed workflow store and
+agent infrastructure explicitly rather than from memory. Send the manifest through
+`catalyst_apply` only after the user has agreed. Then confirm the project exists with
+`catalyst_list_projects` and that it has all of those attached with `catalyst_get_project`
+before working in it.
 
 ## What is not available over MCP yet
 

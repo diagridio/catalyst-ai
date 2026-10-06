@@ -288,7 +288,7 @@ another:
 
 | What you are holding | Parameter | Example |
 | --- | --- | --- |
-| A name-like id | `?project=<name>` | `?project=default` |
+| A name-like id | `?project=<name>` | `?project=default` (use the project in use, not always `default`) |
 | A numeric uid | `?projectId=<uid>` | `?projectId=165`, `prj-` prefix optional |
 
 `projectId` wins when both are present. Put a numeric uid into `?project=` and the console
