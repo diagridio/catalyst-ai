@@ -3,7 +3,7 @@ description: Try Catalyst in one step. A durable workflow crashes mid-run and re
 ---
 
 I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.
-Whenever a run starts, whenever you wait for me, and at the end, give me that run's console link: https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>.
+Whenever a run starts, whenever you wait for me, and at the end, give me that run's console link as a markdown link, never in backticks or a code block, so I can click it: [Run <instance-id> in Catalyst](https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>). Put the plain URL on the line after it as well, also outside backticks, in case my terminal does not render links.
 1. Call `catalyst_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.
 2. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `default`. If `default` is missing, do not reuse another project: offer to create a new one with managed pub/sub, KV store, workflow store and agent infrastructure, wait for my agreement, and use `?project=<new project>` in the console links.
 3. Get its connection with `catalyst_get_connection`, write the values to a `.env` in the sample folder (gitignored), and start the sample in the background with its environment loaded from it.
