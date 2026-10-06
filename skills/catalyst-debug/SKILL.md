@@ -46,7 +46,7 @@ Read the project first, in every case: `catalyst_get_project`. Managed workflow 
 and agent infrastructure are project settings, and when one is off the symptoms are
 indistinguishable from broken resources. The project named `default` already has managed
 pub/sub, KV, workflow store and agent infrastructure attached. **Do not create a project**
-while debugging (if `default` is absent, see `catalyst-setup`) — a new project with different settings turns one unexplained failure
+while debugging (if `default` is absent, see the "If `default` is absent" section of `catalyst-setup`) — a new project with different settings turns one unexplained failure
 into two.
 
 ## 2. Rules of evidence
@@ -365,5 +365,5 @@ Then the fix, separately, and as a proposal if it mutates anything.
   consequences stated, then wait for consent.
 - **Do not write files.** Report in your answer, unless the user asked for a file.
 - **Do not create a project while debugging.** If `default` is absent, see
-  `catalyst-setup`. See section 1.
+  the "If `default` is absent" section of `catalyst-setup`. See section 1.
 - **Do not print secrets** into a summary, a log, or a commit.

@@ -99,7 +99,7 @@ Report two things, from a real call and not from configuration:
 - the organization, by name. It is `data.attributes.name` under `getCurrentOrgWithDetails`
   in the `catalyst_whoami` answer. If it has no name, give the organization ID instead,
   and do not explain why the name is missing.
-- the project you will work in
+- the project you will work in (`default`, or see "If `default` is absent")
 
 Then add one line on write access: whether the write tools are present. Keep it to that.
 Do not name the server, its address, the API host or any other endpoint; the user is
@@ -107,6 +107,15 @@ asking whether they are connected, not where to.
 
 If either is unknown, say which, and say what you tried. A confident "connected!" that
 turns out to be wrong costs more than an honest "the server is added but not signed in".
+
+## If `default` is absent
+
+Call `catalyst_list_projects`. If `default` is there, use it and stop. If it is not, do not
+reuse another project that is misconfigured (agent infrastructure off, no workflow store).
+Offer the user a new project and say what it needs: managed pub/sub, a KV store, a workflow
+store and agent infrastructure, all attached. Then wait. Send a `Project` manifest through
+`catalyst_apply` only after the user has agreed, and confirm the project exists with
+`catalyst_list_projects` before working in it.
 
 ## What is not available over MCP yet
 

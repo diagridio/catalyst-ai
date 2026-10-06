@@ -248,7 +248,8 @@ connection broken.
 These are in the skills already; listed here because they're the ones that cost people
 hours, and they all fail *silently* or with an unhelpful error.
 
-- **Don't create a project.** Your org already has a `default` project, provisioned at
+- **Use `default`; if it is absent, the agent offers to create a new project and waits for
+  your agreement. It never reuses a misconfigured one.** Your org already has a `default` project, provisioned at
   signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
   manifest in a batch creates the project it names, and projects count against a
   per-region limit you can read with `catalyst_get_usage`.

@@ -64,7 +64,7 @@ enabled here".
 
 Every organization has a project named `default` with managed pub/sub, KV, workflow
 store and agent infrastructure already attached. Use it. **Do not create a project while operating**; if `default` is absent, stop and
-see `catalyst-setup` — a
+see the "If `default` is absent" section of `catalyst-setup` — a
 hand-made project that behaves differently is indistinguishable from a broken one to the
 person asking for help.
 
