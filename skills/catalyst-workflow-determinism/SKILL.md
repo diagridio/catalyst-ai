@@ -158,13 +158,14 @@ so — read it from the SDK rather than guessing.
 | --- | --- | --- | --- |
 | .NET | `context.CurrentUtcDateTime` (property) | `context.NewGuid()` | `foreach` over `Dictionary`, `HashSet` or `ConcurrentDictionary` driving activity order. LINQ inherits the source's enumeration order, so a query over a hash-based collection carries the same hazard; `OrderBy` is the fix, not the problem. Also `async void` on a workflow class — it cannot be awaited and bypasses the scheduler. |
 | Python | `ctx.current_utc_datetime` (property) | none — use an activity, or derive from `ctx.instance_id` | `dict` and `set` iteration when the collection was built non-deterministically. `asyncio.gather`, `create_task` and `asyncio.sleep` escape the workflow scheduler — inside an activity they are fine, inside the workflow body they are not. |
-| Go | `ctx.CurrentUTCDateTime()` (method) | none on the context — use an activity | `for k := range myMap` — Go deliberately randomizes map iteration order per run, so this is the one language where the hazard fires reliably rather than occasionally. `go func(){}()` in the workflow body. |
-| Java | **not verified — read it from the SDK.** Do not emit `ctx.getCurrentInstant()`; that name does not exist | not verified | `HashMap` and `HashSet` have no guaranteed order; `Stream` over an unordered source inherits it. |
-| JavaScript / TypeScript | `context.getCurrentUtcDateTime()` (method, returns `Date`) | not verified — use an activity | Workflows must be **generator functions** (`function*` with `yield`), not `async` functions. An `async` workflow awaits outside the workflow scheduler. `context.createTimer()` takes a `Date`, not a duration. |
+| Go | `ctx.CurrentTimeUTC()` (method) | none on the context — use an activity | `for k := range myMap` — Go deliberately randomizes map iteration order per run, so this is the one language where the hazard fires reliably rather than occasionally. `go func(){}()` in the workflow body. |
+| Java | `ctx.getCurrentInstant()` (method, returns `Instant`) | `ctx.newUuid()` | `HashMap` and `HashSet` have no guaranteed order; `Stream` over an unordered source inherits it. |
+| JavaScript / TypeScript | `context.getCurrentUtcDateTime()` (method, returns `Date`) | none on the context — use an activity | Workflows must be **async generator functions** (`async function*` with `yield`). A plain `function*` is not run at all: its generator object becomes the output and the run completes without scheduling anything. `context.createTimer()` takes a `Date`, or a number of seconds. |
 
-Two names that appear in generated code and do not exist in any SDK: `ctx.WorkflowExecutionID()`
-in Go — the real accessor is `ctx.InstanceID()` — and `ctx.getCurrentInstant()` in Java.
-Do not emit either.
+Two names that appear in generated Go code and do not exist on today's workflow context:
+`ctx.WorkflowExecutionID()` and `ctx.InstanceID()`. The accessor is `ctx.ID()`;
+`InstanceID()` belonged to an older Go workflow package that has since been removed. Do
+not emit either.
 
 ## What is not a determinism problem
 
