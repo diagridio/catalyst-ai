@@ -28,13 +28,13 @@ claude plugin install catalyst-ai@diagrid
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.6.0 or later
-claude plugin details catalyst-ai@diagrid    # expect 11 skills
+claude plugin list                           # expect Version: 0.7.0 or later
+claude plugin details catalyst-ai@diagrid    # expect 12 skills
 ```
 
 `list` reports the version you actually have. `details` reports the version the
 marketplace is offering, reading the installed copy only when the two agree — so on its
-own it can show you 11 skills while your session loads 10. If either looks wrong, jump to
+own it can show you 12 skills while your session loads 11. If either looks wrong, jump to
 [If your install is behind](#if-your-install-is-behind).
 
 #### Then sign in to the Catalyst MCP server
@@ -128,11 +128,11 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-This writes all eleven skills to `.agents/skills/`, and Copilot's own listing confirms it
+This writes all twelve skills to `.agents/skills/`, and Copilot's own listing confirms it
 reads them:
 
 ```bash
-copilot skill list        # all 11 under "Project skills"
+copilot skill list        # all 12 under "Project skills"
 ```
 
 Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
@@ -161,8 +161,8 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
 | GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
 
-These were measured with the first ten skills. `catalyst-app-tunnels` has not been
-re-measured on these clients yet.
+These were measured with the first ten skills. `catalyst-app-tunnels` and
+`catalyst-agent-harness` have not been re-measured on these clients yet.
 
 If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
@@ -205,6 +205,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 | `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
 | `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
 | `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
+| `catalyst-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
 | `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
 | `catalyst-app-tunnels` | Let Catalyst call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
 | `catalyst-deploy` | Move an application from your laptop into Catalyst |
@@ -216,7 +217,7 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
 
-**Cost:** roughly **1130 tokens always-on** across all eleven (~103 each, estimated from the first ten), added to every
+**Cost:** roughly **1240 tokens always-on** across all twelve (~103 each, estimated from the first ten), added to every
 session whether or not a skill fires. Each skill costs a few thousand more only when it
 actually fires. That figure is **per model** — `claude plugin details` resolves a tokenizer
 from your active model, so the same ten descriptions cost ~103 each on Sonnet 5 and Opus 5
@@ -291,7 +292,7 @@ installed" and changes nothing:
 ```bash
 claude plugin marketplace update diagrid
 claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.6.0 or later
+claude plugin list                           # expect Version: 0.7.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -303,7 +304,7 @@ reported success and repaired nothing. Deleting the directory is the only fix:
 ```bash
 rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
 claude plugin install catalyst-ai@diagrid
-claude plugin details catalyst-ai@diagrid    # expect 11 skills
+claude plugin details catalyst-ai@diagrid    # expect 12 skills
 ```
 
 CI now fails any change to plugin content that doesn't bump the version, so the second one
