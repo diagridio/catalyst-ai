@@ -63,7 +63,8 @@ sits on, and a large share of "X is missing" turns out to be "X's backing store 
 enabled here".
 
 Every organization has a project named `default` with managed pub/sub, KV, workflow
-store and agent infrastructure already attached. Use it. **Never create a project** — a
+store and agent infrastructure already attached. Use it. **Do not create a project while operating**; if `default` is absent, stop and
+see `catalyst-setup` — a
 hand-made project that behaves differently is indistinguishable from a broken one to the
 person asking for help.
 

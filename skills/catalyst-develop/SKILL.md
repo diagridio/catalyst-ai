@@ -26,8 +26,9 @@ subscriptions, the managed pub/sub and KV store. What you redo: your process. No
 code change requires touching the platform, and section 6 lists what *does* force a
 change. Read it before you delete anything.
 
-**Never create a project to develop in.** Every organization gets one named `default`
-with managed pub/sub, KV, workflow store and agent infrastructure already attached.
+**Use `default`; only if it is absent, offer to create a project and wait for the user's
+agreement. Never reuse a misconfigured project.** Every organization gets one named
+`default` with managed pub/sub, KV, workflow store and agent infrastructure already attached.
 Confirm with `catalyst_list_projects`, and pass the project on every call; there is no
 current project. A `Project` manifest creates the project it names, so if one is in a
 batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
@@ -235,7 +236,8 @@ Two quieter failure modes with no error to search for:
   or deletes something, call `catalyst_whoami` and tell the user which organization the
   change lands in. A user with more than one organization cannot otherwise tell where it
   went. If it fails, follow `catalyst-setup` and write nothing.
-- **Do not create a project.** Use `default`, and check the project name before the first
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's
+  agreement.** Never reuse a misconfigured project. Check the project name before the first
   call of a session.
 - **Set the connection values inline, in a gitignored `.env`, or through your tool's
   environment option**, and never paste `DAPR_API_TOKEN` into chat, a pull request, an

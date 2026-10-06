@@ -249,7 +249,7 @@ only mechanism that catches a determinism regression before deployment does.
   happens to in-flight instances first.
 - **This is static work.** Reading the source, and at most reading run history, is enough.
   It never requires starting an instance, deploying, or modifying state to make a point.
-  Do not create a project — the organization's `default` project already has a managed
+  Do not create a project while reviewing — the organization's `default` project already has a managed
   workflow store.
 - For hazards in the *activity* body — duplicate side effects under retry — use the
   `catalyst-activity-idempotency` skill.

@@ -245,7 +245,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
   reconciliation path is a question for the user.
 - **This is static work.** Reviewing or writing an activity for idempotency needs the
   source and, at most, reads of run history. It never needs to run the workflow, start an
-  instance, or modify state to prove a point. Do not create a project — the organization's
+  instance, or modify state to prove a point. Do not create a project while reviewing — the organization's
   `default` project already has a managed workflow store.
 - For hazards in the *orchestrator* body rather than the activity body, use the
   `catalyst-workflow-determinism` skill. Non-determinism inside an activity is intended

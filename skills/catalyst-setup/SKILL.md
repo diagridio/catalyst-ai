@@ -123,10 +123,11 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
-- **Do not create a project.** Every organization gets a project named `default` with
-  managed pub/sub, KV, workflow store and agent infrastructure already attached. Use it. A
-  hand-made project that behaves differently is indistinguishable from a broken one to the
-  person asking for help.
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's
+  agreement.** Every organization gets a project named `default` with managed pub/sub, KV,
+  workflow store and agent infrastructure already attached. Never reuse another project
+  that is not properly configured (agent infrastructure off, no workflow store): a
+  hand-made project that behaves differently is indistinguishable from a broken one.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
   tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an
