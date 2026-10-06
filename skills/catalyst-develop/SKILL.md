@@ -105,11 +105,18 @@ Two things about the worker process itself:
   port. Do not add an HTTP server just so that a port has something to answer: the worker
   then registers the workflow and every activity successfully and dies at bind because
   something else holds the port, and the startup log reads as healthy right up to the
-  error.
+  error. Do not give it an app port either: `--app-port` on a tunnel, or a
+  health-checked app endpoint on its App ID, with nothing listening blocks every workflow
+  start (section 7).
 - **An app that Catalyst must call into** (service invocation, pub/sub delivery, an agent
-  endpoint) needs an inbound port and a registered endpoint. `catalyst_list_app_tunnels`
-  lists local connections open on the project, so you can see whether Catalyst currently
-  reaches a local process.
+  endpoint, the MCP server behind an `MCPServer`) needs an app tunnel as well, and these
+  three values do not open one. The `catalyst-app-tunnels` skill covers it. Never use a
+  public tunnel instead. `catalyst_list_app_tunnels` lists the tunnels open on the
+  project, so you can see whether Catalyst currently reaches a local process.
+- **An app or agent that calls an MCP server** calls it through its own sidecar, at
+  `$DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp/<mcpserver-name>` with its `DAPR_API_TOKEN`. It
+  never calls the server's own URL, and never calls `dapr.internal.mcp.*` workflows
+  (`DaprMCPClient` in the Dapr SDK). `catalyst-agent-scaffold` section 9 has the details.
 
 If the process cannot connect, read the app back (`catalyst_get_app`) before changing
 code. Status and the per-identity messages under `status.appIds` say whether the platform
@@ -204,6 +211,7 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 | The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `catalyst_list_components` and then `catalyst-debug` |
 | The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `catalyst_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
 | The worker is connected but a run fails | An application error | `catalyst_get_workflow_run` for the failing step |
+| Every workflow start fails with `failed to create workflow instance: context canceled` | The worker runs behind an app tunnel opened with `--app-port`, or its App ID has an app endpoint with the health check enabled, and nothing answers there. Catalyst starts no workflows or actors until the app's health check passes | Remove the app port: clear the endpoint on the App ID (read it, drop the endpoint, apply it whole), or run it without `--app-port` (`catalyst-app-tunnels`). Keep one only for a process that serves Catalyst's calls |
 | Bind error on startup in a worker that never needed a port | An HTTP server was added unnecessarily | Remove it; see section 3 |
 | A component is not ready | A component, not your app | `catalyst_get_component`, then `status.appIdStatus[]` |
 | `component must be deleted to be updated ...` | You changed a component's type | Delete it and apply it again |
@@ -214,9 +222,10 @@ Two quieter failure modes with no error to search for:
 - **A setting that does nothing.** Catalyst applies components as written and ignores
   Dapr settings that belong to a self-hosted sidecar. If a setting appears to have no
   effect, read the resource back before debugging your code.
-- **The app is ready and requests still do not arrive.** Reading inbound requests as they
-  arrive is not available over MCP yet. Check `catalyst_get_metrics` for the app and the
-  endpoint registered on the resource.
+- **The app is ready and requests still do not arrive.** Check
+  `catalyst_list_app_tunnels`: with no tunnel open on that App ID, nothing in Catalyst can
+  reach the local process (`catalyst-app-tunnels`, which can also print requests as they
+  arrive). Then check `catalyst_get_metrics` for the app.
 
 ## Rules
 

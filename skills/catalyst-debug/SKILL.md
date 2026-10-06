@@ -180,6 +180,12 @@ If the workflow calls fail outright rather than returning nothing, the project h
 managed workflow store and the Workflows API is unavailable there. That is a project
 setting, not a broken run.
 
+If every start fails with `failed to create workflow instance: context canceled`, read
+the app (`catalyst_get_app`). An app tunnel opened with `--app-port`, or an app
+endpoint with its health check enabled, with no server answering there keeps the app's
+health check failing, and Catalyst starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
+`catalyst-develop` section 7 has the fix.
+
 ## 4. An app, agent or MCP server that is not ready
 
 Read `catalyst_get_app` (or `catalyst_get_agent`, `catalyst_get_mcp_server`), then work
@@ -200,12 +206,14 @@ down this list. The backing identity, with its own status and messages, is under
 4. **Whether a workflow app works end to end.** `catalyst_start_workflow` (a write) then
    `catalyst_get_workflow_run` separates the platform from the application.
 
-Probing the app directly, publishing a test message, reading state back and streaming
-inbound requests are not available over MCP yet. Say so rather than implying you ruled
-them out.
+Probing the app directly, publishing a test message and reading state back are not
+available over MCP yet. Say so rather than implying you ruled them out. Seeing inbound
+requests as they arrive needs an app tunnel (`catalyst-app-tunnels`).
 
 A missing tunnel is an ordinary answer, not an error: `catalyst_list_app_tunnels` showing
-none means no one is running that App ID from a local machine.
+none means no one is running that App ID from a local machine. For an app meant to run
+locally and be called by Catalyst (an invocation target, a subscriber, an agent endpoint,
+the MCP server behind an `MCPServer`), no tunnel is the cause.
 
 ## 5. An agent that is not responding
 
