@@ -132,13 +132,15 @@ integration; note that only `ChatClient.call()` is durable today, not `.stream()
 
 ## 6. Use the project named `default`
 
-**Do not create a project.** Every organization gets `default`, with managed pub/sub, a
+**Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.** Every organization gets `default`, with managed pub/sub, a
 managed KV store, the workflow store and agent infrastructure already attached. Agent
 infrastructure comes with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, ask
-which project to use rather than creating one. The managed components have fixed names,
+recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, do not reuse another project just because it exists: one with agent or
+pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send
+a `Project` manifest only once the user agrees.
+The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
 ## 7. Fit the topology to one pub/sub
@@ -261,7 +263,7 @@ that 404s or lands on the wrong project is worse than no link.**
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field
   name can quietly mean something else.
-- **Do not create a project.** Use `default`.
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.**
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
   language has no installable adapter instead of guessing one.
 - **Do not scaffold per-language or per-framework variants of this skill.** One skill

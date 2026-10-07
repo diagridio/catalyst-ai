@@ -55,15 +55,17 @@ user hunting for a Catalyst problem that does not exist, which is worse than no 
 
 ## 3. Use the project named `default`
 
-**Do not create a project.** Every organization gets one named `default` with managed
+**Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.** Every organization gets one named `default` with managed
 pub/sub, a managed KV store, the workflow store and agent infrastructure already
 attached. Workflow history lives in that managed store, so a hand-rolled project is the
 most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
-assuming; if it is gone, ask which project to use instead of creating one. There is no
-current project, so pass the project on every call.
+assuming; if it is gone, do not reuse another project just because it exists: one with agent or
+pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send
+a `Project` manifest only once the user agrees.
+There is no current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
 KV store. The managed workflow store is wired in implicitly and has no component name.
@@ -194,8 +196,8 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not create a project.** Use `default`. If it is gone, ask which existing project
-  to use, and send someone with no project to the console to create one.
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.**
+  Never reuse a misconfigured project.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the

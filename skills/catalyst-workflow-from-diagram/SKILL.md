@@ -184,12 +184,14 @@ write it.
 
 ## 7. Wire it into Catalyst
 
-**Do not create a project.** Every organization gets one named `default` at signup,
+**Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.** Every organization gets one named `default` at signup,
 with the managed pub/sub, the managed KV store, the workflow store and agent
 infrastructure already attached. Workflow history lives in that managed store, so a
 hand-rolled project is the most common reason a freshly generated workflow starts and
 then cannot be found. Confirm `default` exists with `catalyst_list_projects` rather than
-assuming it; if it is absent, ask which project to use rather than making one.
+assuming it; if it is absent, do not reuse another project just because it exists: one with agent or
+pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send
+a `Project` manifest only once the user agrees.
 
 The generated project needs **no local state-store component and no Docker**. The
 managed workflow store is already there, which is most of what makes this shorter than
@@ -280,8 +282,8 @@ Alongside it, state plainly:
   `unrecognized_item` and a question, not a best guess.
 - **Never turn a dashed line into control flow.** It is a message or a data
   association, on every input path.
-- **Do not create a project.** Use `default`. If it is gone, ask which existing project
-  to use, and send someone with no project to the console to create one.
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.**
+  Never reuse a misconfigured project.
 - **Do not stop at code that compiles.** Start one run and read its history back.
 - **Do not silently redraw the process.** No merged boxes, no renamed activities, no
   tidied-up branches.
