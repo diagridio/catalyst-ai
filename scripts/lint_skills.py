@@ -181,6 +181,52 @@ def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
             )
 
 
+# The blocked-call rule, copied into the Rules section of every skill because,
+# as above, there is no shared fragment. Its standing-allow limit is a security
+# boundary: loosened in one copy, that skill would suggest a permanent allow for
+# a call that hands out a credential (`catalyst_get_connection` returns the
+# sidecar token). Matched with whitespace collapsed, so line wrapping is free;
+# a skill may add its own sentences after it, never change these.
+BLOCKED_CALL_RULE = (
+    "- **If the client blocks a `catalyst_*` call, stop.** Tell the user which "
+    "call was blocked, with its arguments, and ask them to approve this one "
+    "call. Suggest a standing allow in their client's permissions only for a "
+    "read-only tool that returns no credentials or connection secrets, or if "
+    "they ask for it. Then retry that same call once. If they decline, stop and "
+    "say so. Do not route around a block through the CLI, a script or an "
+    "equivalent tool."
+)
+
+
+def _rules_section(text: str) -> str | None:
+    """The body of the `## Rules` section, or None when there is none."""
+    match = re.search(r"^## Rules[ \t]*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return match.group(1) if match else None
+
+
+def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
+    """Fail a skill whose Rules section lacks the blocked-call rule verbatim."""
+    expected = " ".join(BLOCKED_CALL_RULE.split())
+    for skill_dir in skill_dirs:
+        md = skill_dir / "SKILL.md"
+        if not md.is_file():
+            continue
+        rules = _rules_section(md.read_text(encoding="utf-8"))
+        if rules is None:
+            # A skill with no Rules section is not this gate's business, the
+            # same way check_scope_rule skips absent skills.
+            continue
+        if expected not in " ".join(rules.split()):
+            f.error(
+                str(md.relative_to(REPO)),
+                "its Rules section does not carry the blocked-call rule verbatim "
+                "(BLOCKED_CALL_RULE in scripts/lint_skills.py).\n     Every skill "
+                "carries the same text so that no one copy can loosen the "
+                "standing-allow limit. Change the rule in every SKILL.md and in "
+                "BLOCKED_CALL_RULE together.",
+            )
+
+
 @dataclass
 class Findings:
     errors: list[str] = field(default_factory=list)
@@ -444,6 +490,7 @@ def main() -> int:
     check_tool_names(skill_dirs, f)
     check_description_collisions(descriptions, f)
     check_scope_rule(skill_dirs, f)
+    check_blocked_call_rule(skill_dirs, f)
     check_plugin_validate(f)
 
     total = sum(len(d) for d in descriptions.values())

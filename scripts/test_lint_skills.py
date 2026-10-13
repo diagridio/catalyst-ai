@@ -246,6 +246,37 @@ def main() -> int:
         expect="pass",
     ))
 
+    # The blocked-call rule, copied verbatim into every skill's Rules section.
+    # A copy whose standing-allow limit drifts would let that one skill suggest
+    # a permanent allow for a credential-returning tool.
+    RULE = ("- **If the client blocks a `catalyst_*` call, stop.** Tell the user "
+            "which call was blocked, with its arguments, and ask them to approve "
+            "this one call. Suggest a standing allow in their client's\n  "
+            "permissions only for a read-only tool that returns no credentials "
+            "or connection secrets, or if they ask for it. Then retry that same "
+            "call once. If they decline, stop and say so. Do not route around a "
+            "block through the CLI, a script or an equivalent tool.")
+    RULED = GOOD + "\n## Rules\n\n{rule}\n- **Another rule.**\n"
+
+    cases.append(case(
+        "a Rules section carrying the blocked-call rule, rewrapped and extended",
+        lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE + " A skill-specific sentence.")),
+        expect="pass",
+    ))
+
+    cases.append(case(
+        "a Rules section whose blocked-call rule loosened the standing-allow limit",
+        lambda s: write(s, "ruled", RULED.format(
+            name="ruled",
+            rule=RULE.replace(" that returns no credentials or connection secrets", ""),
+        )),
+    ))
+
+    cases.append(case(
+        "a Rules section without the blocked-call rule",
+        lambda s: write(s, "ruled", RULED.format(name="ruled", rule="- **Some rule.**")),
+    ))
+
     # Report. The control expects PASS; everything else expects REJECT.
     failures = 0
     for name, expect, rejected, output in cases:
