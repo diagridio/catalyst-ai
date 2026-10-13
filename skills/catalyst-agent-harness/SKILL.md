@@ -323,6 +323,11 @@ other four take the harness's existing model client behind a one-method interfac
 - **Key side effects on `<instance-id>:<tool-call-id>`**, passed in the input.
 - **No secrets in inputs.** Every input and output is persisted and printable.
 - **Do not stop at a run that completes.** Kill one mid-tool and check the process ids.
+- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve this one call. Suggest a standing
+  allow in their client's permissions only for a read-only tool, or if they ask for it.
+  Then retry that same call once. If they decline, stop and say so. Do not route around a
+  block through the CLI, a script or an equivalent tool.
 - For determinism in general use `catalyst-workflow-determinism`; for the write side of a
   tool, `catalyst-activity-idempotency`; for a framework with an adapter,
   `catalyst-agent-scaffold`; to run the worker on Catalyst, `catalyst-develop`.
