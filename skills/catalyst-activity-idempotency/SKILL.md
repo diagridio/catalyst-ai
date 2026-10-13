@@ -212,10 +212,14 @@ than reconstructing it in the body, so it is visible to a reviewer.
   `metadata` data-sharing level, workflow and activity `input`, `output` and
   `customStatus` are **removed from the response**, not returned empty. When you are
   checking history to find out whether a duplicate occurred, you cannot see payloads over
-  MCP at that level. Say "the payload was not shared at this organization's data-sharing
-  level" and name the level — never "the activity returned nothing", which the user has no
-  way to detect as wrong. Only an organization administrator can raise the level, so never
-  forge a data-sharing header and never ask for it so you can finish an answer.
+  MCP at that level. Tell the user in plain words: "I can't see what each activity took in
+  or returned, because your organization doesn't let AI tools read that data. So I can't
+  tell from the run history whether the activity ran twice. The console shows the history
+  in full: <link>." Mention once that an admin of their organization can ask Diagrid to
+  change the setting. Never say "the activity returned nothing", which the user has no way
+  to detect as wrong. Never forge a data-sharing header and never ask for the setting to
+  change so you can finish an answer. Avoid "data-sharing level" and "withheld" with the
+  user unless they used them first.
   What remains available over MCP: event types and names, timestamps, `task_scheduled_id`,
   `task_execution_id`, the retry origin key, and failure messages with stack traces.
 - **Link the user to the run** when deciding whether a duplicate happened depends on a
@@ -240,7 +244,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
 - **One retry policy per failure class, not one per workflow.** One policy object applied
   to every activity call in an orchestrator is the finding: it retries permanent rejections
   on the same schedule as transient failures.
-- **Do not report a withheld payload as an empty one.** Name the data-sharing level.
+- **Do not report a hidden payload as an empty one.** Say the organization's setting hides it.
 - **Do not resolve an unknown outcome by guessing.** A `pending` intent with no
   reconciliation path is a question for the user.
 - **This is static work.** Reviewing or writing an activity for idempotency needs the

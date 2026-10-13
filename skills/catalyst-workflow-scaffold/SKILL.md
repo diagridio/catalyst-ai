@@ -149,13 +149,15 @@ to stay in `default`.
 
 **An absent field is not an empty one.** A withheld payload is withheld by deleting the
 key, not by returning an empty value. At the default `metadata` data-sharing level
-`input`, `output` and `customStatus` are all removed from the run. Only an organization
-administrator can raise the level to `full`, and you cannot do it from here. Never forge
-a data-sharing header, and never ask an administrator to raise the level so you can
-finish an answer.
+`input`, `output` and `customStatus` are all removed from the run. Diagrid sets the level
+for each organization, and you cannot change it from here. Never forge a data-sharing
+header, and never ask an administrator to change the setting so you can finish an answer.
 
-When a payload really is missing, say so and name the level: "`output` was not shared at
-this organization's data-sharing level (`metadata`)". Never say "the workflow produced no
+When a payload really is missing, say so in plain words: "I can't see this run's output,
+because your organization's setting doesn't let AI tools read it. It doesn't mean the
+output was empty." Mention once that an admin of their organization can ask Diagrid to
+change the setting. Avoid "data-sharing level" and "withheld" with the user unless they
+used them first. Never say "the workflow produced no
 output" — that sends the user to debug working code. Hand over the console link from
 section 7 so the user can read it themselves.
 
@@ -203,7 +205,7 @@ that 404s or lands on the wrong project is worse than no link.**
 - **Do not put a side effect in the workflow body.** Activities exist for that.
 - **Use only the `catalyst_*` tools.** Where a capability has no tool, say it is not
   available over MCP yet and stop.
-- **Never report a withheld field as an empty result.**
+- **Never report a hidden field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right
   parameter, and print plain identifiers when you cannot build a link you trust.
 

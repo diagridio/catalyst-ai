@@ -237,7 +237,7 @@ Being explicit, because the gap matters and you'll notice it:
 | Running your app, agent or MCP server locally, calling out to Catalyst | ✅ works now, through `catalyst_get_connection` |
 | Letting Catalyst call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`catalyst-app-tunnels`) |
 | An agent calling an MCP server on your machine through Catalyst's workflow path (`dapr.internal.mcp.*` child workflows) | ⛔ the workflow path does not reach a tunneled MCP server yet; the skill points agents at Catalyst's HTTP MCP endpoint, which works |
-| Logs | ⚠️ `catalyst_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
+| Logs | ⚠️ `catalyst_get_logs` only if your organization lets AI tools read logs (Diagrid sets this; the default is off), and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, cluster diagnostics | ⛔ not available over MCP yet |
 
 If something is not available over MCP yet, the skills say so in one line rather than
@@ -267,9 +267,11 @@ hours, and they all fail *silently* or with an unhelpful error.
   adopt an identity it doesn't own, and then stays in error permanently.
 - **Identities are counted org-wide per region** — one per app, agent and MCP server, all
   from the same allowance — so splitting a topology across projects buys nothing.
-- **Absent is not empty.** At the default `metadata` data-sharing level, workflow `input`,
-  `output` and `customStatus` are *withheld*, not empty. A run that shows no output may
-  have produced plenty.
+- **Hidden is not empty.** By default, your organization lets AI tools see a run's names,
+  statuses, timings and errors, but not its `input`, `output` or `customStatus`. The skills
+  say so, and never call a hidden output empty. You can see the full run in the Catalyst
+  console. To let AI tools read this data, an organization admin can ask Diagrid to change
+  the setting.
 - **Connection values are for local dev only.** A deployed app gets its own from the
   platform. They go inline on the launch command, into a gitignored `.env` in the app's
   folder, or through your tool's environment option, and never into chat, a pull request
