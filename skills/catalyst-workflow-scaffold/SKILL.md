@@ -62,9 +62,8 @@ most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
-assuming; if it is gone, do not reuse another project just because it exists: one with agent or
-pub/sub infrastructure turned off breaks the demo. Offer to create a new project, and send
-a `Project` manifest only once the user agrees.
+assuming. If it is gone, follow "If `default` is absent" in `catalyst-setup`; it covers a
+project the user names and creating a new one.
 There is no current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the

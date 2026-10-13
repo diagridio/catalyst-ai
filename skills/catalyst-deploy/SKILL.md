@@ -305,9 +305,8 @@ workflow store and agent infrastructure already attached. Deploy into it.
 
 It is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm with `catalyst_list_projects`; if it is genuinely
-gone, do not reuse another project just because it exists: one with agent or pub/sub
-infrastructure turned off breaks the deploy. Offer to create a new project and wait for the
-user's agreement. A hand-made project that behaves differently is indistinguishable from a
+gone, follow "If `default` is absent" in `catalyst-setup`, which covers a project the user
+names and creating a new one. A hand-made project that behaves differently is indistinguishable from a
 broken one to the person asking for help.
 
 Be careful with a `Project` manifest in a `catalyst_apply` batch: it creates the project
