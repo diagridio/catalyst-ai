@@ -105,6 +105,19 @@ export const installData = {
           ]
         },
         {
+          "id": "mcp-headers",
+          "title": "Send the plugin version",
+          "description": "codex mcp add has no header flag, so add this to ~/.codex/config.toml.",
+          "items": [
+            {
+              "id": "mcp-headers",
+              "label": "~/.codex/config.toml",
+              "lang": "text",
+              "text": "[mcp_servers.catalyst.http_headers]\nX-Catalyst-Plugin-Version = \"0.7.2\""
+            }
+          ]
+        },
+        {
           "id": "mcp-login",
           "title": "Sign in",
           "description": "Opens the browser sign-in.",
@@ -164,7 +177,7 @@ export const installData = {
               "id": "mcp-config",
               "label": "~/.copilot/mcp-config.json",
               "lang": "json",
-              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
+              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.2\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
             }
           ]
         },
@@ -215,7 +228,7 @@ export const installData = {
               "id": "mcp-config",
               "label": ".vscode/mcp.json",
               "lang": "json",
-              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
+              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.2\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
             }
           ]
         },
