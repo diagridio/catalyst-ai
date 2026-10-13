@@ -185,8 +185,9 @@ def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
 # as above, there is no shared fragment. Its standing-allow limit is a security
 # boundary: loosened in one copy, that skill would suggest a permanent allow for
 # a call that hands out a credential (`catalyst_get_connection` returns the
-# sidecar token). Matched with whitespace collapsed, so line wrapping is free;
-# a skill may add its own sentences after it, never change these.
+# sidecar token). The whole bullet is compared with whitespace collapsed, so
+# line wrapping is free but its wording is not: it must equal this rule, or this
+# rule plus the skill's entry in BLOCKED_CALL_RULE_SUFFIXES.
 BLOCKED_CALL_RULE = (
     "- **If the client blocks a `catalyst_*` call, stop.** Tell the user which "
     "call was blocked, with its arguments, and ask them to approve this one "
@@ -197,6 +198,16 @@ BLOCKED_CALL_RULE = (
     "equivalent tool."
 )
 
+# The only text a skill may append to the blocked-call bullet, by skill name.
+# Exact, not a prefix match: a free-form tail could re-grant what the rule
+# withholds ("A standing allow for catalyst_get_connection is fine.").
+BLOCKED_CALL_RULE_SUFFIXES: dict[str, str] = {
+    "catalyst-app-tunnels": "The tunnel commands above are the only CLI use, not a workaround.",
+    "catalyst-debug": "Client approval does not replace asking the user for consent before a change.",
+}
+
+_BLOCKED_CALL_START = "- **If the client blocks a `catalyst_*` call, stop.**"
+
 
 def _rules_section(text: str) -> str | None:
     """The body of the `## Rules` section, or None when there is none."""
@@ -204,26 +215,54 @@ def _rules_section(text: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _blocked_call_bullet(rules: str) -> str | None:
+    """The blocked-call bullet with its indented continuation lines, collapsed."""
+    lines = rules.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith(_BLOCKED_CALL_START):
+            bullet = [line]
+            for cont in lines[i + 1:]:
+                if not cont.strip() or not cont[0].isspace():
+                    break
+                bullet.append(cont)
+            return " ".join(" ".join(bullet).split())
+    return None
+
+
 def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
     """Fail a skill whose Rules section lacks the blocked-call rule verbatim."""
-    expected = " ".join(BLOCKED_CALL_RULE.split())
+    rule = " ".join(BLOCKED_CALL_RULE.split())
     for skill_dir in skill_dirs:
         md = skill_dir / "SKILL.md"
         if not md.is_file():
             continue
-        rules = _rules_section(md.read_text(encoding="utf-8"))
+        text = md.read_text(encoding="utf-8")
+        where = str(md.relative_to(REPO))
+        rules = _rules_section(text)
         if rules is None:
-            # A skill with no Rules section is not this gate's business, the
-            # same way check_scope_rule skips absent skills.
+            # Only a skill that never touches a Catalyst tool may go without
+            # the rule. Any other skill with no `## Rules` heading has had it
+            # renamed or removed, and skipping it would let the rule go with it.
+            if TOOL_REFERENCE.search(text) or "`catalyst_*`" in text:
+                f.error(
+                    where,
+                    "names a Catalyst tool but has no `## Rules` section, so it "
+                    "cannot carry the blocked-call rule (BLOCKED_CALL_RULE in "
+                    "scripts/lint_skills.py). Restore the heading exactly as "
+                    "`## Rules`.",
+                )
             continue
-        if expected not in " ".join(rules.split()):
+        suffix = BLOCKED_CALL_RULE_SUFFIXES.get(skill_dir.name)
+        expected = f"{rule} {suffix}" if suffix else rule
+        if _blocked_call_bullet(rules) != expected:
             f.error(
-                str(md.relative_to(REPO)),
+                where,
                 "its Rules section does not carry the blocked-call rule verbatim "
                 "(BLOCKED_CALL_RULE in scripts/lint_skills.py).\n     Every skill "
                 "carries the same text so that no one copy can loosen the "
-                "standing-allow limit. Change the rule in every SKILL.md and in "
-                "BLOCKED_CALL_RULE together.",
+                "standing-allow limit; the only tail allowed is the skill's entry "
+                "in BLOCKED_CALL_RULE_SUFFIXES. Change the rule in every SKILL.md "
+                "and in BLOCKED_CALL_RULE together.",
             )
 
 

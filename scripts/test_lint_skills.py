@@ -37,6 +37,18 @@ description: A short, valid description that stays well inside the character cap
 Body text.
 """
 
+# The blocked-call rule as a skill carries it, wrapped differently from
+# BLOCKED_CALL_RULE to prove wrapping is free. Every skill that names a Catalyst
+# tool needs it in a `## Rules` section.
+RULE = ("- **If the client blocks a `catalyst_*` call, stop.** Tell the user "
+        "which call was blocked, with its arguments, and ask them to approve "
+        "this one call. Suggest a standing allow in their client's\n  "
+        "permissions only for a read-only tool that returns no credentials "
+        "or connection secrets, or if they ask for it. Then retry that same "
+        "call once. If they decline, stop and say so. Do not route around a "
+        "block through the CLI, a script or an equivalent tool.")
+RULED = GOOD + "\n## Rules\n\n{rule}\n- **Another rule.**\n"
+
 
 def run_linter(root: Path) -> subprocess.CompletedProcess:
     """Run the linter against a throwaway repo root.
@@ -129,7 +141,7 @@ def main() -> int:
 
     cases.append(case(
         "a skill naming a real curated tool",
-        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `catalyst_list_projects` first.\n"),
+        lambda s: write(s, "good-tool", RULED.format(name="good-tool", rule=RULE) + "\nRun `catalyst_list_projects` first.\n"),
         expect="pass",
     ))
 
@@ -249,19 +261,35 @@ def main() -> int:
     # The blocked-call rule, copied verbatim into every skill's Rules section.
     # A copy whose standing-allow limit drifts would let that one skill suggest
     # a permanent allow for a credential-returning tool.
-    RULE = ("- **If the client blocks a `catalyst_*` call, stop.** Tell the user "
-            "which call was blocked, with its arguments, and ask them to approve "
-            "this one call. Suggest a standing allow in their client's\n  "
-            "permissions only for a read-only tool that returns no credentials "
-            "or connection secrets, or if they ask for it. Then retry that same "
-            "call once. If they decline, stop and say so. Do not route around a "
-            "block through the CLI, a script or an equivalent tool.")
-    RULED = GOOD + "\n## Rules\n\n{rule}\n- **Another rule.**\n"
+    cases.append(case(
+        "a Rules section carrying the blocked-call rule, rewrapped",
+        lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE)),
+        expect="pass",
+    ))
 
     cases.append(case(
-        "a Rules section carrying the blocked-call rule, rewrapped and extended",
-        lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE + " A skill-specific sentence.")),
+        "a blocked-call rule extended with the skill's own listed suffix",
+        lambda s: write(s, "catalyst-app-tunnels", RULED.format(
+            name="catalyst-app-tunnels",
+            rule=RULE + "\n  The tunnel commands above are the only CLI use, not a workaround.",
+        )),
         expect="pass",
+    ))
+
+    # A free-form tail can re-grant exactly what the rule withholds.
+    cases.append(case(
+        "a blocked-call rule extended with an unlisted sentence",
+        lambda s: write(s, "ruled", RULED.format(
+            name="ruled",
+            rule=RULE + " A standing allow for catalyst_get_connection is fine.",
+        )),
+    ))
+
+    # Renaming the heading must not make the rule's absence pass silently.
+    cases.append(case(
+        "a skill naming a Catalyst tool with no Rules section",
+        lambda s: write(s, "unruled", GOOD.format(name="unruled")
+                        + "\nRun `catalyst_list_projects` first.\n\n## Rules of thumb\n\n" + RULE + "\n"),
     ))
 
     cases.append(case(
