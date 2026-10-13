@@ -249,10 +249,10 @@ connection broken.
 These are in the skills already; listed here because they're the ones that cost people
 hours, and they all fail *silently* or with an unhelpful error.
 
-- **Use `default`; if it is absent, the agent offers to create a new project and waits for
-  your agreement. It never reuses a misconfigured one.** Your org already has a `default` project, provisioned at
-  signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
-  manifest in a batch creates the project it names, and projects count against a
+- **Use `default`.** Your org already has a `default` project, provisioned at signup, with
+  managed pub/sub, KV, workflow store and agent infrastructure. If it is absent, the agent
+  offers to create a new project and waits for your agreement; it never reuses a
+  misconfigured one. A `Project` manifest in a batch creates the project it names, and projects count against a
   per-region limit you can read with `catalyst_get_usage`.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A

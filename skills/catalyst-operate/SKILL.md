@@ -63,10 +63,10 @@ sits on, and a large share of "X is missing" turns out to be "X's backing store 
 enabled here".
 
 Every organization has a project named `default` with managed pub/sub, KV, workflow
-store and agent infrastructure already attached. Use it. **Do not create a project while operating**; if `default` is absent, stop and
-see the "If `default` is absent" section of `catalyst-setup` — a
-hand-made project that behaves differently is indistinguishable from a broken one to the
-person asking for help.
+store and agent infrastructure already attached. Use it. **Do not create a project while
+operating** — a hand-made project that behaves differently is indistinguishable from a
+broken one to the person asking for help. If `default` is absent, stop, tell the user, and
+only continue with project setup (see `catalyst-setup`) if they ask for it.
 
 Two project-scoped limits matter for designs:
 
