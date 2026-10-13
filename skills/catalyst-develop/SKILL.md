@@ -231,9 +231,10 @@ Two quieter failure modes with no error to search for:
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
-  blocked, with its arguments, and ask them to approve it or allow it in their client's
-  permissions; then retry that same call once. If they decline, stop and say so. Do not
-  route around a block through the CLI, a script or an equivalent tool.
+  blocked, with its arguments, and ask them to approve this one call. Suggest a standing
+  allow in their client's permissions only for a read-only tool, or if they ask for it.
+  Then retry that same call once. If they decline, stop and say so. Do not route around a
+  block through the CLI, a script or an equivalent tool.
 - **Name the organization before the first write.** Before the session's first
   `catalyst_apply`, `catalyst_delete_resource` or any other call that creates, changes
   or deletes something, call `catalyst_whoami` and tell the user which organization the

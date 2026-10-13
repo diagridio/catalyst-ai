@@ -266,9 +266,10 @@ for the tunnel to close (section 3).
   `listen`. Create, grant, read and delete through the `catalyst_*` tools, as every other
   skill does.
 - **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
-  blocked, with its arguments, and ask them to approve it or allow it in their client's
-  permissions; then retry that same call once. If they decline, stop and say so. Do not
-  route around a block through the CLI, a script or an equivalent tool.
+  blocked, with its arguments, and ask them to approve this one call. Suggest a standing
+  allow in their client's permissions only for a read-only tool, or if they ask for it.
+  Then retry that same call once. If they decline, stop and say so. Do not route around a
+  block through the CLI, a script or an equivalent tool.
   The tunnel commands above are the only CLI use, not a workaround.
 - **Never use a public tunnel or a public URL** to let Catalyst reach a process on this
   machine.
