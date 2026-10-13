@@ -300,6 +300,15 @@ def main() -> int:
         )),
     ))
 
+    # Only one copy may carry the lead, or a looser second copy rides on the first.
+    cases.append(case(
+        "a correct blocked-call rule followed by a loosened duplicate",
+        lambda s: write(s, "ruled", RULED.format(
+            name="ruled",
+            rule=RULE + "\n" + RULE.replace(" that returns no credentials or connection secrets", ""),
+        )),
+    ))
+
     cases.append(case(
         "a Rules section without the blocked-call rule",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule="- **Some rule.**")),

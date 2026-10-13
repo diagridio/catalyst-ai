@@ -215,9 +215,14 @@ def _rules_section(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _blocked_call_bullet(rules: str) -> str | None:
-    """The blocked-call bullet with its indented continuation lines, collapsed."""
+def _blocked_call_bullets(rules: str) -> list[str]:
+    """Every blocked-call bullet with its indented continuation lines, collapsed.
+
+    All of them, not the first: a correct copy followed by a looser one with
+    the same bold lead would otherwise pass on the strength of the first.
+    """
     lines = rules.splitlines()
+    bullets = []
     for i, line in enumerate(lines):
         if line.startswith(_BLOCKED_CALL_START):
             bullet = [line]
@@ -225,8 +230,8 @@ def _blocked_call_bullet(rules: str) -> str | None:
                 if not cont.strip() or not cont[0].isspace():
                     break
                 bullet.append(cont)
-            return " ".join(" ".join(bullet).split())
-    return None
+            bullets.append(" ".join(" ".join(bullet).split()))
+    return bullets
 
 
 def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
@@ -254,7 +259,15 @@ def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
             continue
         suffix = BLOCKED_CALL_RULE_SUFFIXES.get(skill_dir.name)
         expected = f"{rule} {suffix}" if suffix else rule
-        if _blocked_call_bullet(rules) != expected:
+        bullets = _blocked_call_bullets(rules)
+        if len(bullets) > 1:
+            f.error(
+                where,
+                f"its Rules section has {len(bullets)} blocked-call bullets. "
+                f"Keep exactly one: a second copy with the same lead can carry "
+                f"looser wording than the first.",
+            )
+        elif bullets != [expected]:
             f.error(
                 where,
                 "its Rules section does not carry the blocked-call rule verbatim "
