@@ -124,7 +124,8 @@ a workflow store and agent infrastructure, all attached. Then wait. Read
 schema exposes explicitly rather than from memory. Send the manifest through
 `catalyst_apply` only after the user has agreed. Then confirm the project exists with
 `catalyst_list_projects` and that it has all of those attached with `catalyst_get_project`
-before working in it.
+before working in it. If `catalyst_get_project` shows any of the four missing, tell the
+user which, do not work in the project, and do not create another one.
 
 ## What is not available over MCP yet
 
