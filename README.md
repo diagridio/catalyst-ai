@@ -356,6 +356,8 @@ python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills,
 python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
+python3 scripts/check_plugin_version_header.py   # the MCP version header matches the plugin version
+python3 scripts/test_check_plugin_version_header.py
 python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
 (cd web/install && npm test)
 ```
@@ -385,7 +387,10 @@ over MCP yet instead of reaching for something else.
 
 If you add a skill, or change any skill's content, bump `version` in
 `.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
-otherwise, and nothing tells them.
+otherwise, and nothing tells them. Every bump also changes the `X-Catalyst-Plugin-Version`
+header: set it to the new version under `mcpServers.catalyst.headers` in `plugin.json` and
+in the three snippets under the install steps here (Codex, Copilot CLI and VS Code), then
+run `python3 scripts/build_install_data.py` and commit the result.
 
 ## License
 
