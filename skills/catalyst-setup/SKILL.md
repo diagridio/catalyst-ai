@@ -123,9 +123,10 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
   blocked, with its arguments, and ask them to approve this one call. Suggest a standing
-  allow in their client's permissions only for a read-only tool, or if they ask for it.
-  Then retry that same call once. If they decline, stop and say so. Do not route around a
-  block through the CLI, a script or an equivalent tool.
+  allow in their client's permissions only for a read-only tool that returns no
+  credentials or connection secrets, or if they ask for it. Then retry that same call
+  once. If they decline, stop and say so. Do not route around a block through the CLI, a
+  script or an equivalent tool.
 - **Never ask the user to paste a token or key of any kind.** If one is needed, the
   client's sign-in flow supplies it.
 - **Do not create a project.** Every organization gets a project named `default` with

@@ -267,9 +267,10 @@ for the tunnel to close (section 3).
   skill does.
 - **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
   blocked, with its arguments, and ask them to approve this one call. Suggest a standing
-  allow in their client's permissions only for a read-only tool, or if they ask for it.
-  Then retry that same call once. If they decline, stop and say so. Do not route around a
-  block through the CLI, a script or an equivalent tool.
+  allow in their client's permissions only for a read-only tool that returns no
+  credentials or connection secrets, or if they ask for it. Then retry that same call
+  once. If they decline, stop and say so. Do not route around a block through the CLI, a
+  script or an equivalent tool.
   The tunnel commands above are the only CLI use, not a workaround.
 - **Never use a public tunnel or a public URL** to let Catalyst reach a process on this
   machine.
