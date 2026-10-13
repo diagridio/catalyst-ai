@@ -55,10 +55,11 @@ user hunting for a Catalyst problem that does not exist, which is worse than no 
 
 ## 3. Use the project named `default`
 
-**Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.** Every organization gets one named `default` with managed
-pub/sub, a managed KV store, the workflow store and agent infrastructure already
-attached. Workflow history lives in that managed store, so a hand-rolled project is the
-most common reason a freshly scaffolded workflow starts but never appears.
+**Use `default`; only if it is absent, offer to create a project and wait for the user's
+agreement.** Every organization gets one named `default` with managed pub/sub, a managed
+KV store, the workflow store and agent infrastructure already attached. Workflow history
+lives in that managed store, so a hand-rolled project is the most common reason a freshly
+scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
@@ -195,8 +196,8 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Use `default`; only if it is absent, offer to create a project and wait for the user's agreement.**
-  Never reuse a misconfigured project.
+- **Use `default`; only if it is absent, offer to create a project and wait for the user's
+  agreement.** Never reuse a misconfigured project.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the

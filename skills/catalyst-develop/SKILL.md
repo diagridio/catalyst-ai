@@ -28,10 +28,10 @@ change. Read it before you delete anything.
 
 **Use `default`; only if it is absent, offer to create a project and wait for the user's
 agreement. Never reuse a misconfigured project.** Every organization gets one named
-`default` with managed pub/sub, KV, workflow store and agent infrastructure already attached.
-Confirm with `catalyst_list_projects`. If it is absent, follow "If `default` is absent" in
-`catalyst-setup`; it covers a project the user names and creating a new one. Pass the
-project on every call; there is no current project.
+`default` with managed pub/sub, KV, workflow store and agent infrastructure already
+attached. Confirm with `catalyst_list_projects`. If it is absent, follow "If `default` is
+absent" in `catalyst-setup`; it covers a project the user names and creating a new one.
+Pass the project on every call; there is no current project.
 
 ## 2. Make sure the App ID exists
 
