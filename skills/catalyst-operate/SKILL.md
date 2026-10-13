@@ -217,7 +217,7 @@ doesn't mean the output was empty. You can open the run in the Catalyst console 
 it: <link>. If you want AI tools to read this data too, an admin of your organization
 can ask Diagrid to change the setting."
 Avoid "data-sharing level", "metadata level" and "withheld" with the user unless they used
-them first. The payload cannot be read through this session at that level. Mention the
+them first. The payload cannot be read through this session at the `metadata` level. Mention the
 admin route once per reply, as an option, even when several things are hidden: do not
 ask for the setting to change so that you can finish an answer, and never try to route
 around it. It is a deliberate control.
