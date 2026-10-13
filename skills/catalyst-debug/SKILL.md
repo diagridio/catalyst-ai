@@ -47,8 +47,9 @@ and agent infrastructure are project settings, and when one is off the symptoms 
 indistinguishable from broken resources. The project named `default` already has managed
 pub/sub, KV, workflow store and agent infrastructure attached. **Do not create a project**
 while debugging — a new project with different settings turns one unexplained failure
-into two. If `default` is absent, stop debugging, tell the user, and only continue with
-project setup (see `catalyst-setup`) if they ask for it.
+into two. If the user has not named a project and `default` is absent, stop debugging,
+tell the user, and only continue with project setup (see `catalyst-setup`) if they ask for
+it. If they named one, debug in that project.
 
 ## 2. Rules of evidence
 
@@ -365,6 +366,7 @@ Then the fix, separately, and as a proposal if it mutates anything.
   destroy the state you are diagnosing. Read first, propose changes with their
   consequences stated, then wait for consent.
 - **Do not write files.** Report in your answer, unless the user asked for a file.
-- **Do not create a project while debugging.** If `default` is absent, stop and tell the
-  user; continue with project setup only if they ask for it. See section 1.
+- **Do not create a project while debugging.** If the user has not named a project and
+  `default` is absent, stop and tell the user; continue with project setup only if they ask
+  for it. See section 1.
 - **Do not print secrets** into a summary, a log, or a commit.
