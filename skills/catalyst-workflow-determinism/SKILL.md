@@ -1,6 +1,6 @@
 ---
 name: catalyst-workflow-determinism
-description: Replay-safety rails for the body of a Dapr Workflow orchestrator. Use when writing or reviewing code inside a workflow function, or when a run diverges on replay — clocks, randomness, ids, iteration order, direct I/O, threads and mutable global state.
+description: Replay-safety rails for the body of a Dapr Workflow orchestrator on Catalyst, as you write it. Use when writing or changing code inside a workflow function, or when a run diverges on replay — clocks, randomness, ids, iteration order, direct I/O, global state.
 ---
 
 # Workflow Determinism

@@ -37,6 +37,9 @@ marketplace is offering, reading the installed copy only when the two agree — 
 own it can show you 12 skills while your session loads 11. If either looks wrong, jump to
 [If your install is behind](#if-your-install-is-behind).
 
+The same marketplace also lists `dapr-skills`, for Dapr applications that run outside
+Catalyst — see [Also in this marketplace](#also-in-this-marketplace-dapr-skills).
+
 #### Then sign in to the Catalyst MCP server
 
 The plugin also registers the Catalyst MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
@@ -168,6 +171,20 @@ If you can get Codex or Copilot to answer a Catalyst question, **that is the sin
 useful thing you can report** — with the wording you used and which skill fired. A skill
 that never fires looks identical to a session where nothing relevant came up, which is why
 this needs a human rather than an installer's exit code.
+
+## Also in this marketplace: dapr-skills
+
+This marketplace lists a second plugin,
+[`dapr-skills`](https://github.com/diagrid-labs/dapr-skills): the same subjects on
+**open-source Dapr** — scaffold a new app, add Dapr to an existing one, and review Dapr Workflow, pub/sub and durable agent code that runs on your own machine under the Dapr CLI or .NET Aspire.
+
+```bash
+claude plugin install dapr-skills@diagrid
+```
+
+They are built to sit side by side. Each `dapr-skills` skill that overlaps with one here
+says so in its description and points at this plugin for anything that runs on Catalyst,
+which is what keeps the two from both firing on the same question.
 
 ## Then just ask
 
@@ -308,6 +325,10 @@ claude plugin details catalyst-ai@diagrid    # expect 12 skills
 
 CI now fails any change to plugin content that doesn't bump the version, so the second one
 shouldn't recur.
+
+Both fixes work the same way for the other plugin in this marketplace — substitute
+`dapr-skills@diagrid` and `~/.claude/plugins/cache/diagrid/dapr-skills`. The version it
+reports is its own, set in its repository, not this one's.
 
 ## Feedback
 
