@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the plugin-version header gate.
 
-Each case copies this repo's real plugin.json and README.md into a throwaway
+Each case copies this repo's real plugin.json, README.md and catalyst-setup skill into a throwaway
 directory, changes one thing, and asserts the gate's verdict. The controls (the
 repo as it is, and a bump done properly) must pass, or the rejections prove only
 that the gate rejects whatever it is shown.
@@ -21,6 +21,7 @@ from typing import Callable
 REPO = Path(__file__).resolve().parent.parent
 CHECKER = REPO / "scripts" / "check_plugin_version_header.py"
 MANIFEST = Path(".claude-plugin") / "plugin.json"
+SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
 HEADER = "X-Catalyst-Plugin-Version"
 CURRENT = json.loads((REPO / MANIFEST).read_text(encoding="utf-8"))["version"]
 
@@ -32,9 +33,17 @@ def edit_manifest(root: Path, change: Callable[[dict], None]) -> None:
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
-def edit_readme(root: Path, change: Callable[[str], str]) -> None:
-    path = root / "README.md"
+def edit_doc(root: Path, doc: Path, change: Callable[[str], str]) -> None:
+    path = root / doc
     path.write_text(change(path.read_text(encoding="utf-8")), encoding="utf-8")
+
+
+def edit_readme(root: Path, change: Callable[[str], str]) -> None:
+    edit_doc(root, Path("README.md"), change)
+
+
+def edit_skill(root: Path, change: Callable[[str], str]) -> None:
+    edit_doc(root, SETUP_SKILL, change)
 
 
 def set_version(v: str) -> Callable[[dict], None]:
@@ -57,9 +66,10 @@ def bump_everywhere(root: Path, v: str = "9.9.9") -> None:
     edit_manifest(root, set_version(v))
     edit_manifest(root, set_header(v))
     edit_readme(root, lambda s: s.replace(f'"{CURRENT}"', f'"{v}"'))
+    edit_skill(root, lambda s: s.replace(f'"{CURRENT}"', f'"{v}"'))
 
 
-def drop_first_readme_snippet(s: str) -> str:
+def drop_first_snippet(s: str) -> str:
     """Remove the first line that sets the header, wherever it is."""
     lines = s.splitlines(keepends=True)
     for i, line in enumerate(lines):
@@ -68,7 +78,7 @@ def drop_first_readme_snippet(s: str) -> str:
     raise AssertionError("README has no header snippet to drop")
 
 
-def stale_first_readme_snippet(s: str) -> str:
+def stale_first_snippet(s: str) -> str:
     lines = s.splitlines(keepends=True)
     for i, line in enumerate(lines):
         if HEADER in line and CURRENT in line:
@@ -83,6 +93,8 @@ def case(name: str, mutate: Callable[[Path], None], expect: str) -> tuple[str, s
         (root / MANIFEST).parent.mkdir(parents=True)
         (root / MANIFEST).write_text((REPO / MANIFEST).read_text(encoding="utf-8"), encoding="utf-8")
         (root / "README.md").write_text((REPO / "README.md").read_text(encoding="utf-8"), encoding="utf-8")
+        (root / SETUP_SKILL).parent.mkdir(parents=True)
+        (root / SETUP_SKILL).write_text((REPO / SETUP_SKILL).read_text(encoding="utf-8"), encoding="utf-8")
         mutate(root)
         proc = subprocess.run([sys.executable, str(CHECKER), str(root)], capture_output=True, text=True)
         return name, expect, proc.returncode != 0, (proc.stderr + proc.stdout).strip()
@@ -99,8 +111,12 @@ def main() -> int:
              lambda r: (bump_everywhere(r), edit_manifest(r, set_header(CURRENT))), "reject"),
         case("a version bump that leaves the README behind",
              lambda r: edit_manifest(r, lambda d: (set_version("9.9.9")(d), set_header("9.9.9")(d))), "reject"),
+        case("a version bump that leaves the setup skill behind",
+             lambda r: (bump_everywhere(r), edit_skill(r, lambda s: s.replace("9.9.9", CURRENT))), "reject"),
+        case("one setup skill snippet left on an old version",
+             lambda r: edit_skill(r, stale_first_snippet), "reject"),
         case("one README snippet left on an old version",
-             lambda r: edit_readme(r, stale_first_readme_snippet), "reject"),
+             lambda r: edit_readme(r, stale_first_snippet), "reject"),
 
         # The header has to be there to be right.
         case("the manifest header removed", lambda r: edit_manifest(r, set_header(None)), "reject"),
@@ -108,7 +124,9 @@ def main() -> int:
              lambda r: edit_manifest(r, lambda d: d.pop("mcpServers")), "reject"),
 
         # Deleting a snippet must not be a way to pass.
-        case("a README snippet removed", lambda r: edit_readme(r, drop_first_readme_snippet), "reject"),
+        case("a README snippet removed", lambda r: edit_readme(r, drop_first_snippet), "reject"),
+        case("a setup skill snippet removed", lambda r: edit_skill(r, drop_first_snippet), "reject"),
+        case("the setup skill removed", lambda r: (r / SETUP_SKILL).unlink(), "reject"),
     ]
 
     failures = 0

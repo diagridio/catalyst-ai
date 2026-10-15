@@ -3,8 +3,9 @@
 
 The `catalyst` MCP server in `.claude-plugin/plugin.json` sends the header
 `X-Catalyst-Plugin-Version` so the server can tell a plugin install from a server
-someone added by hand, and see who is on an old version. The README tells Codex,
-Copilot CLI and VS Code users to set the same header by hand.
+someone added by hand, and see who is on an old version. The README and the
+catalyst-setup skill tell Codex, Copilot CLI and VS Code users to set the same
+header by hand.
 
 The value is a literal, because a plugin manifest cannot interpolate its own
 `version`. So every version bump has to move it in all of those places, and one
@@ -16,9 +17,10 @@ Checked:
 
 * plugin.json  `mcpServers.catalyst.headers["X-Catalyst-Plugin-Version"]` equals
                `version`.
-* README.md    every snippet that sets the header sets it to `version`, and there
-               are at least MIN_README_SNIPPETS of them (Codex, Copilot CLI and
-               VS Code), so deleting a snippet cannot make the check pass.
+* README.md and skills/catalyst-setup/SKILL.md
+               every snippet that sets the header sets it to `version`, and there
+               are at least MIN_SNIPPETS of them in each file (Codex, Copilot CLI
+               and VS Code), so deleting a snippet cannot make the check pass.
 
 web/install/ is generated from plugin.json and checked against the README by
 build_install_data.py --check, so it follows from these two.
@@ -36,13 +38,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = Path(".claude-plugin") / "plugin.json"
 README = Path("README.md")
+SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
+HAND_SET_DOCS = (README, SETUP_SKILL)
 HEADER = "X-Catalyst-Plugin-Version"
 SERVER = "catalyst"
-MIN_README_SNIPPETS = 3
+MIN_SNIPPETS = 3
 
 # Matches the header as a JSON key (`"X-...": "0.7.2"`) or a TOML key
 # (`X-... = "0.7.2"`), and captures the value.
-README_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*[:=]\s*"([^"]*)"')
+SNIPPET_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*[:=]\s*"([^"]*)"')
 
 
 def check(root: Path) -> list[str]:
@@ -67,20 +71,21 @@ def check(root: Path) -> list[str]:
                 f"but `version` is {version!r}"
             )
 
-    try:
-        readme = (root / README).read_text(encoding="utf-8")
-    except OSError as error:
-        return problems + [f"{README}: cannot read: {error}"]
-
-    values = README_VALUE.findall(readme)
-    if len(values) < MIN_README_SNIPPETS:
-        problems.append(
-            f"{README}: {len(values)} snippet(s) set {HEADER}, expected at least "
-            f"{MIN_README_SNIPPETS} (Codex, Copilot CLI, VS Code)"
-        )
-    for value in values:
-        if value != version:
-            problems.append(f"{README}: a snippet sets {HEADER} to {value!r}, but `version` is {version!r}")
+    for doc in HAND_SET_DOCS:
+        try:
+            text = (root / doc).read_text(encoding="utf-8")
+        except OSError as error:
+            problems.append(f"{doc}: cannot read: {error}")
+            continue
+        values = SNIPPET_VALUE.findall(text)
+        if len(values) < MIN_SNIPPETS:
+            problems.append(
+                f"{doc}: {len(values)} snippet(s) set {HEADER}, expected at least "
+                f"{MIN_SNIPPETS} (Codex, Copilot CLI, VS Code)"
+            )
+        for value in values:
+            if value != version:
+                problems.append(f"{doc}: a snippet sets {HEADER} to {value!r}, but `version` is {version!r}")
     return problems
 
 
@@ -93,7 +98,7 @@ def main(argv: list[str]) -> int:
             print(f"  {p}", file=sys.stderr)
         print(
             f"\nSet {HEADER} to the `version` in {MANIFEST}, in the manifest and in every\n"
-            "README snippet, then run `python3 scripts/build_install_data.py`.",
+            "README and catalyst-setup snippet, then run `python3 scripts/build_install_data.py`.",
             file=sys.stderr,
         )
         return 1
