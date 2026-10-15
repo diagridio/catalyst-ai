@@ -31,14 +31,23 @@ in the browser. There is no API key and nothing for the user to paste.
 
 Only clients without the plugin need its address, and the table below carries it. Give
 the user the command or config for their client; do not quote the address on its own.
+Keep the `X-Catalyst-Plugin-Version` header in each non-plugin setup below: it is how the server tells a
+client set up from these instructions from one added by hand.
 
 | Client | Do |
 | --- | --- |
 | Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:catalyst`. Open `/mcp`, pick that server and complete the browser sign-in |
-| Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then `codex mcp login catalyst` |
-| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
-| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login catalyst` |
+| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.7.2"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.7.2"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
+
+For Codex, add this to `~/.codex/config.toml` as its own two-line table:
+
+```toml
+[mcp_servers.catalyst.http_headers]
+X-Catalyst-Plugin-Version = "0.7.2"
+```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
 call `catalyst_whoami` again. Tools appear when it finishes.
