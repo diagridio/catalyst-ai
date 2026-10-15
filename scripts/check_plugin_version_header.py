@@ -19,8 +19,8 @@ Checked:
                `version`.
 * README.md and skills/catalyst-setup/SKILL.md
                every snippet that sets the header sets it to `version`, and there
-               are at least MIN_SNIPPETS of them in each file (Codex, Copilot CLI
-               and VS Code), so deleting a snippet cannot make the check pass.
+               are at least one TOML (Codex) and two JSON (Copilot CLI and VS
+               Code) in each file, so deleting a snippet cannot make the check pass.
 
 web/install/ is generated from plugin.json and checked against the README by
 build_install_data.py --check, so it follows from these two.
@@ -42,11 +42,12 @@ SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
 HAND_SET_DOCS = (README, SETUP_SKILL)
 HEADER = "X-Catalyst-Plugin-Version"
 SERVER = "catalyst"
-MIN_SNIPPETS = 3
+MIN_TOML_SNIPPETS = 1  # Codex
+MIN_JSON_SNIPPETS = 2  # Copilot CLI and VS Code
 
 # Matches the header as a JSON key (`"X-...": "0.7.2"`) or a TOML key
-# (`X-... = "0.7.2"`), and captures the value.
-SNIPPET_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*[:=]\s*"([^"]*)"')
+# (`X-... = "0.7.2"`), and captures the separator and the value.
+SNIPPET_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*([:=])\s*"([^"]*)"')
 
 
 def check(root: Path) -> list[str]:
@@ -77,13 +78,16 @@ def check(root: Path) -> list[str]:
         except OSError as error:
             problems.append(f"{doc}: cannot read: {error}")
             continue
-        values = SNIPPET_VALUE.findall(text)
-        if len(values) < MIN_SNIPPETS:
+        found = SNIPPET_VALUE.findall(text)
+        toml = [v for sep, v in found if sep == "="]
+        json_forms = [v for sep, v in found if sep == ":"]
+        if len(toml) < MIN_TOML_SNIPPETS or len(json_forms) < MIN_JSON_SNIPPETS:
             problems.append(
-                f"{doc}: {len(values)} snippet(s) set {HEADER}, expected at least "
-                f"{MIN_SNIPPETS} (Codex, Copilot CLI, VS Code)"
+                f"{doc}: found {len(toml)} TOML and {len(json_forms)} JSON snippet(s) setting {HEADER}, "
+                f"expected at least {MIN_TOML_SNIPPETS} TOML (Codex) and {MIN_JSON_SNIPPETS} JSON "
+                "(Copilot CLI, VS Code)"
             )
-        for value in values:
+        for _, value in found:
             if value != version:
                 problems.append(f"{doc}: a snippet sets {HEADER} to {value!r}, but `version` is {version!r}")
     return problems

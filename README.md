@@ -389,8 +389,8 @@ If you add a skill, or change any skill's content, bump `version` in
 `.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
 otherwise, and nothing tells them. Every bump also changes the `X-Catalyst-Plugin-Version`
 header: set it to the new version under `mcpServers.catalyst.headers` in `plugin.json` and
-in the three snippets under the install steps here (Codex, Copilot CLI and VS Code), then
-run `python3 scripts/build_install_data.py` and commit the result.
+in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
+in the same three setups in `skills/catalyst-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
 
 ## License
 

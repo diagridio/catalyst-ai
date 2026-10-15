@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tests for the plugin-version header gate.
 
-Each case copies this repo's real plugin.json, README.md and catalyst-setup skill into a throwaway
-directory, changes one thing, and asserts the gate's verdict. The controls (the
+Each case copies this repo's real plugin.json, README.md and catalyst-setup skill
+into a throwaway directory, changes one thing, and asserts the gate's verdict. The controls (the
 repo as it is, and a bump done properly) must pass, or the rejections prove only
 that the gate rejects whatever it is shown.
 
@@ -87,6 +87,24 @@ def stale_first_snippet(s: str) -> str:
     raise AssertionError("README has no header snippet to change")
 
 
+def stale_last_snippet(s: str) -> str:
+    lines = s.splitlines(keepends=True)
+    for i in range(len(lines) - 1, -1, -1):
+        if HEADER in lines[i] and CURRENT in lines[i]:
+            lines[i] = lines[i].replace(CURRENT, "0.0.1")
+            return "".join(lines)
+    raise AssertionError("no header snippet to change")
+
+
+def replace_toml_with_json_duplicate(s: str) -> str:
+    """Drop the Codex TOML line and repeat a JSON one, keeping the total at three."""
+    lines = s.splitlines(keepends=True)
+    toml = next(i for i, l in enumerate(lines) if f'{HEADER} = "' in l)
+    json_line = next(l for l in lines if f'"{HEADER}":' in l)
+    lines[toml] = json_line
+    return "".join(lines)
+
+
 def case(name: str, mutate: Callable[[Path], None], expect: str) -> tuple[str, str, bool, str]:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -117,6 +135,15 @@ def main() -> int:
              lambda r: edit_skill(r, stale_first_snippet), "reject"),
         case("one README snippet left on an old version",
              lambda r: edit_readme(r, stale_first_snippet), "reject"),
+
+        case("the last README snippet left on an old version",
+             lambda r: edit_readme(r, stale_last_snippet), "reject"),
+        case("the last setup skill snippet left on an old version",
+             lambda r: edit_skill(r, stale_last_snippet), "reject"),
+        case("the Codex snippet replaced by a duplicate JSON one in the README",
+             lambda r: edit_readme(r, replace_toml_with_json_duplicate), "reject"),
+        case("the Codex snippet replaced by a duplicate JSON one in the setup skill",
+             lambda r: edit_skill(r, replace_toml_with_json_duplicate), "reject"),
 
         # The header has to be there to be right.
         case("the manifest header removed", lambda r: edit_manifest(r, set_header(None)), "reject"),
