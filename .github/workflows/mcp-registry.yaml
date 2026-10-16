@@ -50,7 +50,9 @@ on:
 permissions:
   contents: read
 
-# One publish at a time, never cancelled midway.
+# One publish at a time, never cancelled midway. GitHub keeps only one pending run per
+# group, so a run queued behind another is replaced by a newer one; dispatch a minor or
+# major bump only when no other run is waiting.
 concurrency:
   group: mcp-registry
   cancel-in-progress: false
@@ -70,6 +72,7 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
       action: ${{ steps.plan.outputs.action }}
       version: ${{ steps.plan.outputs.version }}
+      # true when there is no tag left to make: it exists, or the entry names no commit.
       tagged: ${{ steps.tag.outputs.tagged }}
     steps:
       - name: Refuse to run off main
@@ -84,6 +87,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Record the commit under test
         id: sha
@@ -130,6 +134,7 @@ jobs:
         env:
           ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
+          COMMIT: ${{ steps.plan.outputs.commit }}
         run: |
           set -euo pipefail
           tag="mcp-registry-v$VERSION"
@@ -138,6 +143,10 @@ jobs:
             if [ "$ACTION" = "publish" ]; then
               echo "::error::tag $tag already exists, but the registry has no $VERSION"; exit 1
             fi
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          elif [ "$ACTION" = "skip" ] && [ -z "$COMMIT" ]; then
+            # Published without this workflow's metadata, so the commit is unknown.
+            echo "::warning::$VERSION has no tag and its registry entry names no commit; not tagging"
             echo "tagged=true" >> "$GITHUB_OUTPUT"
           else
             echo "tagged=false" >> "$GITHUB_OUTPUT"
@@ -159,7 +168,11 @@ jobs:
 
   publish:
     needs: preflight
-    if: needs.preflight.outputs.action == 'publish' || needs.preflight.outputs.tagged == 'false'
+    # main is checked here too, not only in preflight, so the job that holds the key
+    # never starts off main even if the environment's branch rule is loosened.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (needs.preflight.outputs.action == 'publish' || needs.preflight.outputs.tagged == 'false')
     runs-on: ubuntu-latest
     environment: mcp-registry
     timeout-minutes: 10
@@ -171,6 +184,9 @@ jobs:
         with:
           ref: ${{ needs.preflight.outputs.sha }}
           fetch-depth: 0
+          # The write token is handed to the tag push alone, not left on disk while
+          # mcp-publisher runs.
+          persist-credentials: false
 
       - name: Assert this is the commit preflight checked
         env:
@@ -218,28 +234,54 @@ jobs:
           if [ -z "${MCP_REGISTRY_PRIVATE_KEY:-}" ]; then
             echo "::error::MCP_REGISTRY_PRIVATE_KEY is not set on the mcp-registry environment. Nothing was published."; exit 1
           fi
-          echo "::add-mask::$MCP_REGISTRY_PRIVATE_KEY"
           publisher="$RUNNER_TEMP/bin/mcp-publisher"
           # The login writes a registry token under ~/.config; drop it however this ends.
           trap '"$publisher" logout >/dev/null 2>&1 || true' EXIT
+          # mcp-publisher takes the key only as a flag, so it is in this ephemeral
+          # runner's process table for the length of the login; Actions masks it in logs.
           "$publisher" login dns --domain "$DOMAIN" --private-key "$MCP_REGISTRY_PRIVATE_KEY"
           "$publisher" publish server.json
 
       # Publish before tagging: a published version with no tag is one re-run from
       # consistent; a tag with nothing in the registry needs a deletion.
+      # A skip tags the commit the registry entry was published from, not this one: a
+      # later commit with unchanged metadata did not publish that version.
       - name: Tag
         env:
+          ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
+          COMMIT: ${{ steps.plan.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           tag="mcp-registry-v$VERSION"
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "tag $tag already exists, skipping"; exit 0
+          if [ "$ACTION" = "publish" ]; then
+            target=$(git rev-parse HEAD)
+          elif [ -n "$COMMIT" ]; then
+            target="$COMMIT"
+          else
+            echo "::warning::$VERSION's registry entry names no commit; not tagging"; exit 0
+          fi
+          if ! git cat-file -e "$target^{commit}" 2>/dev/null; then
+            echo "::error::commit $target, which published $VERSION, is not in this repository's history"; exit 1
+          fi
+          if existing=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
+            if [ "$ACTION" = "publish" ] || [ "$existing" != "$target" ]; then
+              echo "::error::tag $tag already points at $existing, expected $target"; exit 1
+            fi
+            echo "tag $tag already exists at $target, skipping"; exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$tag" -m "MCP Registry io.diagrid/catalyst $VERSION"
-          git push origin "$tag"
+          git tag -a "$tag" -m "MCP Registry io.diagrid/catalyst $VERSION" "$target"
+          # The token goes to this one push through the environment, the way checkout
+          # would have written it to .git/config, and stays out of the process args.
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth" \
+            git push origin "refs/tags/$tag"
 
       - name: Summarise
         if: always()
