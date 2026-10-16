@@ -176,6 +176,9 @@ jobs:
       - name: Test the server.json gate
         run: python3 scripts/test_check_server_json.py
 
+      - name: Test the registry version planner
+        run: python3 scripts/test_plan_registry_version.py
+
       - name: Check server.json against the plugin
         run: python3 scripts/check_server_json.py
 
