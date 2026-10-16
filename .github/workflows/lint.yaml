@@ -160,6 +160,31 @@ jobs:
       - name: Check the MCP surface
         run: python3 scripts/check_mcp_surface.py
 
+  server-json:
+    # server.json is the MCP Registry entry; mcp-registry.yaml publishes it on merge.
+    # The registry's own validator checks the schema and its publishing rules, and
+    # check_server_json.py checks what the schema cannot: the fixed name, and a remote
+    # URL equal to the plugin's, so the two cannot drift. `validate` needs no login and
+    # publishes nothing.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Test the server.json gate
+        run: python3 scripts/test_check_server_json.py
+
+      - name: Check server.json against the plugin
+        run: python3 scripts/check_server_json.py
+
+      - name: Install mcp-publisher
+        run: scripts/install_mcp_publisher.sh "$RUNNER_TEMP/bin"
+
+      - name: Validate server.json against the registry schema
+        run: '"$RUNNER_TEMP/bin/mcp-publisher" validate server.json'
+
   install-component:
     # web/install/ is the npm package `@diagrid/catalyst-ai-install`. Its data is
     # GENERATED from commands/ and checked against the README, so a command or an
