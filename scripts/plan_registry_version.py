@@ -21,7 +21,9 @@ become latest, so the registry's own entries that are not plain are ignored when
 finding the highest, but still count as taken.
 
 Run: python3 scripts/plan_registry_version.py --bump patch --run-id <id>
-Writes `action` (publish|skip) and `version` to $GITHUB_OUTPUT when it is set.
+Writes `action` (publish|skip), `version` and, on a skip, `commit` (the commit the
+version was published from, so the tag lands on it, or empty if the entry does not
+say) to $GITHUB_OUTPUT when it is set.
 """
 
 from __future__ import annotations
@@ -41,6 +43,7 @@ SERVER_JSON = REPO / "server.json"
 REGISTRY = "https://registry.modelcontextprotocol.io"
 PUBLISHER_META = "io.modelcontextprotocol.registry/publisher-provided"
 RUN_ID_KEY = "runId"
+COMMIT_KEY = "commit"
 FIRST_VERSION = (0, 0, 1)
 BUMPS = ("patch", "minor", "major")
 PLAIN_SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
@@ -74,15 +77,25 @@ def comparable(server: dict) -> dict:
     return {k: v for k, v in server.items() if k not in PER_PUBLISH_FIELDS}
 
 
-def run_id_of(server: dict) -> str | None:
+def provided_value(server: dict, key: str) -> str | None:
+    """A value this workflow wrote into the entry's publisher-provided metadata."""
     meta = server.get("_meta")
     if not isinstance(meta, dict):
         return None
     provided = meta.get(PUBLISHER_META)
     if not isinstance(provided, dict):
         return None
-    value = provided.get(RUN_ID_KEY)
+    value = provided.get(key)
     return str(value) if value is not None else None
+
+
+def published_commit(entries: list[dict], version: str) -> str:
+    """The commit `version` was published from, or "" when the registry does not say."""
+    for entry in entries:
+        server = entry.get("server")
+        if isinstance(server, dict) and server.get("version") == version:
+            return provided_value(server, COMMIT_KEY) or ""
+    return ""
 
 
 def plan(entries: list[dict], local: dict, bump: str, run_id: str) -> tuple[str, str]:
@@ -92,7 +105,7 @@ def plan(entries: list[dict], local: dict, bump: str, run_id: str) -> tuple[str,
 
     servers = [e["server"] for e in entries if isinstance(e.get("server"), dict)]
     for server in servers:
-        if run_id and run_id_of(server) == run_id:
+        if run_id and provided_value(server, RUN_ID_KEY) == run_id:
             return "skip", server["version"]
 
     taken = {s.get("version") for s in servers}
@@ -132,20 +145,24 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--bump", choices=BUMPS, default="patch")
     parser.add_argument("--run-id", required=True)
     args = parser.parse_args(argv)
+    if not args.run_id.strip():
+        parser.error("--run-id must not be empty: it is what makes a re-run safe")
 
     local = json.loads(SERVER_JSON.read_text(encoding="utf-8"))
     try:
         entries = fetch_entries(local["name"])
         action, version = plan(entries, local, args.bump, args.run_id)
-    except (urllib.error.URLError, ValueError, KeyError) as exc:
+    except (OSError, ValueError, KeyError) as exc:
         print(f"cannot plan the registry version: {exc}", file=sys.stderr)
         return 1
 
-    print(f"action={action}\nversion={version}")
+    commit = published_commit(entries, version) if action == "skip" else ""
+    result = f"action={action}\nversion={version}\ncommit={commit}\n"
+    print(result, end="")
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
         with open(output, "a", encoding="utf-8") as handle:
-            handle.write(f"action={action}\nversion={version}\n")
+            handle.write(result)
     return 0
 
 

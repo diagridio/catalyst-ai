@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from plan_registry_version import PUBLISHER_META, plan  # noqa: E402
+from plan_registry_version import PUBLISHER_META, plan, published_commit  # noqa: E402
 
 LOCAL = {
     "$schema": "https://example.com/schema.json",
@@ -29,7 +29,7 @@ LOCAL = {
 def entry(version: str, run_id: str | None = None, **changes: object) -> dict:
     server = {**LOCAL, "version": version, **changes}
     if run_id is not None:
-        server["_meta"] = {PUBLISHER_META: {"runId": run_id, "commit": "abc"}}
+        server["_meta"] = {PUBLISHER_META: {"runId": run_id, "commit": f"sha-{run_id}"}}
     return {"server": server, "_meta": {}}
 
 
@@ -60,6 +60,14 @@ CASES: list[tuple[str, list[dict], str, str, tuple[str, str] | str]] = [
     ("ordering is numeric, not lexical", [entry("0.0.9", description="o"), entry("0.0.10", description="o")], "patch", "1", ("publish", "0.0.11")),
     ("a non-plain version is ignored as a base", [entry("v9.0.0"), entry("0.0.1", description="o")], "patch", "1", ("publish", "0.0.2")),
     ("only non-plain versions start at 0.0.1", [entry("1.0.0-rc.1")], "patch", "1", ("publish", "0.0.1")),
+    (
+        "a higher prerelease does not become the base",
+        [entry("1.0.0-rc.1"), entry("0.0.3", description="o")],
+        "patch",
+        "1",
+        ("publish", "0.0.4"),
+    ),
+    ("a re-run skips even on a major bump", [entry("0.0.1", run_id="7")], "major", "7", ("skip", "0.0.1")),
     ("an unknown bump is rejected", [], "huge", "1", "bump must be one of"),
 ]
 
@@ -75,10 +83,20 @@ def main() -> int:
         if not ok:
             failures.append(f"{name}: expected {want!r}, got {got!r}")
 
+    commit_cases = [
+        ("the commit of a run-tagged entry", [entry("0.0.2", run_id="7"), entry("0.0.1")], "0.0.2", "sha-7"),
+        ("no commit when the entry carries none", [entry("0.0.1")], "0.0.1", ""),
+        ("no commit for a version the registry lacks", [entry("0.0.1", run_id="7")], "0.0.9", ""),
+    ]
+    for name, entries, version, want_commit in commit_cases:
+        got_commit = published_commit(entries, version)
+        if got_commit != want_commit:
+            failures.append(f"{name}: expected {want_commit!r}, got {got_commit!r}")
+
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
         return 1
-    print(f"{len(CASES)} cases passed")
+    print(f"{len(CASES) + len(commit_cases)} cases passed")
     return 0
 
 
