@@ -1,6 +1,6 @@
 ---
 name: catalyst-workflow-scaffold
-description: Add, create or generate a Dapr Workflow whose runtime is Diagrid Catalyst, not a local sidecar — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process. Infers the repo's language.
+description: Add, create or generate a Dapr Workflow that runs on Diagrid Catalyst, not a local sidecar — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process.
 ---
 
 # Scaffold a Dapr Workflow on Catalyst

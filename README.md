@@ -184,7 +184,11 @@ claude plugin install dapr-skills@diagrid
 
 They are built to sit side by side. Each `dapr-skills` skill that overlaps with one here
 says so in its description and points at this plugin for anything that runs on Catalyst,
-which is what keeps the two from both firing on the same question.
+which is meant to keep the two from both firing on the same question. Nothing in CI checks
+that across repos yet, so if both plugins answer one request, please report it. The
+`dapr-skills` source is pinned to a commit in
+[`marketplace.json`](.claude-plugin/marketplace.json) and moves only through a reviewed
+change here.
 
 ## Then just ask
 

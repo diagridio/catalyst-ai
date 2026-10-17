@@ -1,6 +1,6 @@
 ---
 name: catalyst-activity-idempotency
-description: Make Dapr Workflow activities on Catalyst safe to run twice. Use when writing or changing an activity body with a side effect — payment, email, write, third-party call — or when a retry produced a duplicate. Activities run at least once, never exactly once.
+description: Make Dapr Workflow activities on Catalyst safe to run twice. Use when writing, changing or reviewing an activity with a side effect — payment, email, write, third-party call — or when a retry duplicated work. Activities run at least once, never exactly once.
 ---
 
 # Activity Idempotency
