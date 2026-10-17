@@ -1,6 +1,6 @@
 {
   "name": "diagrid",
-  "description": "Diagrid's plugin marketplace: Catalyst-first skills and MCP tools for building and operating Dapr Workflows and Durable Agents.",
+  "description": "Diagrid's plugin marketplace: skills and MCP tools for building and operating Dapr Workflows and Durable Agents, on Diagrid Catalyst and on open-source Dapr.",
   "owner": {
     "name": "Diagrid",
     "url": "https://diagrid.io"
@@ -10,6 +10,15 @@
       "name": "catalyst-ai",
       "source": "./",
       "description": "Build and operate Diagrid Catalyst by prompting."
+    },
+    {
+      "name": "dapr-skills",
+      "source": {
+        "source": "github",
+        "repo": "diagrid-labs/dapr-skills",
+        "sha": "f511053f60dc9f2d28a0c92bdf12ef00a88c30a5"
+      },
+      "description": "Create, add, and review Dapr applications that use Workflow, pub/sub, Dapr Agents or a Diagrid agent framework wrapper for durable agent applications."
     }
   ]
 }
