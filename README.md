@@ -176,7 +176,10 @@ end. Each is a single line, so there's nothing to paste:
 
 - `/catalyst-ai:try-workflow`: a durable workflow crashes mid-run and resumes where it
   stopped.
-- `/catalyst-ai:try-agent`: the same for a durable AI agent (LangGraph, no API key).
+- `/catalyst-ai:try-agent`: the same for a durable AI agent. It defaults to LangGraph,
+  which needs no API key; name another framework from
+  [catalyst-quickstarts](https://github.com/diagridio/catalyst-quickstarts/tree/main/agents)
+  and it uses that one instead.
 
 In other clients, paste the matching prompt from [`commands/`](commands/). It's the same
 text.
