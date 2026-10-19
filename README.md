@@ -177,12 +177,13 @@ end. Each is a single line, so there's nothing to paste:
 - `/catalyst-ai:try-workflow`: a durable workflow crashes mid-run and resumes where it
   stopped.
 - `/catalyst-ai:try-agent`: the same for a durable AI agent. It defaults to LangGraph,
-  which needs no API key; name another framework from
+  which needs no API key. Name a framework from
   [catalyst-quickstarts](https://github.com/diagridio/catalyst-quickstarts/tree/main/agents)
-  and it uses that one instead.
+  to get that one instead: `/catalyst-ai:try-agent crewai`.
 
 In other clients, paste the matching prompt from [`commands/`](commands/). It's the same
-text.
+text. The agent prompt opens with "Use the agent framework I named in my message", so add
+that name to what you paste — `Use crewai.` on the end does it.
 
 After that, you don't learn commands. Try:
 
