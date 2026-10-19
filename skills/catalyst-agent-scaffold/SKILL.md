@@ -137,8 +137,9 @@ managed KV store, the workflow store and agent infrastructure already attached. 
 infrastructure comes with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, ask
-which project to use rather than creating one. The managed components have fixed names,
+recreated if someone deletes it. Branch on `getDefaultProject` in the `catalyst_whoami`
+answer rather than on a project listing: it separates "still coming up" from "never
+arriving", and only the second is a reason to ask which project to use instead. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way. The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
 ## 7. Fit the topology to one pub/sub
@@ -261,7 +262,7 @@ that 404s or lands on the wrong project is worse than no link.**
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field
   name can quietly mean something else.
-- **Do not create a project.** Use `default`.
+- **Do not create a project.** Use `default`, read through `getDefaultProject`. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way.
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
   language has no installable adapter instead of guessing one.
 - **Do not scaffold per-language or per-framework variants of this skill.** One skill

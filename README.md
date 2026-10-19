@@ -252,7 +252,20 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **Don't create a project.** Your org already has a `default` project, provisioned at
   signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
   manifest in a batch creates the project it names, and projects count against a
-  per-region limit you can read with `catalyst_get_usage`.
+  per-region limit you can read with `catalyst_get_usage` — three per region on the free
+  plan, five on plus. A project made by hand is not `default`: none of the managed
+  infrastructure is on unless its `spec` asks for it, and `defaultWorkflowStoreEnabled`
+  has to be on **before the app is created**, because the sidecar reads workflow
+  configuration at boot. The flag itself is mutable — turning it on and recreating the
+  app works. It is the already-running sidecar that is never retrofitted, not the project.
+- **"No `default` project" is five situations, not one.** `catalyst_whoami` carries a
+  `getDefaultProject` part that reports `ready`, `pending` or `unavailable`, with the
+  reason, the organization's other projects, and an instruction written for the model.
+  Asking is also what triggers the bootstrap, so a new organization converges from the
+  same call that finds it has not. Branch on that outcome rather than on whether
+  `default` appears in a project listing: reading `pending` as `unavailable` is how an
+  agent improvises a project that was seconds from existing. The `/catalyst-ai:try-*`
+  starter flows are the one path allowed to create one, and only on `unavailable`.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid

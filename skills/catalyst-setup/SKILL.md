@@ -92,7 +92,30 @@ Two things during sign-in look like errors and are not:
 If a refusal is marked retryable, wait briefly and retry once. If it is not, do not retry
 at all: a permanent refusal retried looks to the user like a hang.
 
-## 5. Confirm, out loud
+## 5. No `default` project is five different situations
+
+`catalyst_whoami` carries a `getDefaultProject` part, and it is the authority on this.
+It answers with an `outcome`, a `reason`, the organization's `otherProjects`, and an
+`instruction` written for you. Asking is also what *triggers* the bootstrap, so a brand
+new organization converges from the same call that discovers it has not converged yet.
+
+Branch on `outcome`, never on "is `default` in the project list":
+
+| `outcome` | `reason` | What it means | Do |
+| --- | --- | --- | --- |
+| `ready` | — | The project exists | Use it unless the user named another |
+| `pending` | `no_region`, `region_not_connected` | Still coming up, and your call nudged it | Wait about five seconds and call again, a few times |
+| `unavailable` | `default_deleted` | It existed and was deleted. The operator never recreates it, deliberately | Stop retrying. Use another project |
+| `unavailable` | `region_not_public` | A private (BYOC) region, which hosts no default project | Stop retrying. Normal, not a fault |
+| `unavailable` | `region_in_group` | A grouped region, which takes no standalone projects | Stop retrying. Normal, not a fault |
+
+Treating `pending` as `unavailable` is the expensive mistake: the project is seconds
+away, and an organization on the free plan has only three per region to spend.
+
+`otherProjects` comes back in the same answer, so listing the alternatives needs no
+second call.
+
+## 6. Confirm, out loud
 
 Report two things, from a real call and not from configuration:
 
@@ -126,7 +149,11 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 - **Do not create a project.** Every organization gets a project named `default` with
   managed pub/sub, KV, workflow store and agent infrastructure already attached. Use it. A
   hand-made project that behaves differently is indistinguishable from a broken one to the
-  person asking for help.
+  person asking for help. The `/catalyst-ai:try-*` starter flows are the exception, and
+  only once `getDefaultProject` says `unavailable` — never while it says `pending`. Then
+  `spec` must set `defaultPubsubEnabled`, `defaultKVStoreEnabled` and
+  `defaultWorkflowStoreEnabled` to `true`, because none of it is on by default and the
+  workflow store cannot be added to a sidecar that has already booted.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
   tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an
