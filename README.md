@@ -176,7 +176,9 @@ this needs a human rather than an installer's exit code.
 
 This marketplace lists a second plugin,
 [`dapr-skills`](https://github.com/diagrid-labs/dapr-skills): the same subjects on
-**open-source Dapr** — scaffold a new app, add Dapr to an existing one, and review Dapr Workflow, pub/sub and durable agent code that runs on your own machine under the Dapr CLI or .NET Aspire.
+**open-source Dapr** — scaffold a new app, add Dapr to an existing one, migrate a
+TypeScript service onto Dapr building blocks, and review Dapr Workflow, pub/sub and
+durable agent code that runs on your own machine under the Dapr CLI or .NET Aspire.
 
 ```bash
 claude plugin install dapr-skills@diagrid
