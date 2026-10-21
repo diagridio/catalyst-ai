@@ -9,8 +9,14 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = join(here, '..');
 const repo = join(pkg, '..', '..');
-const json = JSON.parse(readFileSync(join(pkg, 'install.json'), 'utf8'));
-const readme = readFileSync(join(repo, 'README.md'), 'utf8');
+// Git checks this repo out with CRLF on Windows (core.autocrlf), and the
+// committed blobs are LF. Every assertion below is about content, not about
+// which bytes end a line, so normalise on read -- otherwise the frontmatter
+// regex and the prompt comparison in 'commands/ drift' fail on a Windows
+// checkout and pass in CI, which is the worst of both.
+const read = (...p) => readFileSync(join(...p), 'utf8').replace(/\r\n/g, '\n');
+const json = JSON.parse(read(pkg, 'install.json'));
+const readme = read(repo, 'README.md');
 const squash = (s) => s.split(/\s+/).filter(Boolean).join(' ');
 
 test('the component file parses', () => {
@@ -53,7 +59,7 @@ test('commands/ drift: every command is in the data, name, description and promp
   const files = readdirSync(join(repo, 'commands')).filter((f) => f.endsWith('.md')).sort();
   assert.deepEqual(json.commands.map((c) => c.id).sort(), files.map((f) => f.replace(/\.md$/, '')));
   for (const f of files) {
-    const raw = readFileSync(join(repo, 'commands', f), 'utf8');
+    const raw = read(repo, 'commands', f);
     const m = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
     assert.ok(m, f);
     const id = f.replace(/\.md$/, '');
@@ -215,10 +221,10 @@ test('no render before connection: upgrade renders once (A4)', async () => {
 });
 
 test('host variables override the palette in every theme (A3)', () => {
-  const src = readFileSync(join(pkg, 'catalyst-ai-install.js'), 'utf8');
+  const src = read(pkg, 'catalyst-ai-install.js');
   assert.ok(src.includes('--catalyst-ai-code'));
   assert.ok(!/:host\(\[theme="light"\]\), :host\(\[theme="dark"\]\) \{\s*--fg/.test(src), 'no theme block that bypasses the host variables');
-  const readmeText = readFileSync(join(pkg, 'README.md'), 'utf8');
+  const readmeText = read(pkg, 'README.md');
   for (const v of ['fg', 'bg', 'muted', 'border', 'accent', 'code', 'font']) {
     assert.ok(readmeText.includes(`--catalyst-ai-${v}`), v);
   }

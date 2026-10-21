@@ -31,7 +31,15 @@ with managed pub/sub, KV, workflow store and agent infrastructure already attach
 Confirm with `catalyst_list_projects`, and pass the project on every call; there is no
 current project. A `Project` manifest creates the project it names, so if one is in a
 batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
-`Project` manifest only when the user explicitly asked for a new project.
+`Project` manifest only when the user explicitly asked for a new project, or when a
+`/catalyst-ai:try-*` starter flow is running and `getDefaultProject` reports
+`unavailable` — never while it reports `pending`.
+A new project starts with none of the managed infrastructure: set
+`defaultPubsubEnabled`, `defaultKVStoreEnabled` and `defaultWorkflowStoreEnabled` to
+`true` in its `spec`, the workflow store **before the app is created**, because the
+sidecar reads workflow configuration at boot. The flag stays mutable, so a project that
+lacks the store is fixed by enabling it and recreating the app — not by making a second
+project.
 
 ## 2. Make sure the App ID exists
 

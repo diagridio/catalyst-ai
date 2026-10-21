@@ -61,8 +61,9 @@ attached. Workflow history lives in that managed store, so a hand-rolled project
 most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
-assuming; if it is gone, ask which project to use instead of creating one. There is no
+recreated if someone deletes it. Read `getDefaultProject` in the `catalyst_whoami`
+answer rather than assuming: `pending` means wait and ask again, `unavailable` means it
+is never arriving and another project is needed. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way. There is no
 current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
@@ -195,7 +196,9 @@ that 404s or lands on the wrong project is worse than no link.**
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not create a project.** Use `default`. If it is gone, ask which existing project
-  to use, and send someone with no project to the console to create one.
+  to use. Only a `/catalyst-ai:try-*` starter flow may create one, and only once
+  `getDefaultProject` reports `unavailable`; it must enable the managed pub/sub, KV
+  store and workflow store in the `Project` spec — a bare project has none of them.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the

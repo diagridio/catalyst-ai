@@ -1,0 +1,18 @@
+# The committed blobs are LF. The Python gates read with Path.read_text(), which
+# applies universal-newline translation, so they were already CRLF-safe. Node is not:
+# readFileSync returns the bytes, so the install component test's LF-only frontmatter
+# regex failed on a Windows checkout under core.autocrlf=true and passed on the ubuntu
+# runners in CI. That test now normalises on read; this keeps the tree matching CI so
+# the next LF assumption does not have to be found the same way.
+#
+# `text=auto eol=lf` normalises to LF in the index (what autocrlf already did) and
+# also checks out LF on every platform, so the tree matches what CI sees. It adds no
+# phantom modifications to an existing CRLF tree: git normalises on read before
+# diffing, so those files still compare equal to the index.
+* text=auto eol=lf
+
+# Binary, never touched.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
