@@ -68,7 +68,7 @@ test('README drift: client snippets appear in the README', () => {
   const flat = squash(readme);
   const exact = {
     'claude-code': ['marketplace-add', 'plugin-install'],
-    codex: ['mcp-add', 'mcp-login'],
+    codex: ['mcp-add', 'mcp-headers', 'mcp-login'],
     'copilot-cli': ['mcp-config'],
     vscode: ['mcp-config'],
   };

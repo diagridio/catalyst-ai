@@ -62,14 +62,28 @@ Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
 Every client connects to the same remote server, `https://mcp.cloud.r1.diagrid.io/mcp`
 (the `r1` is required), and signs in with OAuth in the browser. The authorization server
 has no dynamic registration, so each client uses its registered client ID: `codex`,
-`copilot-cli`, `vscode` or `claude-code`. Install the skills for
-the client first (below), then:
+`copilot-cli`, `vscode` or `claude-code`.
+
+Each snippet below also sets an `X-Catalyst-Plugin-Version` header to the plugin version,
+which lets the server see which version of these instructions a client was set up from.
+It goes only on the MCP requests the client already makes. When you update the skills,
+update the header to match.
+
+Install the skills for the client first (below), then:
 
 **Codex**
 
 ```bash
 codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex
 codex mcp login catalyst
+```
+
+`codex mcp add` has no header flag, so add this to `~/.codex/config.toml` under the
+server it just wrote:
+
+```toml
+[mcp_servers.catalyst.http_headers]
+X-Catalyst-Plugin-Version = "0.7.3"
 ```
 
 **GitHub Copilot CLI**
@@ -83,6 +97,7 @@ codex mcp login catalyst
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -100,6 +115,7 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -344,6 +360,8 @@ python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills,
 python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
+python3 scripts/check_plugin_version_header.py   # the MCP version header matches the plugin version
+python3 scripts/test_check_plugin_version_header.py
 python3 scripts/check_server_json.py      # server.json: registry name, and the same URL as the plugin
 python3 scripts/test_check_server_json.py
 python3 scripts/test_plan_registry_version.py   # the MCP Registry version planner
@@ -376,7 +394,10 @@ over MCP yet instead of reaching for something else.
 
 If you add a skill, or change any skill's content, bump `version` in
 `.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
-otherwise, and nothing tells them.
+otherwise, and nothing tells them. Every bump also changes the `X-Catalyst-Plugin-Version`
+header: set it to the new version under `mcpServers.catalyst.headers` in `plugin.json` and
+in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
+in the same three setups in `skills/catalyst-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
 
 ## License
 
