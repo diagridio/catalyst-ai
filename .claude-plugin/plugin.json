@@ -1,7 +1,7 @@
 {
   "name": "catalyst-ai",
   "description": "Durable execution for AI agents and workflows on Diagrid Catalyst: build and operate Dapr Workflows, Durable Agents and the running system by prompting.",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "author": {
     "name": "Diagrid",
     "url": "https://diagrid.io"
