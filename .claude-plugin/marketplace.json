@@ -9,7 +9,7 @@
     {
       "name": "catalyst-ai",
       "source": "./",
-      "description": "Build and operate Diagrid Catalyst by prompting."
+      "description": "Durable execution for AI agents and workflows: build and operate Diagrid Catalyst by prompting."
     }
   ]
 }
