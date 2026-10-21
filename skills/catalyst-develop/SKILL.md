@@ -170,17 +170,19 @@ Three different sources, and picking the wrong one is why bugs look invisible.
 | Source | How | What it carries |
 | --- | --- | --- |
 | Your process | Its own terminal or log file, where you started it | Whatever your code prints. Catalyst never sees it |
-| The run | `catalyst_get_workflow_run` | Status, the execution graph, step errors. `input`, `output` and `customStatus` are withheld at the default data-sharing level |
+| The run | `catalyst_get_workflow_run` | Status, the execution graph, step errors. `input`, `output` and `customStatus` are hidden from AI tools at the default setting |
 | The sidecar's API log | `catalyst_get_logs`, at `full` data sharing only | One entry per Dapr API call the app made, with status, method and error |
 
 `catalyst_get_logs` returns `DATA_SHARING_RESTRICTED` at the default `metadata` level.
-That is policy, not a fault: do not retry it, say the logs were not shared at this
-organization's data-sharing level, and use the other two sources. `catalyst_get_metrics`
-shows request and error rates for the app when the question is "is anything arriving at
-all".
+Retrying will not change it. Tell the user in plain words that you can't read the logs
+because their organization's setting doesn't let AI tools read them, and use the other
+two sources. `catalyst_get_metrics` shows request and error rates for the app when the
+question is "is anything arriving at all".
 
 **An absent field is not an empty one.** Never report a missing `output` as "the workflow
-produced no output". Say it was not shared at this level.
+produced no output". Say you can't see it because of the organization's setting for what
+AI tools may read, and point to the console run. Mention once per reply that an admin of
+their organization can ask Diagrid to change the setting.
 
 ## 6. Iterating without touching the platform
 
