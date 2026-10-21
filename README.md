@@ -112,6 +112,10 @@ VS Code opens a browser for authorization on the first connection. See the
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
+The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
+([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
+so clients with a registry-backed server gallery can find it there.
+
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
 ```bash
@@ -341,6 +345,9 @@ python3 scripts/check_mcp_surface.py      # tools, CLI and hosts, across skills,
 python3 scripts/test_check_mcp_surface.py
 python3 scripts/check_version_bump.py     # a plugin change must bump the version
 python3 scripts/test_check_version_bump.py
+python3 scripts/check_server_json.py      # server.json: registry name, and the same URL as the plugin
+python3 scripts/test_check_server_json.py
+python3 scripts/test_plan_registry_version.py   # the MCP Registry version planner
 python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
 (cd web/install && npm test)
 ```
