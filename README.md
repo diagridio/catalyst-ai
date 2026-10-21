@@ -359,7 +359,10 @@ install steps here, run `python3 scripts/build_install_data.py` and commit the r
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
 link resolving when the skill is installed *alone*, and a **0.20 similarity cap between any
 two descriptions** so skills don't compete for the same trigger. It also bans a list of
-substrings that each shipped somewhere and broke.
+substrings that each shipped somewhere and broke, and requires every skill that names a
+Catalyst tool to have a Rules section whose blocked-call bullet is exactly
+`BLOCKED_CALL_RULE`, plus at most that skill's entry in `BLOCKED_CALL_RULE_SUFFIXES`, so
+that no one copy can loosen its standing-allow limit.
 
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
 surface. Every `catalyst_*` name must appear in `contracts/catalyst-mcp-tools.txt`, which
