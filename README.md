@@ -83,7 +83,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.7.3"
+X-Catalyst-Plugin-Version = "0.7.4"
 ```
 
 **GitHub Copilot CLI**
@@ -97,7 +97,7 @@ X-Catalyst-Plugin-Version = "0.7.3"
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -115,7 +115,7 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauth": { "clientId": "vscode" }
     }
   }
