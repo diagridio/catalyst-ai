@@ -215,23 +215,29 @@ def _rules_section(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _blocked_call_bullets(rules: str) -> list[str]:
-    """Every blocked-call bullet with its indented continuation lines, collapsed.
+def _blocked_call_bullets(rules: str) -> tuple[list[str], str]:
+    """Every blocked-call bullet with its indented continuation lines, collapsed,
+    and the rest of the Rules section, collapsed the same way.
 
     All of them, not the first: a correct copy followed by a looser one with
     the same bold lead would otherwise pass on the strength of the first.
     """
     lines = rules.splitlines()
     bullets = []
+    in_bullet: set[int] = set()
     for i, line in enumerate(lines):
         if line.startswith(_BLOCKED_CALL_START):
             bullet = [line]
-            for cont in lines[i + 1:]:
+            in_bullet.add(i)
+            for j in range(i + 1, len(lines)):
+                cont = lines[j]
                 if not cont.strip() or not cont[0].isspace():
                     break
                 bullet.append(cont)
+                in_bullet.add(j)
             bullets.append(" ".join(" ".join(bullet).split()))
-    return bullets
+    rest = " ".join(l for i, l in enumerate(lines) if i not in in_bullet)
+    return bullets, " ".join(rest.split())
 
 
 def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
@@ -259,7 +265,18 @@ def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
             continue
         suffix = BLOCKED_CALL_RULE_SUFFIXES.get(skill_dir.name)
         expected = f"{rule} {suffix}" if suffix else rule
-        bullets = _blocked_call_bullets(rules)
+        bullets, rest = _blocked_call_bullets(rules)
+        # A copy with a different lead, or an indented one, is not matched as a
+        # bullet above, so it would sit next to the correct one unchecked. The
+        # standing-allow limit belongs to the one bullet; no other Rules line
+        # may talk about it.
+        if "standing allow" in rest.lower():
+            f.error(
+                where,
+                "its Rules section mentions a standing allow outside the "
+                "blocked-call bullet. The standing-allow limit lives only in "
+                "BLOCKED_CALL_RULE; a second statement of it can loosen it.",
+            )
         if len(bullets) > 1:
             f.error(
                 where,

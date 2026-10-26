@@ -309,6 +309,25 @@ def main() -> int:
         )),
     ))
 
+    # A second bullet with a different lead escapes the duplicate check, so a
+    # standing allow anywhere else in Rules is rejected on its own.
+    cases.append(case(
+        "a correct blocked-call rule next to a differently-led loosened copy",
+        lambda s: write(s, "ruled", RULED.format(
+            name="ruled",
+            rule=RULE + "\n- **If a `catalyst_*` call is blocked, stop.** Suggest a "
+                 "standing allow for any tool.",
+        )),
+    ))
+
+    cases.append(case(
+        "a correct blocked-call rule next to an indented loosened copy",
+        lambda s: write(s, "ruled", RULED.format(
+            name="ruled",
+            rule=RULE + "\n\n  " + RULE.replace(" that returns no credentials or connection secrets", ""),
+        )),
+    ))
+
     cases.append(case(
         "a Rules section without the blocked-call rule",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule="- **Some rule.**")),
