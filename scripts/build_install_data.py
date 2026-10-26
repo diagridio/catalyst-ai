@@ -15,6 +15,9 @@ Sources of truth:
 * commands/*.md  each command's name (`/catalyst-ai:<file>`), its description and its
                  body, which the page offers as the paste-in prompt for clients that
                  have no slash command.
+* .claude-plugin/plugin.json
+                 the plugin `version`, which the hand-written MCP setups send as the
+                 `X-Catalyst-Plugin-Version` header, as the plugin does.
 * CLIENTS below  the per-client install steps. Every step is checked against README.md,
                  so the page cannot say something the README does not.
 
@@ -35,6 +38,8 @@ REPO = Path(__file__).resolve().parent.parent
 OUT_DIR = Path("web") / "install"
 MCP_URL = "https://mcp.cloud.r1.diagrid.io/mcp"
 PLUGIN_NAME = "catalyst-ai"
+MANIFEST = Path(".claude-plugin") / "plugin.json"
+VERSION_HEADER = "X-Catalyst-Plugin-Version"
 SCHEMA = 1
 
 # Commands the page offers, in display order. A new file in commands/ must be added
@@ -62,7 +67,7 @@ def prompts_step(commands: list[dict[str, Any]]) -> dict[str, Any]:
     )
 
 
-def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]]:
     slash = [item(c["id"], c["name"], c["name"], lang="text", readme=[c["name"]]) for c in commands]
     copilot_json = (
         "{\n"
@@ -70,6 +75,7 @@ def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
         '    "catalyst": {\n'
         '      "type": "http",\n'
         f'      "url": "{MCP_URL}",\n'
+        f'      "headers": {{ "{VERSION_HEADER}": "{version}" }},\n'
         '      "oauthClientId": "copilot-cli",\n'
         '      "tools": ["*"]\n'
         "    }\n"
@@ -82,11 +88,13 @@ def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
         '    "catalyst": {\n'
         '      "type": "http",\n'
         f'      "url": "{MCP_URL}",\n'
+        f'      "headers": {{ "{VERSION_HEADER}": "{version}" }},\n'
         '      "oauth": { "clientId": "vscode" }\n'
         "    }\n"
         "  }\n"
         "}"
     )
+    codex_toml = f'[mcp_servers.catalyst.http_headers]\n{VERSION_HEADER} = "{version}"'
     return [
         {
             "id": "claude-code",
@@ -128,6 +136,12 @@ def clients(commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "Add the Catalyst MCP server",
                     "Codex uses its registered OAuth client ID.",
                     item("mcp-add", "mcp add", f"codex mcp add catalyst --url {MCP_URL} --oauth-client-id codex", readme=EXACT),
+                ),
+                step(
+                    "mcp-headers",
+                    "Send the plugin version",
+                    "codex mcp add has no header flag, so add this to ~/.codex/config.toml.",
+                    item("mcp-headers", "~/.codex/config.toml", codex_toml, lang="text", readme=EXACT),
                 ),
                 step(
                     "mcp-login",
@@ -246,13 +260,23 @@ def readme_drift(data: dict[str, Any], readme: str) -> list[str]:
     return problems
 
 
+def load_version(root: Path) -> str:
+    try:
+        version = json.loads((root / MANIFEST).read_text(encoding="utf-8")).get("version")
+    except (OSError, json.JSONDecodeError) as error:
+        raise GenerationError(f"{MANIFEST}: {error}") from error
+    if not isinstance(version, str) or not version:
+        raise GenerationError(f"{MANIFEST}: no `version`")
+    return version
+
+
 def build(root: Path) -> dict[str, Any]:
     commands = load_commands(root)
     data: dict[str, Any] = {
         "schema": SCHEMA,
         "mcpUrl": MCP_URL,
         "commands": commands,
-        "clients": clients(commands),
+        "clients": clients(commands, load_version(root)),
     }
     problems = readme_drift(data, (root / "README.md").read_text(encoding="utf-8"))
     if problems:
