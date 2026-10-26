@@ -335,6 +335,13 @@ def main() -> int:
                         + "\n## Setup\n\nA standing allow for catalyst_get_connection is fine.\n"),
     ))
 
+    # The hyphenated spelling is the same phrase.
+    cases.append(case(
+        "a correct blocked-call rule with a hyphenated standing-allow in another section",
+        lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE)
+                        + "\n## Setup\n\nA standing-allow for catalyst_get_connection is fine.\n"),
+    ))
+
     cases.append(case(
         "a Rules section without the blocked-call rule",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule="- **Some rule.**")),

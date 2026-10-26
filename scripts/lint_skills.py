@@ -208,6 +208,9 @@ BLOCKED_CALL_RULE_SUFFIXES: dict[str, str] = {
 
 _BLOCKED_CALL_START = "- **If the client blocks a `catalyst_*` call, stop.**"
 
+# "standing allow" however it is spaced or hyphenated ("standing-allow").
+_STANDING_ALLOW = re.compile(r"standing[\s-]+allow", re.I)
+
 
 _RULES_SECTION = re.compile(r"^## Rules[ \t]*\n(.*?)(?=^## |\Z)", re.M | re.S)
 
@@ -244,7 +247,7 @@ def _blocked_call_bullets(rules: str) -> tuple[list[str], str]:
                 bullet.append(cont)
                 in_bullet.add(j)
             bullets.append(" ".join(" ".join(bullet).split()))
-    rest = " ".join(l for i, l in enumerate(lines) if i not in in_bullet)
+    rest = " ".join(line for i, line in enumerate(lines) if i not in in_bullet)
     return bullets, " ".join(rest.split())
 
 
@@ -278,7 +281,7 @@ def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
         # bullet above, so it would sit next to the correct one unchecked; so
         # would a sentence in any other section. The standing-allow limit
         # belongs to the one bullet; nothing else in the file may talk about it.
-        if "standing allow" in f"{rest} {_outside_rules(text)}".lower():
+        if _STANDING_ALLOW.search(f"{rest} {_outside_rules(text)}"):
             f.error(
                 where,
                 "mentions a standing allow outside the blocked-call bullet. The "
