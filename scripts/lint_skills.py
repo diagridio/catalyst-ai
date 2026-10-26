@@ -209,10 +209,18 @@ BLOCKED_CALL_RULE_SUFFIXES: dict[str, str] = {
 _BLOCKED_CALL_START = "- **If the client blocks a `catalyst_*` call, stop.**"
 
 
+_RULES_SECTION = re.compile(r"^## Rules[ \t]*\n(.*?)(?=^## |\Z)", re.M | re.S)
+
+
 def _rules_section(text: str) -> str | None:
     """The body of the `## Rules` section, or None when there is none."""
-    match = re.search(r"^## Rules[ \t]*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    match = _RULES_SECTION.search(text)
     return match.group(1) if match else None
+
+
+def _outside_rules(text: str) -> str:
+    """The SKILL.md with its `## Rules` section cut out, whitespace collapsed."""
+    return " ".join(_RULES_SECTION.sub("", text, count=1).split())
 
 
 def _blocked_call_bullets(rules: str) -> tuple[list[str], str]:
@@ -267,15 +275,15 @@ def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
         expected = f"{rule} {suffix}" if suffix else rule
         bullets, rest = _blocked_call_bullets(rules)
         # A copy with a different lead, or an indented one, is not matched as a
-        # bullet above, so it would sit next to the correct one unchecked. The
-        # standing-allow limit belongs to the one bullet; no other Rules line
-        # may talk about it.
-        if "standing allow" in rest.lower():
+        # bullet above, so it would sit next to the correct one unchecked; so
+        # would a sentence in any other section. The standing-allow limit
+        # belongs to the one bullet; nothing else in the file may talk about it.
+        if "standing allow" in f"{rest} {_outside_rules(text)}".lower():
             f.error(
                 where,
-                "its Rules section mentions a standing allow outside the "
-                "blocked-call bullet. The standing-allow limit lives only in "
-                "BLOCKED_CALL_RULE; a second statement of it can loosen it.",
+                "mentions a standing allow outside the blocked-call bullet. The "
+                "standing-allow limit lives only in BLOCKED_CALL_RULE; a second "
+                "statement of it, anywhere in the SKILL.md, can loosen it.",
             )
         if len(bullets) > 1:
             f.error(

@@ -328,6 +328,13 @@ def main() -> int:
         )),
     ))
 
+    # The limit covers the whole file, not only the Rules section.
+    cases.append(case(
+        "a correct blocked-call rule with a standing allow in another section",
+        lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE)
+                        + "\n## Setup\n\nA standing allow for catalyst_get_connection is fine.\n"),
+    ))
+
     cases.append(case(
         "a Rules section without the blocked-call rule",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule="- **Some rule.**")),
