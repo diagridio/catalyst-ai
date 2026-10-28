@@ -159,7 +159,8 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 step(
                     "skills",
                     "Install the skills",
-                    "Writes the skills to ~/.copilot/skills/, which Copilot reads in every project.",
+                    "Writes the skills to ~/.copilot/skills/. Copilot should read them in every "
+                    "project; not yet verified, so check with `copilot skill list`.",
                     item(
                         "skills",
                         "install skills",

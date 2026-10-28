@@ -159,8 +159,9 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-`--global` writes all twelve skills to `~/.copilot/skills/`, which Copilot reads in every
-project. Check that Copilot sees them:
+`--global` writes all twelve skills to `~/.copilot/skills/`. Copilot should read them in
+every project from there. **Not yet verified:** we have checked only that the installer
+writes that directory, not that Copilot loads skills from it. Check that Copilot sees them:
 
 ```bash
 copilot skill list        # expect all 12
