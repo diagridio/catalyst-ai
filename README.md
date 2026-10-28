@@ -167,6 +167,9 @@ writes that directory, not that Copilot loads skills from it. Check that Copilot
 copilot skill list        # expect all 12
 ```
 
+If it shows none, run the per-project command (without `--global`) from the repository
+root.
+
 Without `--global` the skills go into `.agents/skills/` under the folder you ran the
 command in. Copilot reads project skills only at the root of the repository it is working
 in, so an install from a subfolder, or from a folder Copilot does not treat as that root,

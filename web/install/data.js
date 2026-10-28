@@ -158,7 +158,7 @@ export const installData = {
         {
           "id": "skills",
           "title": "Install the skills",
-          "description": "Writes the skills to ~/.copilot/skills/. Copilot should read them in every project; not yet verified, so check with `copilot skill list`.",
+          "description": "Writes the skills to ~/.copilot/skills/. Copilot should read them in every project; not yet verified, so check with copilot skill list.",
           "items": [
             {
               "id": "skills",

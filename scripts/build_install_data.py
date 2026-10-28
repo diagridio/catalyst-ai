@@ -160,7 +160,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     "skills",
                     "Install the skills",
                     "Writes the skills to ~/.copilot/skills/. Copilot should read them in every "
-                    "project; not yet verified, so check with `copilot skill list`.",
+                    "project; not yet verified, so check with copilot skill list.",
                     item(
                         "skills",
                         "install skills",
