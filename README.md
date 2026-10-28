@@ -184,6 +184,12 @@ npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
 
 Without `--global`, the `github-copilot` target writes that shared directory.
 
+### VS Code (Copilot Chat)
+
+**Not yet verified:** we have not checked whether VS Code Copilot Chat reads skills from
+`~/.copilot/skills/`, from `.agents/skills/` at the workspace root, or both. Until then,
+run the per-project command above from your workspace root, which writes `.agents/skills/`.
+
 ### Codex
 
 ```bash
