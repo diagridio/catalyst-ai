@@ -133,7 +133,7 @@ to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connector
 same account. Without the client ID, the connector tries to register itself and the
 sign-in fails. Custom connectors cannot set request headers, so this one sends no
 `X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need
-Claude Code, Codex or Copilot (see [Install](#install)). **Not yet verified:** the
+a client from [Install](#install). **Not yet verified:** the
 `claude-web` client is registered, but nobody has run this sign-in end to end.
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
