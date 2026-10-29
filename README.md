@@ -61,8 +61,10 @@ Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
 
 Every client connects to the same remote server, `https://mcp.cloud.r1.diagrid.io/mcp`
 (the `r1` is required), and signs in with OAuth in the browser. The authorization server
-has no dynamic registration, so each client uses its registered client ID: `codex`,
-`copilot-cli`, `vscode` or `claude-code`.
+does not accept dynamic registration, so a client that tries to register itself fails.
+Each client below uses its registered client ID instead: `codex`, `copilot-cli`, `vscode`,
+`claude-code`, or `claude-web` for claude.ai. VS Code and the Copilot CLI can also sign in
+without one, because the server reads the client metadata they publish.
 
 Each snippet below also sets an `X-Catalyst-Plugin-Version` header to the plugin version,
 which lets the server see which version of these instructions a client was set up from.
@@ -83,7 +85,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.7.3"
+X-Catalyst-Plugin-Version = "0.7.4"
 ```
 
 **GitHub Copilot CLI**
@@ -97,7 +99,7 @@ X-Catalyst-Plugin-Version = "0.7.3"
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -115,7 +117,7 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -124,6 +126,14 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
 
 VS Code opens a browser for authorization on the first connection. See the
 [VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+**claude.ai and Claude Desktop**: in claude.ai, open **Settings → Connectors → Add custom
+connector**, enter the URL above, and under **Advanced settings** set the OAuth client ID
+to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connectors of the
+same account. Without the client ID, the connector tries to register itself and the
+sign-in fails. Custom connectors cannot set request headers, so this one sends no
+`X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need one
+of the clients below.
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
@@ -135,7 +145,7 @@ so clients with a registry-backed server gallery can find it there.
 ### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
 ```
 
 Use **repeated `--agent` flags** if you pass more than one. The comma form
@@ -148,15 +158,17 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-This writes all twelve skills to `.agents/skills/`, and Copilot's own listing confirms it
-reads them:
+`--global` writes all twelve skills to `~/.copilot/skills/`, which Copilot reads in every
+project. Check that Copilot sees them:
 
 ```bash
-copilot skill list        # all 12 under "Project skills"
+copilot skill list        # expect all 12
 ```
 
-Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
-`.claude/skills/`, so one directory covers it. Don't rely on `npx skills list` for this —
+Without `--global` the skills go into `.agents/skills/` under the folder you ran the
+command in. Copilot reads project skills only at the root of the repository it is working
+in, so an install from a subfolder, or from a folder Copilot does not treat as that root,
+leaves it with no skills and no error. Don't rely on `npx skills list` for this —
 its "Agents:" line only names agents it detects as **installed on your machine**, so it
 will quietly leave out a client you haven't installed yet.
 

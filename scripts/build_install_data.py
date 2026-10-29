@@ -159,12 +159,12 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 step(
                     "skills",
                     "Install the skills",
-                    "Writes the skills to .agents/skills/, which Copilot reads.",
+                    "Writes the skills to ~/.copilot/skills/, which Copilot reads in every project.",
                     item(
                         "skills",
                         "install skills",
-                        "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes",
-                        readme=["npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes"],
+                        "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes",
+                        readme=["npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes"],
                     ),
                 ),
                 step(
