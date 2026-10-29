@@ -132,8 +132,9 @@ connector**, enter the URL above, and under **Advanced settings** set the OAuth 
 to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connectors of the
 same account. Without the client ID, the connector tries to register itself and the
 sign-in fails. Custom connectors cannot set request headers, so this one sends no
-`X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need one
-of the clients below.
+`X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need
+Claude Code, Codex or Copilot (see [Install](#install)). **Not yet verified:** the
+`claude-web` client is registered, but nobody has run this sign-in end to end.
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
@@ -142,7 +143,7 @@ The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
 ([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
 so clients with a registry-backed server gallery can find it there.
 
-### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
+### GitHub Copilot CLI
 
 ```bash
 npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
@@ -172,6 +173,17 @@ leaves it with no skills and no error. Don't rely on `npx skills list` for this 
 its "Agents:" line only names agents it detects as **installed on your machine**, so it
 will quietly leave out a client you haven't installed yet.
 
+### Gemini CLI, Zed and Antigravity
+
+These read the shared `.agents/skills/` project directory, not `~/.copilot/skills/`, so
+install per project, from your repository's root:
+
+```bash
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+```
+
+Without `--global`, the `github-copilot` target writes that shared directory.
+
 ### Codex
 
 ```bash
@@ -191,7 +203,7 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | --- | --- | --- | --- |
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
-| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
+| GitHub Copilot 1.0.80 | ✅ 2.0 s (per-project install; `--global` not yet re-measured) | ✅ 10/10 | not yet verified |
 
 These were measured with the first ten skills. `catalyst-app-tunnels` and
 `catalyst-agent-harness` have not been re-measured on these clients yet.
