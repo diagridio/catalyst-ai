@@ -133,8 +133,9 @@ to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connector
 same account. Without the client ID, the connector tries to register itself and the
 sign-in fails. Custom connectors cannot set request headers, so this one sends no
 `X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need
-a client from [Install](#install). **Not yet verified:** the
-`claude-web` client is registered, but nobody has run this sign-in end to end.
+a client from [Install](#install). Verified on claude.ai on 2026-10-29: the connector
+signed in and the chat could say who was signed in to Catalyst. Claude Desktop shares
+those connectors but has not been tried separately.
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
