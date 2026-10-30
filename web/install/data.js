@@ -113,7 +113,7 @@ export const installData = {
               "id": "mcp-headers",
               "label": "~/.codex/config.toml",
               "lang": "text",
-              "text": "[mcp_servers.catalyst.http_headers]\nX-Catalyst-Plugin-Version = \"0.7.3\""
+              "text": "[mcp_servers.catalyst.http_headers]\nX-Catalyst-Plugin-Version = \"0.7.4\""
             }
           ]
         },
@@ -158,13 +158,13 @@ export const installData = {
         {
           "id": "skills",
           "title": "Install the skills",
-          "description": "Writes the skills to .agents/skills/, which Copilot reads.",
+          "description": "Writes the skills to ~/.copilot/skills/. Copilot should read them in every project; not yet verified, so check with copilot skill list. If it shows none, run the same command without --global from the repository root.",
           "items": [
             {
               "id": "skills",
               "label": "install skills",
               "lang": "bash",
-              "text": "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes"
+              "text": "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes"
             }
           ]
         },
@@ -177,7 +177,7 @@ export const installData = {
               "id": "mcp-config",
               "label": "~/.copilot/mcp-config.json",
               "lang": "json",
-              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.3\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
+              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.4\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
             }
           ]
         },
@@ -228,7 +228,7 @@ export const installData = {
               "id": "mcp-config",
               "label": ".vscode/mcp.json",
               "lang": "json",
-              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.3\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
+              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.7.4\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
             }
           ]
         },

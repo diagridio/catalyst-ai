@@ -61,8 +61,10 @@ Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
 
 Every client connects to the same remote server, `https://mcp.cloud.r1.diagrid.io/mcp`
 (the `r1` is required), and signs in with OAuth in the browser. The authorization server
-has no dynamic registration, so each client uses its registered client ID: `codex`,
-`copilot-cli`, `vscode` or `claude-code`.
+does not accept dynamic registration, so a client that tries to register itself fails.
+Each client below uses its registered client ID instead: `codex`, `copilot-cli`, `vscode`,
+`claude-code`, or `claude-web` for claude.ai. VS Code and the Copilot CLI can also sign in
+without one, because the server reads the client metadata they publish.
 
 Each snippet below also sets an `X-Catalyst-Plugin-Version` header to the plugin version,
 which lets the server see which version of these instructions a client was set up from.
@@ -83,7 +85,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.7.3"
+X-Catalyst-Plugin-Version = "0.7.4"
 ```
 
 **GitHub Copilot CLI**
@@ -97,7 +99,7 @@ X-Catalyst-Plugin-Version = "0.7.3"
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -115,7 +117,7 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.7.3" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.7.4" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -125,6 +127,16 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
 VS Code opens a browser for authorization on the first connection. See the
 [VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
 
+**claude.ai and Claude Desktop**: in claude.ai, open **Settings → Connectors → Add custom
+connector**, enter the URL above, and under **Advanced settings** set the OAuth client ID
+to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connectors of the
+same account. Without the client ID, the connector tries to register itself and the
+sign-in fails. Custom connectors cannot set request headers, so this one sends no
+`X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need
+a client from [Install](#install). Verified on claude.ai on 2026-10-29: the connector
+signed in and the chat could say who was signed in to Catalyst. Claude Desktop shares
+those connectors but has not been tried separately.
+
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
@@ -132,10 +144,10 @@ The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
 ([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
 so clients with a registry-backed server gallery can find it there.
 
-### GitHub Copilot (and Gemini CLI, Zed, Antigravity)
+### GitHub Copilot CLI
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
 ```
 
 Use **repeated `--agent` flags** if you pass more than one. The comma form
@@ -148,17 +160,40 @@ The failure that *is* silent is a missing `-y` where nothing can answer the prom
 is every CI runner: it prints `Done!`, installs zero skills, and exits **0**. Pass `-y`,
 and assert a skill count rather than an exit code.
 
-This writes all twelve skills to `.agents/skills/`, and Copilot's own listing confirms it
-reads them:
+`--global` writes all twelve skills to `~/.copilot/skills/`. Copilot should read them in
+every project from there. **Not yet verified:** we have checked only that the installer
+writes that directory, not that Copilot loads skills from it. Check that Copilot sees them:
 
 ```bash
-copilot skill list        # all 12 under "Project skills"
+copilot skill list        # expect all 12
 ```
 
-Copilot looks for project skills in `.github/skills/`, `.agents/skills/` and
-`.claude/skills/`, so one directory covers it. Don't rely on `npx skills list` for this —
+If it shows none, run the per-project command (without `--global`) from the repository
+root.
+
+Without `--global` the skills go into `.agents/skills/` under the folder you ran the
+command in. Copilot reads project skills only at the root of the repository it is working
+in, so an install from a subfolder, or from a folder Copilot does not treat as that root,
+leaves it with no skills and no error. Don't rely on `npx skills list` for this —
 its "Agents:" line only names agents it detects as **installed on your machine**, so it
 will quietly leave out a client you haven't installed yet.
+
+### Gemini CLI, Zed and Antigravity
+
+These read the shared `.agents/skills/` project directory, not `~/.copilot/skills/`, so
+install per project, from your repository's root:
+
+```bash
+npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+```
+
+Without `--global`, the `github-copilot` target writes that shared directory.
+
+### VS Code (Copilot Chat)
+
+**Not yet verified:** we have not checked whether VS Code Copilot Chat reads skills from
+`~/.copilot/skills/`, from `.agents/skills/` at the workspace root, or both. Until then,
+run the per-project command above from your workspace root, which writes `.agents/skills/`.
 
 ### Codex
 
@@ -179,7 +214,7 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | --- | --- | --- | --- |
 | Claude Code 2.1.241 | ✅ 4.7 s | ✅ 10/10 | ✅ right skill fires unprompted, grounded answer |
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
-| GitHub Copilot 1.0.80 | ✅ 2.0 s | ✅ 10/10 | not yet verified |
+| GitHub Copilot 1.0.80 | ✅ 2.0 s (per-project install; `--global` not yet re-measured) | ✅ 10/10 | not yet verified |
 
 These were measured with the first ten skills. `catalyst-app-tunnels` and
 `catalyst-agent-harness` have not been re-measured on these clients yet.
