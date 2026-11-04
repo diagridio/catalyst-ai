@@ -139,7 +139,9 @@ infrastructure comes with the managed KV store.
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Branch on `getDefaultProject` in the `catalyst_whoami`
 answer rather than on a project listing: it separates "still coming up" from "never
-arriving", and only the second is a reason to ask which project to use instead. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way. The managed components have fixed names,
+arriving", and only the second is a reason to ask which project to use instead. Its
+`instruction` is also what says whether a project may be created here — follow it rather
+than deciding, and never create one while it reports `pending`. The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
 ## 7. Fit the topology to one pub/sub
@@ -262,7 +264,10 @@ that 404s or lands on the wrong project is worse than no link.**
   an `Agent` resource.
 - **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field
   name can quietly mean something else.
-- **Do not create a project.** Use `default`, read through `getDefaultProject`. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way.
+- **Do not create a project** on your own judgement. Use `default`, read through
+  `getDefaultProject`, and let its `instruction` decide: it forbids a project for almost
+  every situation and permits one only where the default will never arrive, there is no
+  other project, and a created one would work. Never while it reports `pending`.
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
   language has no installable adapter instead of guessing one.
 - **Do not scaffold per-language or per-framework variants of this skill.** One skill

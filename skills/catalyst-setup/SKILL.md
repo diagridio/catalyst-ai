@@ -99,21 +99,37 @@ It answers with an `outcome`, a `reason`, the organization's `otherProjects`, an
 `instruction` written for you. Asking is also what *triggers* the bootstrap, so a brand
 new organization converges from the same call that discovers it has not converged yet.
 
-Branch on `outcome`, never on "is `default` in the project list":
+Branch on `outcome`, never on "is `default` in the project list". The table below is
+orientation; the `instruction` in the answer is what you act on, and it is the only
+thing that knows whether this organization may have a project created for it.
 
 | `outcome` | `reason` | What it means | Do |
 | --- | --- | --- | --- |
 | `ready` | — | The project exists | Use it unless the user named another |
 | `pending` | `no_region`, `region_not_connected` | Still coming up, and your call nudged it | Wait about five seconds and call again, a few times |
-| `unavailable` | `default_deleted` | It existed and was deleted. The operator never recreates it, deliberately | Stop retrying. Use another project |
-| `unavailable` | `region_not_public` | A private (BYOC) region, which hosts no default project | Stop retrying. Normal, not a fault |
-| `unavailable` | `region_in_group` | A grouped region, which takes no standalone projects | Stop retrying. Normal, not a fault |
+| `unavailable` | `default_deleted` | It existed and was deleted. The operator never recreates it, deliberately | Stop retrying. Use another project; with none, the `instruction` permits creating one |
+| `unavailable` | `region_not_public` | A private (BYOC) region, which hosts no default project | Stop retrying. Normal, not a fault. Same as above when there is no other project |
+| `unavailable` | `region_in_group` | A grouped region, which takes no standalone projects | Stop retrying. Never create one: management-backed tools cannot reach a group project, so the organization needs a standalone region |
 
 Treating `pending` as `unavailable` is the expensive mistake: the project is seconds
 away, and an organization on the free plan has only three per region to spend.
 
 `otherProjects` comes back in the same answer, so listing the alternatives needs no
 second call.
+
+### Whether you may create a project is the `instruction`'s call, not yours
+
+The `instruction` resolves one of two ways, and never leaves it unsaid. It forbids a
+project for almost every situation above. It permits one only where all three hold: the
+default will never arrive, the organization has no other project, and a project created
+there would actually work — which excludes `region_in_group`, and excludes any reason a
+later platform build adds until someone has checked it.
+
+When it permits, it carries the spec rather than just the permission: which region to
+check and for what (connected, no tunnel, no region group), whether to name `spec.region`,
+and which managed stores that region supports. Follow that text. Do not carry your own
+copy of it here — a second copy is how the two come to disagree, and the platform's is
+the one that is right.
 
 ## 6. Confirm, out loud
 
@@ -149,11 +165,11 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 - **Do not create a project.** Every organization gets a project named `default` with
   managed pub/sub, KV, workflow store and agent infrastructure already attached. Use it. A
   hand-made project that behaves differently is indistinguishable from a broken one to the
-  person asking for help. The `/catalyst-ai:try-*` starter flows are the exception, and
-  only once `getDefaultProject` says `unavailable` — never while it says `pending`. Then
-  `spec` must set `defaultPubsubEnabled`, `defaultKVStoreEnabled` and
-  `defaultWorkflowStoreEnabled` to `true`, because none of it is on by default and the
-  workflow store cannot be added to a sidecar that has already booted.
+  person asking for help. The exception is not yours to judge: `getDefaultProject`'s
+  `instruction` decides, it permits a create only in the narrow case section 5 describes,
+  and it carries the spec when it does. Never create one while it reports `pending`, and
+  never with a bare `spec` — none of the managed infrastructure is on unless the spec asks
+  for it, and the workflow store cannot be added to a sidecar that has already booted.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
   tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an

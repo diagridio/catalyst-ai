@@ -190,7 +190,8 @@ infrastructure already attached. Workflow history lives in that managed store, s
 hand-rolled project is the most common reason a freshly generated workflow starts and
 then cannot be found. Read `getDefaultProject` in the `catalyst_whoami` answer rather
 than assuming: `pending` means wait and ask again, `unavailable` means it is never
-arriving and another project is needed. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way.
+arriving and another project is needed. Whether one may be created instead is its
+`instruction`'s call, not yours, and never while it reports `pending`.
 
 The generated project needs **no local state-store component and no Docker**. The
 managed workflow store is already there, which is most of what makes this shorter than
@@ -281,10 +282,10 @@ Alongside it, state plainly:
   `unrecognized_item` and a question, not a best guess.
 - **Never turn a dashed line into control flow.** It is a message or a data
   association, on every input path.
-- **Do not create a project.** Use `default`. If it is gone, ask which existing project
-  to use. Only a `/catalyst-ai:try-*` starter flow may create one, and only once
-  `getDefaultProject` reports `unavailable`; it must enable the managed pub/sub, KV
-  store and workflow store in the `Project` spec — a bare project has none of them.
+- **Do not create a project** on your own judgement. Use `default`. If it is gone, ask
+  which existing project to use. `getDefaultProject`'s `instruction` is what permits a
+  create, only where there is no other project and one would actually work, and it carries
+  the spec when it does — a bare project has none of the managed infrastructure.
 - **Do not stop at code that compiles.** Start one run and read its history back.
 - **Do not silently redraw the process.** No merged boxes, no renamed activities, no
   tidied-up branches.

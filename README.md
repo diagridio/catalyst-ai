@@ -264,8 +264,11 @@ hours, and they all fail *silently* or with an unhelpful error.
   Asking is also what triggers the bootstrap, so a new organization converges from the
   same call that finds it has not. Branch on that outcome rather than on whether
   `default` appears in a project listing: reading `pending` as `unavailable` is how an
-  agent improvises a project that was seconds from existing. The `/catalyst-ai:try-*`
-  starter flows are the one path allowed to create one, and only on `unavailable`.
+  agent improvises a project that was seconds from existing. Whether a project may be
+  created is the instruction's call, not the agent's: it forbids one for almost every
+  situation, and permits one only where the default will never arrive, the organization
+  has nothing else, and a created project would actually work — carrying the spec with
+  it when it does.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid

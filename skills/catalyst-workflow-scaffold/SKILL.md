@@ -63,7 +63,8 @@ most common reason a freshly scaffolded workflow starts but never appears.
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Read `getDefaultProject` in the `catalyst_whoami`
 answer rather than assuming: `pending` means wait and ask again, `unavailable` means it
-is never arriving and another project is needed. A `/catalyst-ai:try-*` starter flow is the one exception, and only once `getDefaultProject` reports `unavailable` — never while it reports `pending`, because the project is already on its way. There is no
+is never arriving and another project is needed. Whether one may be created instead is
+its `instruction`'s call, not yours, and never while it reports `pending`. There is no
 current project, so pass the project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
@@ -195,10 +196,10 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not create a project.** Use `default`. If it is gone, ask which existing project
-  to use. Only a `/catalyst-ai:try-*` starter flow may create one, and only once
-  `getDefaultProject` reports `unavailable`; it must enable the managed pub/sub, KV
-  store and workflow store in the `Project` spec — a bare project has none of them.
+- **Do not create a project** on your own judgement. Use `default`. If it is gone, ask
+  which existing project to use. `getDefaultProject`'s `instruction` is what permits a
+  create, only where there is no other project and one would actually work, and it carries
+  the spec when it does — a bare project has none of the managed infrastructure.
 - **Do not name a package version you have not resolved.** Check the registry, or state
   the package without a version.
 - **Do not scaffold per-language variants of this skill.** One skill detects the
