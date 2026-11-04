@@ -1,0 +1,303 @@
+name: Publish to the MCP Registry
+
+# Publishes server.json to the official MCP Registry (registry.modelcontextprotocol.io)
+# as `io.diagrid/catalyst`, a remote server, and tags the commit `mcp-registry-v<version>`.
+#
+# The version is its own semver line, separate from the plugin and the npm package, and
+# nobody edits it by hand. scripts/plan_registry_version.py reads every version the
+# registry holds and bumps the highest: patch on a push, or what the dispatch asks for.
+# The first publish is 0.0.1. The checked-in `version` is a placeholder this workflow
+# overwrites. The git tag is a record; the registry is the source of truth.
+#
+# A remote server's tools are discovered live from the server, so a server release
+# needs no new registry version. Only a change to this metadata does, which is why a
+# push publishes only when server.json changes.
+#
+# Re-running is safe. Each entry carries this run's id in its publisher-provided
+# metadata, so a re-run after a failed tag step finds the version it already published
+# and only tags. A patch run whose metadata matches the latest entry publishes nothing.
+# A published version can never be reused or deleted, so nothing here publishes twice.
+#
+# ## Prerequisites (not in this repo)
+#
+#   1. A `v=MCPv1; k=ed25519; p=<public key>` TXT record on the apex of diagrid.io.
+#      `preflight` checks for it and fails before anything is published if it is absent.
+#   2. The GitHub environment `mcp-registry`, holding the secret MCP_REGISTRY_PRIVATE_KEY
+#      (the hex Ed25519 private key), with required reviewers and a deployment-branch
+#      rule limited to `main`. Like npm-release.yaml, a workflow cannot verify this.
+#
+# The registry name owns the remote URL for good: never publish this URL under any
+# other name, including as a test. To check server.json without publishing, run
+# `mcp-publisher validate server.json`, which needs no login.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - server.json
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Which part of the version to bump (the first publish is always 0.0.1)"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: read
+
+# One publish at a time, never cancelled midway. GitHub keeps only one pending run per
+# group, so a run queued behind another is replaced by a newer one; dispatch a minor or
+# major bump only when no other run is waiting.
+concurrency:
+  group: mcp-registry
+  cancel-in-progress: false
+
+env:
+  DOMAIN: diagrid.io
+  BUMP: ${{ inputs.bump || 'patch' }}
+
+jobs:
+  preflight:
+    # Everything that can fail before a publish runs here, with no secret and no
+    # reviewer, so a missing DNS record or an invalid server.json never waits on an
+    # approval and never reaches the registry.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+      action: ${{ steps.plan.outputs.action }}
+      version: ${{ steps.plan.outputs.version }}
+      # true when there is no tag left to make: it exists, or the entry names no commit.
+      tagged: ${{ steps.tag.outputs.tagged }}
+    steps:
+      - name: Refuse to run off main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::publishes only from main, not $GITHUB_REF"
+            echo "Refused: the MCP Registry publishes only from \`main\`, not \`$GITHUB_REF\`." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record the commit under test
+        id: sha
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          test "$sha" = "$GITHUB_SHA"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check the namespace's DNS record
+        run: |
+          set -euo pipefail
+          records=$(dig +short TXT "$DOMAIN" || true)
+          if ! grep -q '"v=MCPv1; *k=ed25519; *p=' <<<"$records"; then
+            echo "::error::$DOMAIN has no 'v=MCPv1; k=ed25519; p=...' TXT record, so the registry would refuse the login. Nothing was published."
+            {
+              echo "### MCP Registry publish refused"
+              echo "\`$DOMAIN\` has no \`v=MCPv1\` TXT record, which proves ownership of the namespace. Nothing was published."
+              echo "Add the record, then re-run this workflow with \`workflow_dispatch\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "found the v=MCPv1 TXT record on $DOMAIN"
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Check server.json against the plugin
+        run: python3 scripts/check_server_json.py
+
+      - name: Install mcp-publisher
+        run: scripts/install_mcp_publisher.sh "$RUNNER_TEMP/bin"
+
+      - name: Validate server.json against the registry schema
+        run: '"$RUNNER_TEMP/bin/mcp-publisher" validate server.json'
+
+      - name: Plan the version
+        id: plan
+        run: python3 scripts/plan_registry_version.py --bump "$BUMP" --run-id "$GITHUB_RUN_ID"
+
+      - name: Check the tag
+        id: tag
+        env:
+          ACTION: ${{ steps.plan.outputs.action }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          COMMIT: ${{ steps.plan.outputs.commit }}
+        run: |
+          set -euo pipefail
+          tag="mcp-registry-v$VERSION"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            # A tag for a version the registry does not have yet is a real conflict.
+            if [ "$ACTION" = "publish" ]; then
+              echo "::error::tag $tag already exists, but the registry has no $VERSION"; exit 1
+            fi
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          elif [ "$ACTION" = "skip" ] && [ -z "$COMMIT" ]; then
+            # Published without this workflow's metadata, so the commit is unknown.
+            echo "::warning::$VERSION has no tag and its registry entry names no commit; not tagging"
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Summarise the plan
+        env:
+          ACTION: ${{ steps.plan.outputs.action }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          TAGGED: ${{ steps.tag.outputs.tagged }}
+        run: |
+          if [ "$ACTION" = "publish" ]; then
+            echo "Publishing \`io.diagrid/catalyst\` $VERSION ($BUMP bump), pending approval of the \`mcp-registry\` environment." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$TAGGED" = "true" ]; then
+            echo "Nothing to publish: the registry already has this metadata as $VERSION, and it is tagged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nothing to publish: the registry already has this metadata as $VERSION. Tagging it." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    needs: preflight
+    # main is checked here too, not only in preflight, so the job that holds the key
+    # never starts off main even if the environment's branch rule is loosened.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (needs.preflight.outputs.action == 'publish' || needs.preflight.outputs.tagged == 'false')
+    runs-on: ubuntu-latest
+    environment: mcp-registry
+    timeout-minutes: 10
+    permissions:
+      contents: write # pushing the tag
+    steps:
+      # The commit preflight checked, not whatever main has moved to since.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.preflight.outputs.sha }}
+          fetch-depth: 0
+          # The write token is handed to the tag push alone, not left on disk while
+          # mcp-publisher runs.
+          persist-credentials: false
+
+      - name: Assert this is the commit preflight checked
+        env:
+          CHECKED_SHA: ${{ needs.preflight.outputs.sha }}
+        run: |
+          set -euo pipefail
+          head=$(git rev-parse HEAD)
+          if [ -z "$CHECKED_SHA" ] || [ "$head" != "$CHECKED_SHA" ] || [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::error::checked out $head, preflight checked '$CHECKED_SHA', triggered at $GITHUB_SHA"; exit 1
+          fi
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install mcp-publisher
+        run: scripts/install_mcp_publisher.sh "$RUNNER_TEMP/bin"
+
+      # Planned again rather than taken from preflight: the approval may have waited,
+      # and on a re-run of this job alone the registry may already hold what an
+      # earlier attempt published.
+      - name: Plan the version
+        id: plan
+        run: python3 scripts/plan_registry_version.py --bump "$BUMP" --run-id "$GITHUB_RUN_ID"
+
+      - name: Write the version into server.json
+        if: steps.plan.outputs.action == 'publish'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          jq --arg version "$VERSION" --arg commit "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" '
+            .version = $version
+            | ._meta = {"io.modelcontextprotocol.registry/publisher-provided": {commit: $commit, runId: $run}}
+          ' server.json > "$RUNNER_TEMP/server.json"
+          mv "$RUNNER_TEMP/server.json" server.json
+          "$RUNNER_TEMP/bin/mcp-publisher" validate server.json
+
+      - name: Publish
+        if: steps.plan.outputs.action == 'publish'
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MCP_REGISTRY_PRIVATE_KEY:-}" ]; then
+            echo "::error::MCP_REGISTRY_PRIVATE_KEY is not set on the mcp-registry environment. Nothing was published."; exit 1
+          fi
+          publisher="$RUNNER_TEMP/bin/mcp-publisher"
+          # The login writes a registry token under ~/.config; drop it however this ends.
+          trap '"$publisher" logout >/dev/null 2>&1 || true' EXIT
+          # mcp-publisher takes the key only as a flag, so it is in this ephemeral
+          # runner's process table for the length of the login; Actions masks it in logs.
+          "$publisher" login dns --domain "$DOMAIN" --private-key "$MCP_REGISTRY_PRIVATE_KEY"
+          "$publisher" publish server.json
+
+      # Publish before tagging: a published version with no tag is one re-run from
+      # consistent; a tag with nothing in the registry needs a deletion.
+      # A skip tags the commit the registry entry was published from, not this one: a
+      # later commit with unchanged metadata did not publish that version.
+      - name: Tag
+        env:
+          ACTION: ${{ steps.plan.outputs.action }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          COMMIT: ${{ steps.plan.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="mcp-registry-v$VERSION"
+          if [ "$ACTION" = "publish" ]; then
+            target=$(git rev-parse HEAD)
+          elif [ -n "$COMMIT" ]; then
+            target="$COMMIT"
+          else
+            echo "::warning::$VERSION's registry entry names no commit; not tagging"; exit 0
+          fi
+          if ! git cat-file -e "$target^{commit}" 2>/dev/null; then
+            echo "::error::commit $target, which published $VERSION, is not in this repository's history"; exit 1
+          fi
+          if existing=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
+            if [ "$ACTION" = "publish" ] || [ "$existing" != "$target" ]; then
+              echo "::error::tag $tag already points at $existing, expected $target"; exit 1
+            fi
+            echo "tag $tag already exists at $target, skipping"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "MCP Registry io.diagrid/catalyst $VERSION" "$target"
+          # The token goes to this one push through the environment, the way checkout
+          # would have written it to .git/config, and stays out of the process args.
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth" \
+            git push origin "refs/tags/$tag"
+
+      - name: Summarise
+        if: always()
+        env:
+          ACTION: ${{ steps.plan.outputs.action }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          if [ "$OUTCOME" != "success" ]; then
+            {
+              echo "### MCP Registry publish failed"
+              echo "Planned \`$ACTION\` of \`$VERSION\`. See the failed step above."
+              echo "Re-running is safe: a version this run already published is found and only tagged."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$ACTION" = "publish" ]; then
+            echo "Published \`io.diagrid/catalyst\` $VERSION and tagged \`mcp-registry-v$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Already published as $VERSION; tagged \`mcp-registry-v$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
