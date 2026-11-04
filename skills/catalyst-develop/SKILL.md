@@ -32,9 +32,10 @@ Read `getDefaultProject` in the `catalyst_whoami` answer rather than assuming: `
 means wait and ask again, `unavailable` means it is never arriving and another project is
 needed. Pass the project on every call; there is no current project. A `Project` manifest creates the project it names, so if one is in a
 batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
-`Project` manifest only when the user explicitly asked for a new project, or when
-`getDefaultProject`'s `instruction` permits one — never while it reports `pending`, and
-never on your own reading of the `outcome`.
+`Project` manifest only when the user explicitly asked for one or
+`getDefaultProject`'s `instruction` permits one. Even then, never while it reports
+`pending`, and never where the `instruction` says a created project would not work (a
+region group) — never on your own reading of the `outcome`.
 A new project starts with none of the managed infrastructure, so a permitting
 `instruction` carries the spec to use: which region to check, whether to name
 `spec.region`, and which managed stores that region supports. Enable the workflow store

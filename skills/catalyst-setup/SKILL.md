@@ -118,7 +118,7 @@ thing that knows whether this organization may have a project created for it.
 | `outcome` | `reason` | What it means | Do |
 | --- | --- | --- | --- |
 | `ready` | — | The project exists | Use it unless the user named another |
-| `pending` | `no_region`, `region_not_connected` | Still coming up, and your call nudged it | Wait about five seconds and call again, a few times |
+| `pending` | `no_region`, `region_not_connected` | Still coming up, and your call nudged it | Wait about five seconds and call again, a few times. Never create a project meanwhile, and never ask the user to create one either |
 | `unavailable` | `default_deleted` | It existed and was deleted. The operator never recreates it, deliberately | Stop retrying. Use another project; with none, the `instruction` permits creating one |
 | `unavailable` | `region_not_public` | A private (BYOC) region, which hosts no default project | Stop retrying. Normal, not a fault. Same as above when there is no other project |
 | `unavailable` | `region_in_group` | A grouped region, which takes no standalone projects | Stop retrying. Never create one: management-backed tools cannot reach a group project, so the organization needs a standalone region |
