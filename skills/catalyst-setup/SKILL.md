@@ -38,16 +38,16 @@ client set up from these instructions from one added by hand.
 | --- | --- |
 | Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:catalyst`. Open `/mcp`, pick that server and complete the browser sign-in |
 | Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login catalyst` |
-| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.8.0"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.8.1"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
 | claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Catalyst-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
-| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.8.0"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.8.1"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 For Codex, add this to `~/.codex/config.toml` as its own two-line table:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.8.0"
+X-Catalyst-Plugin-Version = "0.8.1"
 ```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
@@ -104,7 +104,46 @@ Two things during sign-in look like errors and are not:
 If a refusal is marked retryable, wait briefly and retry once. If it is not, do not retry
 at all: a permanent refusal retried looks to the user like a hang.
 
-## 5. Confirm, out loud
+## 5. No `default` project is five different situations
+
+`catalyst_whoami` carries a `getDefaultProject` part, and it is the authority on this.
+It answers with an `outcome`, a `reason`, the organization's `otherProjects`, and an
+`instruction` written for you. Asking is also what *triggers* the bootstrap, so a brand
+new organization converges from the same call that discovers it has not converged yet.
+
+Branch on `outcome`, never on "is `default` in the project list". The table below is
+orientation; the `instruction` in the answer is what you act on, and it is the only
+thing that knows whether this organization may have a project created for it.
+
+| `outcome` | `reason` | What it means | Do |
+| --- | --- | --- | --- |
+| `ready` | — | The project exists | Use it unless the user named another |
+| `pending` | `no_region`, `region_not_connected` | Still coming up, and your call nudged it | Wait about five seconds and call again, a few times. Never create a project meanwhile, and never ask the user to create one either |
+| `unavailable` | `default_deleted` | It existed and was deleted. The operator never recreates it, deliberately | Stop retrying. Use another project; with none, the `instruction` permits creating one |
+| `unavailable` | `region_not_public` | A private (BYOC) region, which hosts no default project | Stop retrying. Normal, not a fault. Same as above when there is no other project |
+| `unavailable` | `region_in_group` | A grouped region, which takes no standalone projects | Stop retrying. Never create one: management-backed tools cannot reach a group project, so the organization needs a standalone region |
+
+Treating `pending` as `unavailable` is the expensive mistake: the project is seconds
+away, and an organization on the free plan has only three per region to spend.
+
+`otherProjects` comes back in the same answer, so listing the alternatives needs no
+second call.
+
+### Whether you may create a project is the `instruction`'s call, not yours
+
+The `instruction` resolves one of two ways, and never leaves it unsaid. It forbids a
+project for almost every situation above. It permits one only where all three hold: the
+default will never arrive, the organization has no other project, and a project created
+there would actually work — which excludes `region_in_group`, and excludes any reason a
+later platform build adds until someone has checked it.
+
+When it permits, it carries the spec rather than just the permission: which region to
+check and for what (connected, no tunnel, no region group), whether to name `spec.region`,
+and which managed stores that region supports. Follow that text. Do not carry your own
+copy of it here — a second copy is how the two come to disagree, and the platform's is
+the one that is right.
+
+## 6. Confirm, out loud
 
 Report two things, from a real call and not from configuration:
 
@@ -138,7 +177,11 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
 - **Do not create a project.** Every organization gets a project named `default` with
   managed pub/sub, KV, workflow store and agent infrastructure already attached. Use it. A
   hand-made project that behaves differently is indistinguishable from a broken one to the
-  person asking for help.
+  person asking for help. The exception is not yours to judge: `getDefaultProject`'s
+  `instruction` decides, it permits a create only in the narrow case section 5 describes,
+  and it carries the spec when it does. Never create one while it reports `pending`, and
+  never with a bare `spec` — none of the managed infrastructure is on unless the spec asks
+  for it, and the workflow store cannot be added to a sidecar that has already booted.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
   tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an
