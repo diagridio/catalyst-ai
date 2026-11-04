@@ -28,8 +28,9 @@ change. Read it before you delete anything.
 
 **Never create a project to develop in.** Every organization gets one named `default`
 with managed pub/sub, KV, workflow store and agent infrastructure already attached.
-Confirm with `catalyst_list_projects`, and pass the project on every call; there is no
-current project. A `Project` manifest creates the project it names, so if one is in a
+Read `getDefaultProject` in the `catalyst_whoami` answer rather than assuming: `pending`
+means wait and ask again, `unavailable` means it is never arriving and another project is
+needed. Pass the project on every call; there is no current project. A `Project` manifest creates the project it names, so if one is in a
 batch, check its `metadata.name`; a differing `project` argument is rejected. Send a
 `Project` manifest only when the user explicitly asked for a new project, or when
 `getDefaultProject`'s `instruction` permits one — never while it reports `pending`, and

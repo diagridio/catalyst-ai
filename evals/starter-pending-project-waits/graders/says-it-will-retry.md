@@ -4,4 +4,4 @@ target: last_message
 flags: i
 match: contains
 ---
-wait|retry|again|moment|few seconds
+(?:call|check|ask)\w*[^.]{0,40}(?:again|catalyst_whoami)|retry|few seconds
