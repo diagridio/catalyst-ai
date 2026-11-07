@@ -38,16 +38,16 @@ client set up from these instructions from one added by hand.
 | --- | --- |
 | Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:catalyst`. Open `/mcp`, pick that server and complete the browser sign-in |
 | Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login catalyst` |
-| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.8.0"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.8.1"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
 | claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Catalyst-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
-| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.8.0"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.8.1"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 For Codex, add this to `~/.codex/config.toml` as its own two-line table:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.8.0"
+X-Catalyst-Plugin-Version = "0.8.1"
 ```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
@@ -88,7 +88,7 @@ user for an API key, which is never the right next step.
 | Kind | What it means | Do |
 | --- | --- | --- |
 | `NOT_AUTHENTICATED` | No token, or it does not verify | Ask the user to sign in to the MCP server again (section 2). Do not ask for a token. If they just did, check the client's entry (section 3) |
-| `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user to sign in to the MCP server again and pick an organization when the browser asks. If they belong to none, they create one in the Catalyst console first. Do not ask for an organization ID: there is nowhere to put one |
+| `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user to sign in to the MCP server again and pick an organization when the browser asks. If they belong to none, they create one in the Catalyst console first: give them `https://catalyst.diagrid.io/?utm_source=coding-agent&utm_medium=mcp` exactly as written. Do not ask for an organization ID: there is nowhere to put one |
 | `ORG_MISMATCH` | A supplied org disagrees with the sign-in | Stop. Report both values. Do not retry with either |
 | `ORG_UNAVAILABLE` | Organization blocked or being deleted | Terminal. Tell the user to contact Diagrid support. Do not retry |
 | `CATALYST_NOT_ENABLED` | No Catalyst entitlement, or an expired trial | Report which. These need different remedies, enabling versus renewing |
