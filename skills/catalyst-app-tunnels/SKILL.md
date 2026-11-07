@@ -88,21 +88,29 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
 - `--rm-appids` deletes the App IDs that this run created when it stops. It suits a
   throwaway app; never use it on an App ID that existed before.
 
-**Stopping a tunnel.** Ending the process does not always close the tunnel:
+**Stopping a tunnel.** Ending `dev run` does not close the tunnel:
 
 - Stop `dev run` with SIGINT: `kill -INT <pid>` on the `dev run` process you started in
   the background (not on the app it started), or Ctrl-C if the user runs it in their own
-  terminal. That stops the app it started and closes the tunnel.
-- If it was killed instead (SIGKILL, a background-task time limit, a crash of the app),
-  the tunnel record stays `ready` with nothing behind it. Run
-  `diagrid dev stop --id <app-id> -p <project>` to close it (in `dev stop`, `-p` is the
-  project).
+  terminal. That stops the app it started, but the tunnel record stays `ready` with
+  nothing behind it, and the App ID keeps pointing at it. The same happens when it is
+  killed (SIGKILL, a background-task time limit, a crash of the app).
+- To close the tunnel, run `diagrid dev stop --id <app-id> -p <project>` (in `dev stop`,
+  `-p` is the project). It also stops a `dev run` still serving that App ID, so it is
+  the one command to use when you are done.
 - On older CLIs, `dev stop` can leave the app that `dev run` started still running on
   its port. Check the port with `lsof -i :<port>` afterwards and stop the leftover.
 - After a stop, the tunnel takes up to a minute to finish closing. Until
   `catalyst_list_app_tunnels` no longer lists the App ID, an apply or a grant on it is
-  still refused, and a new `listen` on it can fail with `local app connection not found`.
-  Wait for it to go, then retry.
+  still refused, and a new `dev run` or `listen` on it can fail with
+  `local app connection not found with the given id`. Wait for it to go, then retry.
+
+**Restarting a tunnel** on the same App ID, after a code change say: start one `dev run`
+and wait for it. If the last tunnel was not closed, `dev run` closes it, waits for it to
+go and opens a new one, which takes up to a minute before the app starts. That is not a
+hang. Do not stop it or start another `dev run` on that App ID meanwhile: an App ID has
+one tunnel, and a second `dev run` either fails on the first one's lock or, from
+another machine, takes the tunnel over.
 
 What it does to the platform:
 
