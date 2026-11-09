@@ -278,8 +278,45 @@ def starter_eval_drift(root: Path) -> list[Finding]:
     return found
 
 
+def variant_eval_drift(root: Path) -> list[Finding]:
+    """Each evals/try-<x>-<rest>/ grades a variation on commands/try-<x>.md.
+
+    A starter eval copies the command's body verbatim. A variant adds to it --
+    the framework the user names, say -- so it must still *open* with that body.
+    Without this, the second copy drifts the next time the command changes and
+    the eval grades a prompt no user sends.
+    """
+    found: list[Finding] = []
+    commands = {c.stem: c for c in (root / "commands").glob("try-*.md")}
+    for prompt in sorted((root / "evals").glob("try-*/prompt.md")):
+        name = prompt.parent.name
+        stem = next(
+            (s for s in sorted(commands, key=len, reverse=True) if name.startswith(f"{s}-")),
+            None,
+        )
+        if stem is None:
+            found.append(
+                Finding(
+                    str(prompt.relative_to(root)),
+                    0,
+                    "names no command in commands/, so the command it grades does not exist",
+                )
+            )
+            continue
+        if not _body(prompt).startswith(_body(commands[stem])):
+            found.append(
+                Finding(
+                    str(prompt.relative_to(root)),
+                    0,
+                    f"does not open with the body of {commands[stem].relative_to(root)}. "
+                    "A variant prompt is that body verbatim, then what the user adds.",
+                )
+            )
+    return found
+
+
 def main() -> int:
-    findings = missing_roots(REPO) + check(REPO) + starter_eval_drift(REPO)
+    findings = missing_roots(REPO) + check(REPO) + starter_eval_drift(REPO) + variant_eval_drift(REPO)
     if findings:
         print("MCP surface check FAILED:\n", file=sys.stderr)
         for finding in findings:

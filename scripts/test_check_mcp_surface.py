@@ -16,7 +16,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from check_mcp_surface import REPO, check, missing_roots, starter_eval_drift  # noqa: E402
+from check_mcp_surface import (  # noqa: E402
+    REPO,
+    check,
+    missing_roots,
+    starter_eval_drift,
+    variant_eval_drift,
+)
 
 CONTRACT = "# tools\ncatalyst_whoami\ncatalyst_get_app\n"
 
@@ -155,6 +161,40 @@ def main() -> int:
         "does not exist",
     )
     expect("the real repo's starter evals match", starter_eval_drift(REPO), "")
+
+    variant = "---\nname: e\n---\n\nDo the thing.\n\nUse crewai.\n"
+    expect(
+        "a variant eval that opens with the command body passes",
+        variant_eval_drift(tree({"commands/try-x.md": command, "evals/try-x-names-a-thing/prompt.md": variant})),
+        "",
+    )
+    expect(
+        "a variant eval that drifts from the command body fails",
+        variant_eval_drift(
+            tree({"commands/try-x.md": command, "evals/try-x-names-a-thing/prompt.md": "---\nname: e\n---\n\nDo another thing.\n"})
+        ),
+        "does not open with",
+    )
+    expect(
+        "a variant eval that only paraphrases the command body fails",
+        variant_eval_drift(
+            tree({"commands/try-x.md": command, "evals/try-x-names-a-thing/prompt.md": "---\nname: e\n---\n\nDo the thin.\n\nUse crewai.\n"})
+        ),
+        "does not open with",
+    )
+    expect(
+        "a variant eval naming no command fails",
+        variant_eval_drift(tree({"commands/try-x.md": command, "evals/try-z-names-a-thing/prompt.md": variant})),
+        "does not exist",
+    )
+    expect(
+        "a starter eval is not mistaken for a variant",
+        variant_eval_drift(
+            tree({"commands/try-x.md": command, "evals/starter-x-loads-a-skill/prompt.md": "---\nname: e\n---\n\nDo the thing.\n"})
+        ),
+        "",
+    )
+    expect("the real repo's variant evals match", variant_eval_drift(REPO), "")
 
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
