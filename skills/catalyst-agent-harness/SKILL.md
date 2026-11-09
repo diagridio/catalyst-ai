@@ -1,6 +1,6 @@
 ---
 name: catalyst-agent-harness
-description: Make a hand-written agent loop durable with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
+description: Make a hand-written agent loop durable on Catalyst with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
 ---
 
 # Make a hand-written agent loop durable
