@@ -100,7 +100,7 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
   the one command to use when you are done.
 - On older CLIs, `dev stop` can leave the app that `dev run` started still running on
   its port. Check the port with `lsof -i :<port>` afterwards and stop the leftover.
-- After a stop, the tunnel takes up to a minute to finish closing. Until
+- After `diagrid dev stop`, the tunnel takes up to a minute to finish closing. Until
   `catalyst_list_app_tunnels` no longer lists the App ID, an apply or a grant on it is
   still refused, and a new `dev run` or `listen` on it can fail with
   `local app connection not found with the given id`. Wait for it to go, then retry.
