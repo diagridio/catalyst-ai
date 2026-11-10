@@ -343,8 +343,7 @@ rejected. Send one only when the user has agreed to a new project.
 - **Report a status verbatim.** The vocabulary is not closed, and paraphrasing a platform
   error loses the detail that mattered.
 - **Use `default`; only if it is absent, offer to create a project and wait for the user's
-  agreement.** Check the `metadata.name` of any
-  `Project` manifest in a batch.
+  agreement.** Check the `metadata.name` of any `Project` manifest in a batch.
 - **Ask before any delete.** `catalyst_delete_resource` cannot be undone.
 - **Do not print secrets.** Never paste a secret value, or an API token if you are ever
   given one, into anything that outlives the answer.
