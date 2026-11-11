@@ -113,7 +113,7 @@ export const installData = {
               "id": "mcp-headers",
               "label": "~/.codex/config.toml",
               "lang": "text",
-              "text": "[mcp_servers.catalyst.http_headers]\nX-Catalyst-Plugin-Version = \"0.8.1\""
+              "text": "[mcp_servers.catalyst.http_headers]\nX-Catalyst-Plugin-Version = \"0.9.0\""
             }
           ]
         },
@@ -177,7 +177,7 @@ export const installData = {
               "id": "mcp-config",
               "label": "~/.copilot/mcp-config.json",
               "lang": "json",
-              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.8.1\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
+              "text": "{\n  \"mcpServers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.9.0\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
             }
           ]
         },
@@ -228,7 +228,7 @@ export const installData = {
               "id": "mcp-config",
               "label": ".vscode/mcp.json",
               "lang": "json",
-              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.8.1\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
+              "text": "{\n  \"servers\": {\n    \"catalyst\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Catalyst-Plugin-Version\": \"0.9.0\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
             }
           ]
         },
