@@ -88,21 +88,32 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
 - `--rm-appids` deletes the App IDs that this run created when it stops. It suits a
   throwaway app; never use it on an App ID that existed before.
 
-**Stopping a tunnel.** Ending the process does not always close the tunnel:
+**Stopping a tunnel.** Ending `dev run` does not close the tunnel:
 
 - Stop `dev run` with SIGINT: `kill -INT <pid>` on the `dev run` process you started in
   the background (not on the app it started), or Ctrl-C if the user runs it in their own
-  terminal. That stops the app it started and closes the tunnel.
-- If it was killed instead (SIGKILL, a background-task time limit, a crash of the app),
-  the tunnel record stays `ready` with nothing behind it. Run
-  `diagrid dev stop --id <app-id> -p <project>` to close it (in `dev stop`, `-p` is the
-  project).
+  terminal. That stops the app it started, but the tunnel record stays `ready` with
+  nothing behind it, and the App ID keeps pointing at it. The same happens when it is
+  killed (SIGKILL, a background-task time limit, a crash of the app).
+- To close the tunnel, run `diagrid dev stop --id <app-id> -p <project>` (in `dev stop`,
+  `-p` is the project). It also stops a `dev run` still serving that App ID, so it is
+  the one command to use when you are done.
 - On older CLIs, `dev stop` can leave the app that `dev run` started still running on
   its port. Check the port with `lsof -i :<port>` afterwards and stop the leftover.
-- After a stop, the tunnel takes up to a minute to finish closing. Until
+- After `diagrid dev stop`, the tunnel takes up to a minute to finish closing. Until
   `catalyst_list_app_tunnels` no longer lists the App ID, an apply or a grant on it is
-  still refused, and a new `listen` on it can fail with `local app connection not found`.
-  Wait for it to go, then retry.
+  still refused, and a new `dev run` or `listen` on it can fail with
+  `local app connection not found with the given id`. Wait for it to go, then retry.
+
+**Restarting a tunnel** that `dev run` opened on the same App ID, after a code change
+say: stop the old `dev run` with SIGINT, **do not run `dev stop`**, and start one new
+`dev run`. It closes the old tunnel, waits for it to go and opens a new one, which takes
+up to a minute before the app starts. That is not a hang. Do not stop it or start
+another `dev run` on that App ID meanwhile: an App ID has one tunnel, and a second
+`dev run` either fails on the first one's lock, fails with a 409 saying the tunnel is
+being deleted, or, from another machine, takes the tunnel over. If you already ran
+`dev stop`, wait until `catalyst_list_app_tunnels` no longer lists the App ID before
+starting `dev run` (above). A tunnel left by `listen` is handled differently (section 6).
 
 What it does to the platform:
 
@@ -129,8 +140,9 @@ What it does to the platform:
   what holds it only if it is the user's own leftover process.
 - **While a tunnel is open, that App ID cannot be updated.** A `catalyst_apply` to it, or
   an access grant that has to attach a policy to it, is refused with a message telling
-  you to stop the tunnel. Stop the tunnel and wait for it to close (above), make the
-  change, start it again.
+  you to stop the tunnel. Run `diagrid dev stop --id <app-id> -p <project>`, wait until
+  `catalyst_list_app_tunnels` no longer lists the App ID (above), make the change, start
+  it again.
 - `catalyst_list_app_tunnels` lists the tunnel records on a project. A record can stay
   `ready` after its `dev run` has exited, so it shows that a tunnel was opened, not that
   one is live. Proof of a live tunnel is a request arriving in the local process's own
@@ -220,8 +232,9 @@ code schedules those workflows, tell the user it cannot use an MCP server on thi
 machine yet, and point it at the HTTP endpoint instead. The HTTP proxy working proves
 nothing about the workflow path.
 
-**Tear down in this order:** stop the tunnel, then delete the `MCPServer`. An open
-tunnel blocks the delete of its identity.
+**Tear down in this order:** run `diagrid dev stop --id <mcpserver-name> -p <project>`,
+wait until `catalyst_list_app_tunnels` no longer lists it, then delete the `MCPServer`.
+An open tunnel blocks the delete of its identity.
 
 ## 6. `diagrid listen`: see what Catalyst sends, with no app yet
 
@@ -242,7 +255,8 @@ by mode: with no handler flag each request shows `method`, `url` and `body`; und
 
 **`listen` leaves the tunnel open when you stop it**, and says so. Before running
 `dev run` on the same App ID, run `diagrid dev stop --id <app-id> -p <project>` and wait
-for the tunnel to close (section 3).
+until `catalyst_list_app_tunnels` no longer lists the App ID (section 3). Do not count on
+`dev run` replacing a `listen` tunnel the way it replaces one it opened itself.
 
 ## 7. When it does not work
 
@@ -250,8 +264,9 @@ for the tunnel to close (section 3).
 | --- | --- | --- |
 | `dev run` exits with an error containing `not ready` | It gave up waiting for the App ID (section 3) | Read the App ID with `catalyst_get_app`. Once it is `ready`, run `dev run` again. If it has sat in `processing` for over 10 minutes, report it as a platform problem; do not delete and re-create it |
 | `App ID "<other>" must be in ready status in order to scaffold dev session configuration`, naming an App ID this run does not use | Older CLI versions require **every** App ID in the project to be `ready`, and stop the app they just started | `catalyst_list_apps` to find the one that is not `ready`. Wait for it, or ask the user before deleting it if it is theirs and unused |
-| The `Agent` or `MCPServer` is in error after a `dev run` | `dev run` created a plain App ID of that name first | With the user's agreement, stop the tunnel, delete the App ID (`catalyst_delete_resource`) and apply the resource again |
-| An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID, or is still closing | Stop it, wait until `catalyst_list_app_tunnels` no longer lists it, make the change, start it again |
+| The `Agent` or `MCPServer` is in error after a `dev run` | `dev run` created a plain App ID of that name first | With the user's agreement, run `diagrid dev stop --id <app-id> -p <project>`, wait until `catalyst_list_app_tunnels` no longer lists it, delete the App ID (`catalyst_delete_resource`) and apply the resource again |
+| An apply or a grant is refused, naming `dev stop` | A tunnel is open on that App ID, or is still closing | Run `diagrid dev stop --id <app-id> -p <project>`, wait until `catalyst_list_app_tunnels` no longer lists it, make the change, start it again |
+| `dev run` fails with a 409 saying the tunnel is being deleted | A second `dev run` started on the App ID while the first was still replacing the old tunnel | Stop the extra run and let the one `dev run` finish, or wait until `catalyst_list_app_tunnels` no longer lists the App ID, then start one `dev run` |
 | The MCP server answers 4xx to every tunneled request | It rejects the tunnel's `Host` header | Relax its host check for local development (section 5, step 1) |
 | The upstream sees `/mcp/mcp` | The proxy path repeated the spec URL's path | Post to the bare `/v1.0/diagrid/mcp/<name>` |
 | Every workflow start fails with `failed to create workflow instance: context canceled` | `dev run` has `--app-port`, and nothing listens on that port, so the app's health check never passes | Run it again without `--app-port` if nothing calls into the process (section 1); otherwise start the server on that port |
