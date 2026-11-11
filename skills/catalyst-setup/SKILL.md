@@ -88,7 +88,7 @@ user for an API key, which is never the right next step.
 | Kind | What it means | Do |
 | --- | --- | --- |
 | `NOT_AUTHENTICATED` | No token, or it does not verify | Ask the user to sign in to the MCP server again (section 2). Do not ask for a token. If they just did, check the client's entry (section 3) |
-| `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user to sign in to the MCP server again and pick an organization when the browser asks. If they belong to none, they create one in the Catalyst console first. Do not ask for an organization ID: there is nowhere to put one |
+| `NO_ORG`, `NO_ORGANIZATION` | Verified, but no organization resolved | Ask the user to sign in to the MCP server again and pick an organization when the browser asks. If they belong to none, they create one in the Catalyst console first: give them `https://catalyst.diagrid.io/?utm_source=coding-agent&utm_medium=mcp` exactly as written. Do not ask for an organization ID: there is nowhere to put one |
 | `ORG_MISMATCH` | A supplied org disagrees with the sign-in | Stop. Report both values. Do not retry with either |
 | `ORG_UNAVAILABLE` | Organization blocked or being deleted | Terminal. Tell the user to contact Diagrid support. Do not retry |
 | `CATALYST_NOT_ENABLED` | No Catalyst entitlement, or an expired trial | Report which. These need different remedies, enabling versus renewing |
