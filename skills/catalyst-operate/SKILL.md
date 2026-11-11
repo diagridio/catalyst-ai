@@ -63,9 +63,11 @@ sits on, and a large share of "X is missing" turns out to be "X's backing store 
 enabled here".
 
 Every organization has a project named `default` with managed pub/sub, KV, workflow
-store and agent infrastructure already attached. Use it. **Never create a project** — a
-hand-made project that behaves differently is indistinguishable from a broken one to the
-person asking for help.
+store and agent infrastructure already attached. Use it. **Do not create a project while
+operating** — a hand-made project that behaves differently is indistinguishable from a
+broken one to the person asking for help. If the user has not named a project and
+`default` is absent, stop, tell the user, and only continue with project setup (see
+`catalyst-setup`) if they ask for it. If they named one, operate in that project.
 
 Two project-scoped limits matter for designs:
 
@@ -282,7 +284,7 @@ an app. Linking to either one 404s.
 
 | What you are holding | Parameter | Example |
 | --- | --- | --- |
-| A name-like id | `?project=<name>` | `?project=default` |
+| A name-like id | `?project=<name>` | `?project=default` (use the project in use, not always `default`) |
 | A numeric uid | `?projectId=<uid>` | `?projectId=165`, `prj-` prefix optional |
 
 Neither falls back to the other, and `projectId` wins when both are present. Put a

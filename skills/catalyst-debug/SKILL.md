@@ -45,9 +45,11 @@ deployments, not projects in this organization.
 Read the project first, in every case: `catalyst_get_project`. Managed workflow storage
 and agent infrastructure are project settings, and when one is off the symptoms are
 indistinguishable from broken resources. The project named `default` already has managed
-pub/sub, KV, workflow store and agent infrastructure attached. **Never create a project**
+pub/sub, KV, workflow store and agent infrastructure attached. **Do not create a project**
 while debugging — a new project with different settings turns one unexplained failure
-into two.
+into two. If the user has not named a project and `default` is absent, stop debugging,
+tell the user, and only continue with project setup (see `catalyst-setup`) if they ask for
+it. If they named one, debug in that project.
 
 ## 2. Rules of evidence
 
@@ -324,7 +326,7 @@ The project is a query parameter, and there are two of them:
 
 | What you are holding | Parameter | Example |
 | --- | --- | --- |
-| A name-like id | `?project=<name>` | `?project=default` |
+| A name-like id | `?project=<name>` | `?project=default` (use the project in use, not always `default`) |
 | A numeric uid | `?projectId=<uid>` | `?projectId=165`, `prj-` prefix optional |
 
 Neither falls back to the other, and `projectId` wins when both are present. Put a numeric
@@ -364,5 +366,7 @@ Then the fix, separately, and as a proposal if it mutates anything.
   destroy the state you are diagnosing. Read first, propose changes with their
   consequences stated, then wait for consent.
 - **Do not write files.** Report in your answer, unless the user asked for a file.
-- **Do not create a project.** Ever, in this skill. See section 1.
+- **Do not create a project while debugging.** If the user has not named a project and
+  `default` is absent, stop and tell the user; continue with project setup only if they ask
+  for it. See section 1.
 - **Do not print secrets** into a summary, a log, or a commit.

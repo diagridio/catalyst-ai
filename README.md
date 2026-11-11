@@ -88,7 +88,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.8.1"
+X-Catalyst-Plugin-Version = "0.8.2"
 ```
 
 **GitHub Copilot CLI**
@@ -102,7 +102,7 @@ X-Catalyst-Plugin-Version = "0.8.1"
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.8.1" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.8.2" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -120,7 +120,7 @@ Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the bro
     "catalyst": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.8.1" },
+      "headers": { "X-Catalyst-Plugin-Version": "0.8.2" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -331,10 +331,11 @@ connection broken.
 These are in the skills already; listed here because they're the ones that cost people
 hours, and they all fail *silently* or with an unhelpful error.
 
-- **Don't create a project.** Your org already has a `default` project, provisioned at
-  signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
-  manifest in a batch creates the project it names, and projects count against a
-  per-region limit you can read with `catalyst_get_usage`.
+- **Use `default`.** Your org already has a `default` project, provisioned at signup, with
+  managed pub/sub, KV, workflow store and agent infrastructure. If it is absent, the agent
+  offers to create a new project and waits for your agreement; it never reuses a
+  misconfigured one. A `Project` manifest in a batch creates the project it names, and
+  projects count against a per-region limit you can read with `catalyst_get_usage`.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid
