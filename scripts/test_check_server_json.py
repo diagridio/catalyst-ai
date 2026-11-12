@@ -24,7 +24,7 @@ URL = "https://mcp.cloud.r1.diagrid.io/mcp"
 
 def server(**overrides: object) -> dict:
     base = {
-        "name": "io.diagrid/catalyst",
+        "name": "io.diagrid/mcp",
         "description": "d",
         "version": "0.0.0",
         "remotes": [{"type": "streamable-http", "url": URL}],
@@ -56,6 +56,7 @@ CASES: list[tuple[str, Path, str]] = [
     ("a missing server.json fails", tree(None), "missing"),
     ("invalid JSON fails", tree("{"), "not valid JSON"),
     ("a different name fails", tree(server(name="io.diagrid/other")), "name"),
+    ("the earlier name fails", tree(server(name="io.diagrid/catalyst")), "name"),
     ("a leading v fails", tree(server(version="v0.0.1")), "plain X.Y.Z"),
     ("a prerelease suffix fails", tree(server(version="0.0.1-rc.1")), "plain X.Y.Z"),
     ("packages fail", tree(server(packages=[{}])), "remote only"),
