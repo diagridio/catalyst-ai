@@ -93,6 +93,8 @@ def main() -> int:
         if got_commit != want_commit:
             failures.append(f"{name}: expected {want_commit!r}, got {got_commit!r}")
 
+    # A new name starts again at 0.0.1, so its first tag must not be the existing
+    # `mcp-registry-v0.0.1`, which records io.diagrid/catalyst's first publish.
     tag_cases = [
         ("the tag names the server and the version", "io.diagrid/mcp", "0.0.1", "mcp-registry-io.diagrid-mcp-v0.0.1"),
         ("another name gets its own tag", "io.diagrid/catalyst", "0.0.1", "mcp-registry-io.diagrid-catalyst-v0.0.1"),
@@ -102,16 +104,10 @@ def main() -> int:
         if got_tag != want_tag:
             failures.append(f"{name}: expected {want_tag!r}, got {got_tag!r}")
 
-    # A new name starts again at 0.0.1, so its first tag must not be the existing
-    # `mcp-registry-v0.0.1`, which records io.diagrid/catalyst's first publish.
-    first = tag_for(LOCAL["name"], plan([], LOCAL, "patch", "1")[1])
-    if first == "mcp-registry-v0.0.1":
-        failures.append(f"a new name's first publish reuses the existing tag {first!r}")
-
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
         return 1
-    print(f"{len(CASES) + len(commit_cases) + len(tag_cases) + 1} cases passed")
+    print(f"{len(CASES) + len(commit_cases) + len(tag_cases)} cases passed")
     return 0
 
 
