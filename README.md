@@ -143,9 +143,10 @@ those connectors but has not been tried separately.
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
-The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
-([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
-so clients with a registry-backed server gallery can find it there.
+The server is also listed in the official MCP Registry as `io.diagrid/mcp`
+([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/mcp)),
+so clients with a registry-backed server gallery can find it there. The earlier entry,
+`io.diagrid/catalyst`, points at the same URL and is superseded by `io.diagrid/mcp`.
 
 ### GitHub Copilot CLI
 

@@ -4,9 +4,10 @@
 The schema itself is checked by `mcp-publisher validate` in CI. This gate covers
 what the schema cannot know:
 
-* The name is `io.diagrid/catalyst` and nothing else. The registry lets each
-  remote URL belong to one server name only, so a typo here would publish
-  under a name that then owns the URL for good.
+* The name is `io.diagrid/mcp` and nothing else. The registry lets any number
+  of names point at one remote URL, so it would accept a typo, and a published
+  version can never be reused or deleted: the stray entry would stay listed.
+  `io.diagrid/catalyst`, the earlier name for the same URL, fails here too.
 * There is exactly one remote, streamable HTTP, at the same URL as the default
   in .claude-plugin/plugin.json. Two copies of one URL drift, and the registry
   entry would then send clients somewhere the plugin does not.
@@ -27,7 +28,7 @@ REPO = Path(__file__).resolve().parent.parent
 SERVER_JSON = Path("server.json")
 PLUGIN_JSON = Path(".claude-plugin") / "plugin.json"
 PLUGIN_SERVER = "catalyst"
-SERVER_NAME = "io.diagrid/catalyst"
+SERVER_NAME = "io.diagrid/mcp"
 REMOTE_TYPE = "streamable-http"
 PLAIN_SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 # `${VAR:-default}`, the form plugin.json uses so a developer can point the plugin
@@ -67,7 +68,7 @@ def check(root: Path) -> list[str]:
     if server.get("name") != SERVER_NAME:
         findings.append(
             f"{SERVER_JSON}: name is {server.get('name')!r}, must be {SERVER_NAME!r}. "
-            "The first publish locks the remote URL to one name for good."
+            "A published name and version can never be taken back, so a rename is deliberate."
         )
 
     version = server.get("version")
