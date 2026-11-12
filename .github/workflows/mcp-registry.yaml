@@ -1,13 +1,16 @@
 name: Publish to the MCP Registry
 
 # Publishes server.json to the official MCP Registry (registry.modelcontextprotocol.io)
-# as `io.diagrid/catalyst`, a remote server, and tags the commit `mcp-registry-v<version>`.
+# under the name it holds, `io.diagrid/mcp`, as a remote server, and tags the commit
+# `mcp-registry-<name, "/" as "-">-v<version>`, e.g. `mcp-registry-io.diagrid-mcp-v0.0.1`.
 #
-# The version is its own semver line, separate from the plugin and the npm package, and
-# nobody edits it by hand. scripts/plan_registry_version.py reads every version the
-# registry holds and bumps the highest: patch on a push, or what the dispatch asks for.
-# The first publish is 0.0.1. The checked-in `version` is a placeholder this workflow
-# overwrites. The git tag is a record; the registry is the source of truth.
+# The version is its own semver line per registry name, separate from the plugin and the
+# npm package, and nobody edits it by hand. scripts/plan_registry_version.py reads every
+# version the registry holds for the name and bumps the highest: patch on a push, or what
+# the dispatch asks for. A name's first publish is 0.0.1, which is why the tag carries the
+# name: the bare `mcp-registry-v0.0.1` tag already records `io.diagrid/catalyst`'s first
+# publish. The checked-in `version` is a placeholder this workflow overwrites. The git tag
+# is a record; the registry is the source of truth.
 #
 # A remote server's tools are discovered live from the server, so a server release
 # needs no new registry version. Only a change to this metadata does, which is why a
@@ -26,9 +29,24 @@ name: Publish to the MCP Registry
 #      (the hex Ed25519 private key), with required reviewers and a deployment-branch
 #      rule limited to `main`. Like npm-release.yaml, a workflow cannot verify this.
 #
-# The registry name owns the remote URL for good: never publish this URL under any
-# other name, including as a test. To check server.json without publishing, run
-# `mcp-publisher validate server.json`, which needs no login.
+# Any number of registry names may point at the same remote URL, so the registry would
+# accept a wrong name; scripts/check_server_json.py pins it instead. A published name and
+# version stay in the registry for good, so never publish to try something out. To check
+# server.json without publishing, run `mcp-publisher validate server.json`, which needs
+# no login.
+#
+# ## After the first publish of `io.diagrid/mcp` (CAT-2481)
+#
+# The same URL was listed earlier as `io.diagrid/catalyst`. Once `io.diagrid/mcp` is
+# live in the registry, a person with publish rights on the `io.diagrid` namespace logs
+# in (`mcp-publisher login dns --domain diagrid.io --private-key <key>`) and deprecates
+# every version of the old name, once, by hand:
+#
+#   mcp-publisher status --status deprecated --all-versions \
+#     --message "Renamed to io.diagrid/mcp. Same server and URL; install io.diagrid/mcp instead." \
+#     io.diagrid/catalyst
+#
+# Nothing here publishes `io.diagrid/catalyst` again.
 
 on:
   push:
@@ -134,14 +152,14 @@ jobs:
         env:
           ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
           COMMIT: ${{ steps.plan.outputs.commit }}
         run: |
           set -euo pipefail
-          tag="mcp-registry-v$VERSION"
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             # A tag for a version the registry does not have yet is a real conflict.
             if [ "$ACTION" = "publish" ]; then
-              echo "::error::tag $tag already exists, but the registry has no $VERSION"; exit 1
+              echo "::error::tag $TAG already exists, but the registry has no $VERSION"; exit 1
             fi
             echo "tagged=true" >> "$GITHUB_OUTPUT"
           elif [ "$ACTION" = "skip" ] && [ -z "$COMMIT" ]; then
@@ -154,12 +172,13 @@ jobs:
 
       - name: Summarise the plan
         env:
+          NAME: ${{ steps.plan.outputs.name }}
           ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
           TAGGED: ${{ steps.tag.outputs.tagged }}
         run: |
           if [ "$ACTION" = "publish" ]; then
-            echo "Publishing \`io.diagrid/catalyst\` $VERSION ($BUMP bump), pending approval of the \`mcp-registry\` environment." >> "$GITHUB_STEP_SUMMARY"
+            echo "Publishing \`$NAME\` $VERSION ($BUMP bump), pending approval of the \`mcp-registry\` environment." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$TAGGED" = "true" ]; then
             echo "Nothing to publish: the registry already has this metadata as $VERSION, and it is tagged." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -248,13 +267,14 @@ jobs:
       # later commit with unchanged metadata did not publish that version.
       - name: Tag
         env:
+          NAME: ${{ steps.plan.outputs.name }}
           ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
           COMMIT: ${{ steps.plan.outputs.commit }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="mcp-registry-v$VERSION"
           if [ "$ACTION" = "publish" ]; then
             target=$(git rev-parse HEAD)
           elif [ -n "$COMMIT" ]; then
@@ -265,15 +285,15 @@ jobs:
           if ! git cat-file -e "$target^{commit}" 2>/dev/null; then
             echo "::error::commit $target, which published $VERSION, is not in this repository's history"; exit 1
           fi
-          if existing=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
+          if existing=$(git rev-parse -q --verify "refs/tags/$TAG^{commit}"); then
             if [ "$ACTION" = "publish" ] || [ "$existing" != "$target" ]; then
-              echo "::error::tag $tag already points at $existing, expected $target"; exit 1
+              echo "::error::tag $TAG already points at $existing, expected $target"; exit 1
             fi
-            echo "tag $tag already exists at $target, skipping"; exit 0
+            echo "tag $TAG already exists at $target, skipping"; exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$tag" -m "MCP Registry io.diagrid/catalyst $VERSION" "$target"
+          git tag -a "$TAG" -m "MCP Registry $NAME $VERSION" "$target"
           # The token goes to this one push through the environment, the way checkout
           # would have written it to .git/config, and stays out of the process args.
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
@@ -281,13 +301,15 @@ jobs:
           GIT_CONFIG_COUNT=1 \
             GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
             GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth" \
-            git push origin "refs/tags/$tag"
+            git push origin "refs/tags/$TAG"
 
       - name: Summarise
         if: always()
         env:
+          NAME: ${{ steps.plan.outputs.name }}
           ACTION: ${{ steps.plan.outputs.action }}
           VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
           OUTCOME: ${{ job.status }}
         run: |
           if [ "$OUTCOME" != "success" ]; then
@@ -297,7 +319,7 @@ jobs:
               echo "Re-running is safe: a version this run already published is found and only tagged."
             } >> "$GITHUB_STEP_SUMMARY"
           elif [ "$ACTION" = "publish" ]; then
-            echo "Published \`io.diagrid/catalyst\` $VERSION and tagged \`mcp-registry-v$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "Published \`$NAME\` $VERSION and tagged \`$TAG\`." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Already published as $VERSION; tagged \`mcp-registry-v$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "Already published as $VERSION; tagged \`$TAG\`." >> "$GITHUB_STEP_SUMMARY"
           fi
