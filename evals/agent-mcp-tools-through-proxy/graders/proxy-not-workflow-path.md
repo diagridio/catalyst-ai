@@ -10,7 +10,7 @@ called with the agent's `dapr-api-token`. The MCPServerAccessPolicy is enforced 
 PASS if the response does all of these:
 - has the agent call the server through `/v1.0/diagrid/mcp/travel` (or discovers it via
   `GET /v1.0/diagrid/mcp` and its `connect.path`) with an ordinary MCP client;
-- grants `weather-assistant` access to `get_local_time` with `catalyst_grant_access` (or
+- grants `weather-assistant` access to `get_local_time` with `diagrid_grant_access` (or
   describes that grant), leaving `cancel_booking` out;
 - verifies the grant through that endpoint: `tools/list` without `cancel_booking`, and a
   call to `cancel_booking` refused (403).

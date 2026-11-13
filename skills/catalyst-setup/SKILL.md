@@ -8,7 +8,7 @@ description: Connect this session to Diagrid Catalyst and confirm it works. Use 
 Goal: end this skill able to name the user's organization and project, having made one
 real call to Catalyst. Anything less is not connected, however healthy it looks.
 
-These skills drive Catalyst only through the Catalyst MCP server, the `catalyst_*` tools.
+These skills drive Catalyst only through the Catalyst MCP server, the `diagrid_*` tools.
 Setup is therefore two things: the server is added to the client, and the user has signed
 in to it with the client's own OAuth flow. There is nothing to install.
 
@@ -17,8 +17,8 @@ in to it with the client's own OAuth flow. There is nothing to install.
 Do not start by changing anything. Most sessions are already connected, and a redundant
 sign-in is the fastest way to make a working setup stop working.
 
-Call `catalyst_whoami`. Clients prefix tool names (in Claude Code it appears as
-`mcp__plugin_catalyst-ai_catalyst__catalyst_whoami`), so match the ending.
+Call `diagrid_whoami`. Clients prefix tool names (in Claude Code it appears as
+`mcp__plugin_catalyst-ai_diagrid__diagrid_whoami`), so match the ending.
 
 - **It returns an organization.** Connected. Confirm it the way section 5 says, and stop.
 - **The tool is not there, or it returns `NOT_AUTHENTICATED`.** The server is missing or
@@ -31,27 +31,27 @@ in the browser. There is no API key and nothing for the user to paste.
 
 Only clients without the plugin need its address, and the table below carries it. Give
 the user the command or config for their client; do not quote the address on its own.
-Keep the `X-Catalyst-Plugin-Version` header in each non-plugin setup below: it is how the server tells a
+Keep the `X-Diagrid-Plugin-Version` header in each non-plugin setup below: it is how the server tells a
 client set up from these instructions from one added by hand.
 
 | Client | Do |
 | --- | --- |
-| Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:catalyst`. Open `/mcp`, pick that server and complete the browser sign-in |
-| Codex | `codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login catalyst` |
-| GitHub Copilot CLI | `copilot mcp add --transport http catalyst https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Catalyst-Plugin-Version": "0.8.1"}` to the `catalyst` entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
-| claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Catalyst-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
-| VS Code | In `.vscode/mcp.json`: `"catalyst": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Catalyst-Plugin-Version": "0.8.1"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:diagrid`. Open `/mcp`, pick that server and complete the browser sign-in |
+| Codex | `codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login diagrid` |
+| GitHub Copilot CLI | `copilot mcp add --transport http diagrid https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Diagrid-Plugin-Version": "0.9.0"}` to that server's entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Diagrid-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
+| VS Code | In `.vscode/mcp.json`: `"diagrid": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Diagrid-Plugin-Version": "0.9.0"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 For Codex, add this to `~/.codex/config.toml` as its own two-line table:
 
 ```toml
-[mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.8.1"
+[mcp_servers.diagrid.http_headers]
+X-Diagrid-Plugin-Version = "0.9.0"
 ```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
-call `catalyst_whoami` again. Tools appear when it finishes.
+call `diagrid_whoami` again. Tools appear when it finishes.
 
 The sign-in must be granted the scopes `catalyst:read catalyst:write offline_access`. The
 authorization server does not accept dynamic registration, so a client that tries to
@@ -72,7 +72,7 @@ plugin, they have two copies of every tool. Ask them to remove their own entry.
   refused as `NOT_AUTHENTICATED`. If sign-in succeeded but calls are refused, check that
   the client's entry matches section 2 before anything else.
 - **The tool list depends on the user's role and on the scopes they granted.** Write
-  tools, such as `catalyst_apply`, or starting or terminating a workflow run, are left out
+  tools, such as `diagrid_apply`, or starting or terminating a workflow run, are left out
   of the list entirely unless the role can write and the sign-in granted `catalyst:write`.
   They are not refused when called; they are simply not there. If one is missing, either
   the role is read-only or the sign-in did not grant write scope. Ask the user to sign in
@@ -109,7 +109,7 @@ at all: a permanent refusal retried looks to the user like a hang.
 Report two things, from a real call and not from configuration:
 
 - the organization, by name. It is `data.attributes.name` under `getCurrentOrgWithDetails`
-  in the `catalyst_whoami` answer. If it has no name, give the organization ID instead,
+  in the `diagrid_whoami` answer. If it has no name, give the organization ID instead,
   and do not explain why the name is missing.
 - the project you will work in
 
@@ -122,7 +122,7 @@ turns out to be wrong costs more than an honest "the server is added but not sig
 
 ## What is not available over MCP yet
 
-Some things have no `catalyst_*` tool. Say so in one line and do not improvise a route
+Some things have no `diagrid_*` tool. Say so in one line and do not improvise a route
 around it: invoking an app, publishing to a topic, reading or writing state through
 Catalyst, and cluster diagnostics are not available over MCP yet.
 
@@ -141,5 +141,5 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
   person asking for help.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
   tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
-- **Name the proof.** This skill is done when `catalyst_whoami` has actually returned an
+- **Name the proof.** This skill is done when `diagrid_whoami` has actually returned an
   organization, and you have said so. Configuration that looks right is not proof.

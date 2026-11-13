@@ -30,7 +30,7 @@ from skill_links import link_path, local_link_targets
 
 REPO = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO / "skills"
-TOOL_CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
+TOOL_CONTRACT = REPO / "contracts" / "diagrid-mcp-tools.txt"
 
 # Codex caps the skill list at roughly 8000 characters and, when it overflows,
 # SHORTENS DESCRIPTIONS FIRST — and a shortened description is exactly what
@@ -342,11 +342,12 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
                         )
 
 
-# A tool reference is `catalyst_` plus lowercase words. The lookbehind keeps
-# `number_of_catalyst_subscriptions` — a quota field, not a tool — from matching,
-# and requiring at least one trailing character keeps the `catalyst_*` wildcard
-# the skills use to describe the whole family from matching either.
-TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z]+[a-z_]*")
+# A tool reference is `diagrid_` plus lowercase words. The lookbehind keeps a field
+# such as `number_of_diagrid_things` from matching, and requiring at least one
+# trailing character keeps the `diagrid_*` wildcard the skills use to describe the
+# whole family from matching either. The old `catalyst_*` names are rejected by
+# check_mcp_surface.py, which covers skills/ as well.
+TOOL_REFERENCE = re.compile(r"(?<![a-z_])diagrid_[a-z]+[a-z_]*")
 
 
 def check_tool_names(skill_dirs: list[Path], f: Findings) -> None:

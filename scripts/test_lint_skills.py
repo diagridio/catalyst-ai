@@ -18,7 +18,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO / "scripts"
-CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
+CONTRACT = REPO / "contracts" / "diagrid-mcp-tools.txt"
 
 # Every module the linter needs at the fixture root. `skill_links` is imported
 # rather than inlined so that this gate and scripts/check_install.py cannot
@@ -124,12 +124,12 @@ def main() -> int:
     # tool", and carries on with whatever it can improvise. Nothing crashes.
     cases.append(case(
         "a skill naming a tool outside the curated surface",
-        lambda s: write(s, "bad-tool", GOOD.format(name="bad-tool") + "\nRun `catalyst_delete_everything` first.\n"),
+        lambda s: write(s, "bad-tool", GOOD.format(name="bad-tool") + "\nRun `diagrid_delete_everything` first.\n"),
     ))
 
     cases.append(case(
         "a skill naming a real curated tool",
-        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `catalyst_list_projects` first.\n"),
+        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `diagrid_list_projects` first.\n"),
         expect="pass",
     ))
 
