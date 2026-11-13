@@ -22,7 +22,8 @@ REPO = Path(__file__).resolve().parent.parent
 CHECKER = REPO / "scripts" / "check_plugin_version_header.py"
 MANIFEST = Path(".claude-plugin") / "plugin.json"
 SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
-HEADER = "X-Catalyst-Plugin-Version"
+HEADER = "X-Diagrid-Plugin-Version"
+RETIRED_HEADER = "X-Catalyst-Plugin-Version"
 CURRENT = json.loads((REPO / MANIFEST).read_text(encoding="utf-8"))["version"]
 
 
@@ -54,7 +55,7 @@ def set_version(v: str) -> Callable[[dict], None]:
 
 def set_header(v: str | None) -> Callable[[dict], None]:
     def change(data: dict) -> None:
-        headers = data["mcpServers"]["catalyst"].setdefault("headers", {})
+        headers = data["mcpServers"]["diagrid"].setdefault("headers", {})
         if v is None:
             headers.pop(HEADER, None)
         else:
@@ -147,8 +148,17 @@ def main() -> int:
 
         # The header has to be there to be right.
         case("the manifest header removed", lambda r: edit_manifest(r, set_header(None)), "reject"),
-        case("the catalyst MCP server removed",
+        case("the diagrid MCP server removed",
              lambda r: edit_manifest(r, lambda d: d.pop("mcpServers")), "reject"),
+
+        # The old header makes the server offer the old tool names, so it must not come back.
+        case("the manifest also sending the old header",
+             lambda r: edit_manifest(r, lambda d: d["mcpServers"]["diagrid"]["headers"].update({RETIRED_HEADER: CURRENT})),
+             "reject"),
+        case("a README snippet setting the old header",
+             lambda r: edit_readme(r, lambda s: s.replace(f'"{HEADER}"', f'"{RETIRED_HEADER}"', 1)), "reject"),
+        case("the setup skill naming the old header",
+             lambda r: edit_skill(r, lambda s: s + f"\nSend {RETIRED_HEADER} too.\n"), "reject"),
 
         # Deleting a snippet must not be a way to pass.
         case("a README snippet removed", lambda r: edit_readme(r, drop_first_snippet), "reject"),

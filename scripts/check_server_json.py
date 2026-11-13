@@ -26,7 +26,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 SERVER_JSON = Path("server.json")
 PLUGIN_JSON = Path(".claude-plugin") / "plugin.json"
-PLUGIN_SERVER = "catalyst"
+PLUGIN_SERVER = "diagrid"
 SERVER_NAME = "io.diagrid/catalyst"
 REMOTE_TYPE = "streamable-http"
 PLAIN_SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
@@ -45,7 +45,7 @@ def load(path: Path) -> tuple[object, str | None]:
 
 
 def plugin_url(plugin: object) -> str | None:
-    """The URL the plugin ships for the catalyst server, with any env default resolved."""
+    """The URL the plugin ships for the diagrid server, with any env default resolved."""
     try:
         raw = plugin["mcpServers"][PLUGIN_SERVER]["url"]  # type: ignore[index]
     except (KeyError, TypeError):

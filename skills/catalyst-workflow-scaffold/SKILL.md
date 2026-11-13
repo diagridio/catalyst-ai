@@ -61,7 +61,7 @@ attached. Workflow history lives in that managed store, so a hand-rolled project
 most common reason a freshly scaffolded workflow starts but never appears.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Confirm it with `catalyst_list_projects` rather than
+recreated if someone deletes it. Confirm it with `diagrid_list_projects` rather than
 assuming; if it is gone, ask which project to use instead of creating one. There is no
 current project, so pass the project on every call.
 
@@ -71,7 +71,7 @@ Agent infrastructure arrives with the managed KV store.
 
 A project holds **one managed pub/sub and one managed KV store** on every plan, and no plan upgrade raises it, so never offer one as the
 fix. Fan work out across topics on the one broker. These are plan values overlaid per
-organization, not constants in the code, so read the live quota with `catalyst_get_usage`
+organization, not constants in the code, so read the live quota with `diagrid_get_usage`
 rather than asserting the 1 — and do not promise a user it can be raised for them, which
 is a commercial question rather than one you can answer.
 
@@ -100,12 +100,12 @@ instead and let the old instances drain. Workflow versioning is not solved for y
 
 ## 5. Run it against Catalyst
 
-1. **Make sure the app exists.** `catalyst_get_app` for the project and the app name; if
-   it is absent, `catalyst_apply` an `App` (read `catalyst_get_resource_schema` first, run
+1. **Make sure the app exists.** `diagrid_get_app` for the project and the app name; if
+   it is absent, `diagrid_apply` an `App` (read `diagrid_get_resource_schema` first, run
    with `dry_run`, show the user, then apply). A write role is needed: if
-   `catalyst_apply` is not in the tool list, say so and stop.
+   `diagrid_apply` is not in the tool list, say so and stop.
 2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
-   start the process with the connection values from `catalyst_get_connection` in its
+   start the process with the connection values from `diagrid_get_connection` in its
    environment. Follow it
    rather than improvising.
 
@@ -129,20 +129,20 @@ resource's `status.appIds` (the get tools include it). For an agent registered f
 own code, it's the `appId` on its registry record.
 
 Budget the identities. Every app, agent and MCP server counts as one identity against a
-per-region allowance; read it with `catalyst_get_usage`. Scaffold one app for the workflow and add more only when the
+per-region allowance; read it with `diagrid_get_usage`. Scaffold one app for the workflow and add more only when the
 user asks. Workflows themselves are not quotaed — instances are free, apps are not.
 
 ## 6. Read the result back before claiming success
 
 Start one instance and inspect it:
 
-- `catalyst_start_workflow` with the project, the app identity and the workflow name, and
+- `diagrid_start_workflow` with the project, the app identity and the workflow name, and
   the input if it takes one. It assigns the run id and returns it; keep it.
-- `catalyst_list_workflow_runs` for the project, if you lost the id.
-- `catalyst_get_workflow_run` for the run: the execution graph, and which step it is on
+- `diagrid_list_workflow_runs` for the project, if you lost the id.
+- `diagrid_get_workflow_run` for the run: the execution graph, and which step it is on
   or failed at.
 
-`catalyst_start_workflow` is a write tool and is absent for a role that cannot write.
+`diagrid_start_workflow` is a write tool and is absent for a role that cannot write.
 
 Workflow exploration is only available for the managed workflow store — another reason
 to stay in `default`.
@@ -201,7 +201,7 @@ that 404s or lands on the wrong project is worse than no link.**
 - **Do not scaffold per-language variants of this skill.** One skill detects the
   language; five near-identical skills would compete for the same request and lose.
 - **Do not put a side effect in the workflow body.** Activities exist for that.
-- **Use only the `catalyst_*` tools.** Where a capability has no tool, say it is not
+- **Use only the `diagrid_*` tools.** Where a capability has no tool, say it is not
   available over MCP yet and stop.
 - **Never report a withheld field as an empty result.**
 - **Never guess at a console URL.** Use the routes above, put the project in the right

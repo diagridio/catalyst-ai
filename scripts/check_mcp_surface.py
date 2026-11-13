@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """Hold the skills, evals and README to the remote Catalyst MCP surface.
 
-These skills drive Catalyst only through the remote MCP server. Three things
+These skills drive Catalyst only through the remote MCP server. Four things
 drift silently, because a skill is prose a model acts on and nothing fails to
 compile:
 
-* A `catalyst_*` tool name that is not in contracts/catalyst-mcp-tools.txt. The
+* A `diagrid_*` tool name that is not in contracts/diagrid-mcp-tools.txt. The
   model calls it, gets "unknown tool" and improvises. lint_skills.py already
   checks this for skills/; this gate adds commands/, evals/ and README.md, which it does
   not read, and is the one place the rule is stated for the whole repo.
+* A tool named by its old `catalyst_*` name. The plugin no longer sends the
+  X-Catalyst-Plugin-Version header, so the server offers it the `diagrid_*` names,
+  and an old name is an unknown tool like any other.
+  contracts/catalyst-mcp-tools.txt still lists the old names, for older plugins
+  and for cloudgrid's CI; nothing here may name them.
 * A `diagrid <subcommand>` CLI invocation. There is no CLI path any more: no
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.
   One exception: opening an app tunnel, so Catalyst can call into a process on
-  the user's machine, has no `catalyst_*` tool. The `catalyst-app-tunnels` skill
+  the user's machine, has no `diagrid_*` tool. The `catalyst-app-tunnels` skill
   and its evals may name the CLI commands that do that, and no others.
 * A local MCP server (`mcp serve`, `mcp install`) or a host outside the allowlist.
   The only server is the remote one at https://mcp.cloud.r1.diagrid.io/mcp, and
@@ -30,19 +35,34 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-CONTRACT = Path("contracts") / "catalyst-mcp-tools.txt"
+CONTRACT = Path("contracts") / "diagrid-mcp-tools.txt"
 
 # Same shape as lint_skills.TOOL_REFERENCE: not preceded by a letter or underscore,
-# so a client's prefixed name (`..._catalyst__catalyst_whoami`) still resolves.
-# Case-insensitive, so `Catalyst_Apply` is found and fails; an ALL-CAPS name is an error
-# kind (`CATALYST_NOT_ENABLED`), not a tool, and is skipped in check().
-TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORECASE)
+# so a client's prefixed name (`..._diagrid__diagrid_whoami`) still resolves.
+# Case-insensitive, so `Diagrid_Apply` is found and fails; an ALL-CAPS name is an
+# environment variable (`DIAGRID_MCP_URL`) or an error kind, not a tool, and is skipped
+# in check().
+TOOL_REFERENCE = re.compile(r"(?<![a-z_])diagrid_[a-z0-9_]+", re.IGNORECASE)
+# The same shape under the old prefix. Any match that is not ALL CAPS
+# (`CATALYST_NOT_ENABLED` is an error kind) fails. The lookbehind keeps a field such as
+# `number_of_catalyst_subscriptions` out, and the `catalyst_*` wildcard does not match.
+RETIRED_TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORECASE)
+# The old server key, in the forms a client shows it: Claude Code's prefixed tool name
+# (`mcp__plugin_catalyst-ai_catalyst__…`, or `mcp__catalyst__…` for a hand-added server)
+# and the `/mcp` entry (`plugin:catalyst-ai:catalyst`). The key is `diagrid` now.
+RETIRED_SERVER_KEY = re.compile(r"mcp__(?:plugin_catalyst-ai_)?catalyst__|plugin:catalyst-ai:catalyst\b")
 
 # `diagrid`, an optional closing backtick, whitespace (a line wrap counts) and a word,
 # not part of a path, scope, marketplace id or domain (`@diagrid/x`, `catalyst-ai@diagrid`,
 # `diagridio/y`, `diagrid.io`, `marketplace update diagrid`). Prose says "Diagrid" with a capital. Matched over the
 # whole file, not per line, so a command split across a wrap is still found.
-CLI_INVOCATION = re.compile(r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+[A-Za-z-]+")
+# `diagrid` is also the MCP server's key, so the places a setup names that key are not
+# CLI invocations either: `plugin:catalyst-ai:diagrid`, `codex mcp add diagrid --url`,
+# `codex mcp login diagrid`, `copilot mcp add --transport http diagrid <url>`.
+NOT_A_CLI_INVOCATION = (
+    r"(?<![\w./@:-])(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
+)
+CLI_INVOCATION = re.compile(NOT_A_CLI_INVOCATION + r"diagrid`?\s+[A-Za-z-]+")
 # Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
 # followed by an ordinary word (`// diagrid site embed`). There only a real CLI subcommand
 # after `diagrid` counts, so prose passes and `'diagrid login'` fails. Markdown and the
@@ -53,18 +73,18 @@ CLI_SUBCOMMANDS = (
     "region", "tokenbudget", "audit",
 )
 CLI_INVOCATION_CODE = re.compile(
-    r"(?<![\w./@-])(?<!marketplace update )diagrid`?\s+(?:" + "|".join(CLI_SUBCOMMANDS) + r")(?![\w-])"
+    NOT_A_CLI_INVOCATION + r"diagrid`?\s+(?:" + "|".join(CLI_SUBCOMMANDS) + r")(?![\w-])"
 )
 WEB_CODE_SUFFIXES = frozenset({".js", ".mjs", ".ts", ".html"})
 CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 
-# The one carve-out from the CLI rule. No `catalyst_*` tool opens an app tunnel, so
+# The one carve-out from the CLI rule. No `diagrid_*` tool opens an app tunnel, so
 # letting Catalyst call into a process on the user's machine (service invocation,
 # pub/sub delivery, an MCPServer whose upstream runs locally) needs `diagrid dev run`
 # or `diagrid listen`. Only the tunnel skill and its evals may name them, and only the
 # subcommands that installing, signing in and tunnelling need. `dev` passes only as
 # `dev run`, `dev stop` or `dev scaffold`. Every other subcommand still fails there, so
-# the skill cannot drift into doing with the CLI what a `catalyst_*` tool already does.
+# the skill cannot drift into doing with the CLI what a `diagrid_*` tool already does.
 TUNNEL_SKILL = Path("skills") / "catalyst-app-tunnels"
 TUNNEL_EVAL_PREFIX = "tunnel-"
 TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "listen"})
@@ -202,19 +222,40 @@ def check(root: Path) -> list[Finding]:
                     f"gets 'unknown tool' and improvises.",
                 )
             )
+        for match in RETIRED_TOOL_REFERENCE.finditer(text):
+            name = match.group(0)
+            if name.isupper():
+                continue
+            findings.append(
+                Finding(
+                    str(path.relative_to(root)),
+                    text.count("\n", 0, match.start()) + 1,
+                    f"names `{name}`, the old name of a tool. The plugin is offered only the "
+                    f"`diagrid_*` names; use the one in {CONTRACT}.",
+                )
+            )
+        for match in RETIRED_SERVER_KEY.finditer(text):
+            findings.append(
+                Finding(
+                    str(path.relative_to(root)),
+                    text.count("\n", 0, match.start()) + 1,
+                    f"`{match.group(0)}` uses the old server key `catalyst`. The plugin registers "
+                    f"the server as `diagrid`.",
+                )
+            )
 
     for path in tool_files:
         rel = path.relative_to(root)
         is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in rel.parts[:1]
         findings += _scan(
             path, root, CLI_INVOCATION_CODE if is_web_code else CLI_INVOCATION,
-            "`{match}` is a CLI invocation. Skills drive Catalyst only through `catalyst_*` tools; "
+            "`{match}` is a CLI invocation. Skills drive Catalyst only through `diagrid_*` tools; "
             "say the capability is not available over MCP yet instead.",
             allowed=tunnel_subcommand if is_tunnel_material(rel) else (lambda match: False),
         )
         findings += _scan(
             path, root, CLI_PROSE,
-            "`{match}` points at the old command-line tool. Skills drive Catalyst only through `catalyst_*` tools.",
+            "`{match}` points at the old command-line tool. Skills drive Catalyst only through `diagrid_*` tools.",
         )
         findings += _scan(
             path, root, LOCAL_SERVER,

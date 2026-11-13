@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Fail when the `X-Catalyst-Plugin-Version` header disagrees with the plugin version.
+"""Fail when the `X-Diagrid-Plugin-Version` header disagrees with the plugin version.
 
-The `catalyst` MCP server in `.claude-plugin/plugin.json` sends the header
-`X-Catalyst-Plugin-Version` so the server can tell a plugin install from a server
+The `diagrid` MCP server in `.claude-plugin/plugin.json` sends the header
+`X-Diagrid-Plugin-Version` so the server can tell a plugin install from a server
 someone added by hand, and see who is on an old version. The README and the
 catalyst-setup skill tell Codex, Copilot CLI and VS Code users to set the same
 header by hand.
@@ -15,12 +15,16 @@ header follow.
 
 Checked:
 
-* plugin.json  `mcpServers.catalyst.headers["X-Catalyst-Plugin-Version"]` equals
+* plugin.json  `mcpServers.diagrid.headers["X-Diagrid-Plugin-Version"]` equals
                `version`.
 * README.md and skills/catalyst-setup/SKILL.md
                every snippet that sets the header sets it to `version`, and there
                are at least one TOML (Codex) and two JSON (Copilot CLI and VS
                Code) in each file, so deleting a snippet cannot make the check pass.
+* none of them  names the old header, `X-Catalyst-Plugin-Version`. The server
+               offers the old `catalyst_*` tool names to any request that carries
+               it, so a setup that still sent it would get names the skills no
+               longer use.
 
 web/install/ is generated from plugin.json and checked against the README by
 build_install_data.py --check, so it follows from these two.
@@ -40,8 +44,9 @@ MANIFEST = Path(".claude-plugin") / "plugin.json"
 README = Path("README.md")
 SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
 HAND_SET_DOCS = (README, SETUP_SKILL)
-HEADER = "X-Catalyst-Plugin-Version"
-SERVER = "catalyst"
+HEADER = "X-Diagrid-Plugin-Version"
+RETIRED_HEADER = "X-Catalyst-Plugin-Version"
+SERVER = "diagrid"
 MIN_TOML_SNIPPETS = 1  # Codex
 MIN_JSON_SNIPPETS = 2  # Copilot CLI and VS Code
 
@@ -71,6 +76,13 @@ def check(root: Path) -> list[str]:
                 f"{MANIFEST}: mcpServers.{SERVER}.headers[{HEADER!r}] is {sent!r}, "
                 f"but `version` is {version!r}"
             )
+
+    for doc in (MANIFEST, *HAND_SET_DOCS):
+        try:
+            if RETIRED_HEADER in (root / doc).read_text(encoding="utf-8"):
+                problems.append(f"{doc}: still names {RETIRED_HEADER}; the header is {HEADER} now")
+        except OSError:
+            pass  # reported below, or above for the manifest
 
     for doc in HAND_SET_DOCS:
         try:
