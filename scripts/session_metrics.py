@@ -29,8 +29,13 @@ What it counts, and the shape of the log that decides how:
 - User turns, from the main log only: typed prompts after the first, plus
   `AskUserQuestion` calls. Each is a wait on the person.
 - Skill text, from the hidden message that carries a loaded skill (it starts
-  with "Base directory for this skill:") plus `Read` calls on files under a
-  `skills/` directory. Bytes, not tokens: the tokenizer differs by model.
+  with "Base directory for this skill:") plus `Read` calls on a skill's files.
+  A Read counts only when its path is under a skill base directory one of those
+  messages named, or under the plugin cache (`catalyst-ai/<version>/skills/`),
+  so a `skills/` folder in the working tree is not taken for a skill. A Read of
+  `SKILL.md` for a skill already loaded is not counted again, and a file that no
+  longer exists names its skill with 0 bytes. Bytes, not tokens: the tokenizer
+  differs by model.
 - Subagent work lives in `<session>/subagents/*.jsonl` and is added to every
   count except user turns, because a skill that spawns a subagent still spent it.
 
@@ -48,13 +53,13 @@ import os
 import re
 import sys
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 SKILL_PREAMBLE = "Base directory for this skill:"
 CATALYST_TOOL = re.compile(r"(?:^|__)(?:catalyst|diagrid)_[a-z0-9_]+$")
 PLUGIN_VERSION = re.compile(r"/catalyst-ai/(\d+\.\d+\.\d+[^/]*)/skills/")
-SKILL_PATH = re.compile(r"/skills/([^/]+)/")
+PLUGIN_SKILL = re.compile(r"/catalyst-ai/\d+\.\d+\.\d+[^/]*/skills/([^/]+)/")
 NOT_TYPED = (
     "<system-reminder>", "<task-notification>", "<local-command-", "<bash-stdout>", "<bash-stderr>",
     "[Request interrupted",
@@ -128,6 +133,26 @@ def is_typed_prompt(entry: dict) -> bool:
     return not text_of(entry).lstrip().startswith(NOT_TYPED)
 
 
+def parse_time(value) -> datetime | None:
+    """A line's timestamp as an aware datetime, or None when it cannot be read.
+    One without an offset is taken as UTC, so it can be compared with the rest."""
+    try:
+        when = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when.replace(tzinfo=timezone.utc) if when.tzinfo is None else when
+
+
+def skill_of(path: str, bases: dict[str, str]) -> str | None:
+    """The skill a read file belongs to: under a base directory a loaded skill
+    named, or under the plugin cache. None for any other file."""
+    for base, name in bases.items():
+        if path.startswith(base.rstrip("/") + "/"):
+            return name
+    found = PLUGIN_SKILL.search(path)
+    return found.group(1) if found else None
+
+
 def measure(session: Path) -> dict:
     files = [session, *sorted((session.parent / session.stem / "subagents").glob("*.jsonl"))]
     usage: dict[str, dict] = {}
@@ -139,6 +164,8 @@ def measure(session: Path) -> dict:
     models: set[str] = set()
     plugin: set[str] = set()
     times: list[datetime] = []
+    reads: list[str] = []
+    bases: dict[str, str] = {}  # skill base directory -> skill name, from the loaded skills
 
     for path in files:
         main = path == session
@@ -148,8 +175,8 @@ def measure(session: Path) -> dict:
                 continue
             if entry.get("version"):
                 versions.add(entry["version"])
-            if entry.get("timestamp"):
-                times.append(datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00")))
+            if entry.get("timestamp") and (when := parse_time(entry["timestamp"])):
+                times.append(when)
 
             if kind == "assistant":
                 message = entry.get("message") or {}
@@ -169,12 +196,8 @@ def measure(session: Path) -> dict:
                     if call in seen_calls:
                         repeated += 1
                     seen_calls.add(call)
-                    if name == "Read" and (found := SKILL_PATH.search(str(args.get("file_path", "")))):
-                        try:
-                            size = Path(args["file_path"]).stat().st_size
-                        except OSError:
-                            size = 0
-                        skills[found.group(1)] += size
+                    if name == "Read" and args.get("file_path"):
+                        reads.append(str(args["file_path"]))  # attributed once every loaded skill is known
                 continue
 
             failed += sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and b.get("is_error"))
@@ -183,9 +206,20 @@ def measure(session: Path) -> dict:
                 base = text[len(SKILL_PREAMBLE):].splitlines()[0].strip()
                 name = Path(base).name
                 skills[name] += len(text.encode("utf-8"))
+                bases[base] = name
                 plugin.update(PLUGIN_VERSION.findall(base + "/"))
             elif main and is_typed_prompt(entry):
                 typed += 1
+
+    loaded = set(bases.values())
+    for path in reads:
+        name = skill_of(path, bases)
+        if name is None or (name in loaded and Path(path).name == "SKILL.md"):
+            continue  # not a skill's file, or the text the load already counted
+        try:
+            skills[name] += Path(path).stat().st_size
+        except OSError:
+            skills[name] += 0  # read then, gone now: the skill was still used
 
     tokens_in = sum(
         u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0)

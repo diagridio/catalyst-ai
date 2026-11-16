@@ -55,10 +55,18 @@ def user(content, second: int, **extra) -> dict:
 def build(root: Path) -> tuple[Path, int, int]:
     """Write the fixture session. Returns its path, the skill preamble's size in
     bytes and the reference file's size."""
-    reference = root / "plugin" / "skills" / "catalyst-develop" / "reference" / "tunnels.md"
+    skill_dir = root / "cache" / "diagrid" / "catalyst-ai" / "0.8.1" / "skills" / "catalyst-develop"
+    reference = skill_dir / "reference" / "tunnels.md"
     reference.parent.mkdir(parents=True)
     reference.write_text("# Tunnels\n\nHow to open one.\n")
-    preamble = "Base directory for this skill: /cache/diagrid/catalyst-ai/0.8.1/skills/catalyst-develop\n\n# Develop\n"
+    (skill_dir / "SKILL.md").write_text("# Develop\n")
+    preamble = f"Base directory for this skill: {skill_dir}\n\n# Develop\n"
+    # A working tree with its own skills/ folder: not a loaded skill.
+    not_a_skill = root / "src" / "skills" / "myapp" / "main.py"
+    not_a_skill.parent.mkdir(parents=True)
+    not_a_skill.write_text("print('hi')\n")
+    # In the plugin cache but gone since: the skill is named, with 0 bytes.
+    gone = skill_dir.parent / "catalyst-operate" / "reference" / "gone.md"
 
     session = root / "projects" / "-work" / "s1.jsonl"
     session.parent.mkdir(parents=True)
@@ -79,7 +87,13 @@ def build(root: Path) -> tuple[Path, int, int]:
             tool_use("mcp__diagrid-admin-prod__get_user", id="u"),  # not a Catalyst tool
             tool_use("AskUserQuestion", question="which project?"),
             tool_use("Read", file_path=str(reference)),
+            tool_use("Read", file_path=str(skill_dir / "SKILL.md")),  # counted with the load already
+            tool_use("Read", file_path=str(not_a_skill)),
+            tool_use("Read", file_path=str(gone)),
         ),
+        # Timestamps a log should not hold: one unreadable, one with no offset.
+        user("<system-reminder>a</system-reminder>", 0) | {"timestamp": "not-a-time"},
+        user("<system-reminder>b</system-reminder>", 0) | {"timestamp": "2026-11-17T10:00:06"},
         user("<system-reminder>remember</system-reminder>", 6),  # older client, no origin
         user("yes, project a", 7),  # older client, typed
         # Written with no origin by current clients too, and not typed prompts.
@@ -126,16 +140,19 @@ def main() -> int:
               m["tokens_in"], 115 + 203 + 21)
         check("tokens out", m["tokens_out"], 7 + 11 + 2)
         check("model requests are response ids, not lines, and not synthetic", m["model_requests"], 3)
-        check("tool calls: replayed request history is ignored", m["tool_calls"], 8)
+        check("tool calls: replayed request history is ignored", m["tool_calls"], 11)
         check("catalyst calls match both name sets and nothing else", m["catalyst_calls"], 3)
         check("failed calls come from is_error", m["failed_calls"], 1)
         check("a call with the same tool and arguments is repeated", m["repeated_calls"], 1)
         check("user turns: typed prompts after the first, plus questions; not reminders, "
               "command output, interrupts or subagents", m["user_turns"], 2)
-        check("skills loaded, with bytes", m["skills"], {"catalyst-develop": preamble_bytes + reference_bytes})
+        check("skills loaded, with bytes: not a working tree's skills/ folder, not SKILL.md twice, "
+              "0 for a file now gone", m["skills"],
+              {"catalyst-develop": preamble_bytes + reference_bytes, "catalyst-operate": 0})
         check("plugin version from the loaded skill's path", m["plugin"], "0.8.1")
         check("client and model", (m["client"], m["model"]), ("claude-code 2.1.325", "claude-opus-5-5"))
-        check("wall time from first to last line, subagent included", m["wall_seconds"], 10)
+        check("wall time from first to last line, subagent included; bad and naive timestamps "
+              "do not stop the run", m["wall_seconds"], 10)
         check("subagent logs are found", m["subagent_files"], 1)
 
         text = run([str(session)])
