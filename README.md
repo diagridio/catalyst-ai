@@ -465,6 +465,12 @@ header: set it to the new version under `mcpServers.catalyst.headers` in `plugin
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
 in the same three setups in `skills/catalyst-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
 
+To measure a run of the plugin, finish the Claude Code session and run
+`python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log
+and prints a one-row Markdown table: tokens, model requests, tool calls, user turns and the skills loaded.
+It prints counts and names only, never what was typed or a tool's arguments. It is not a gate;
+`python3 scripts/test_session_metrics.py` tests it.
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
