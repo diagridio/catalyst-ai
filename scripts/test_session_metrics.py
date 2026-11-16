@@ -54,12 +54,15 @@ def user(content, second: int, **extra) -> dict:
 
 def build(root: Path) -> tuple[Path, int, int]:
     """Write the fixture session. Returns its path, the skill preamble's size in
-    bytes and the reference file's size."""
+    bytes and the size of the reference files it reads."""
     skill_dir = root / "cache" / "diagrid" / "catalyst-ai" / "0.8.1" / "skills" / "catalyst-develop"
     reference = skill_dir / "reference" / "tunnels.md"
     reference.parent.mkdir(parents=True)
     reference.write_text("# Tunnels\n\nHow to open one.\n")
     (skill_dir / "SKILL.md").write_text("# Develop\n")
+    # Read in two pages: counted once, page by page.
+    paged = skill_dir / "reference" / "paged.md"
+    paged.write_text("one\ntwo\nthree\nfour\n")
     preamble = f"Base directory for this skill: {skill_dir}\n\n# Develop\n"
     # A working tree with its own skills/ folder: not a loaded skill.
     not_a_skill = root / "src" / "skills" / "myapp" / "main.py"
@@ -90,6 +93,8 @@ def build(root: Path) -> tuple[Path, int, int]:
             tool_use("Read", file_path=str(skill_dir / "SKILL.md")),  # counted with the load already
             tool_use("Read", file_path=str(not_a_skill)),
             tool_use("Read", file_path=str(gone)),
+            tool_use("Read", file_path=str(paged), offset=1, limit=2),
+            tool_use("Read", file_path=str(paged), offset=3, limit=2),
         ),
         # Timestamps a log should not hold: one unreadable, one with no offset.
         user("<system-reminder>a</system-reminder>", 0) | {"timestamp": "not-a-time"},
@@ -115,7 +120,7 @@ def build(root: Path) -> tuple[Path, int, int]:
         # A subagent's question is not a wait on the person: not a user turn.
         assistant("m3", USAGE_SUB, 10, tool_use("Bash", command="ls"), tool_use("AskUserQuestion", question="sub?")),
     ]) + "\n")
-    return session, len(preamble.encode("utf-8")), reference.stat().st_size
+    return session, len(preamble.encode("utf-8")), reference.stat().st_size + paged.stat().st_size
 
 
 def run(argv: list[str]) -> str:
@@ -140,7 +145,7 @@ def main() -> int:
               m["tokens_in"], 115 + 203 + 21)
         check("tokens out", m["tokens_out"], 7 + 11 + 2)
         check("model requests are response ids, not lines, and not synthetic", m["model_requests"], 3)
-        check("tool calls: replayed request history is ignored", m["tool_calls"], 11)
+        check("tool calls: replayed request history is ignored", m["tool_calls"], 13)
         check("catalyst calls match both name sets and nothing else", m["catalyst_calls"], 3)
         check("failed calls come from is_error", m["failed_calls"], 1)
         check("a call with the same tool and arguments is repeated", m["repeated_calls"], 1)
@@ -150,6 +155,15 @@ def main() -> int:
               "0 for a file now gone", m["skills"],
               {"catalyst-develop": preamble_bytes + reference_bytes, "catalyst-operate": 0})
         check("plugin version from the loaded skill's path", m["plugin"], "0.8.1")
+
+        # A session that only Reads a skill's file from the plugin cache, with no load.
+        read_only = root / "projects" / "-other" / "s2.jsonl"
+        read_only.parent.mkdir(parents=True)
+        cached = root / "cache" / "diagrid" / "catalyst-ai" / "0.9.0" / "skills" / "catalyst-operate" / "SKILL.md"
+        read_only.write_text(json.dumps(assistant("m9", USAGE_1, 0, tool_use("Read", file_path=str(cached)))) + "\n")
+        r = session_metrics.measure(read_only)
+        check("plugin version from a Read under the plugin cache, with no skill loaded",
+              (r["plugin"], r["skills"]), ("0.9.0", {"catalyst-operate": 0}))
         check("client and model", (m["client"], m["model"]), ("claude-code 2.1.325", "claude-opus-5-5"))
         check("wall time from first to last line, subagent included; bad and naive timestamps "
               "do not stop the run", m["wall_seconds"], 10)

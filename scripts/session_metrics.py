@@ -34,8 +34,10 @@ What it counts, and the shape of the log that decides how:
   messages named, or under the plugin cache (`catalyst-ai/<version>/skills/`),
   so a `skills/` folder in the working tree is not taken for a skill. A Read of
   `SKILL.md` for a skill already loaded is not counted again, and a file that no
-  longer exists names its skill with 0 bytes. Bytes, not tokens: the tokenizer
-  differs by model.
+  longer exists names its skill with 0 bytes. A Read with `offset` or `limit`
+  counts only the lines it loaded, so a file read in pages is counted once. A
+  Read under the plugin cache also gives the plugin version. Bytes, not tokens:
+  the tokenizer differs by model.
 - Subagent work lives in `<session>/subagents/*.jsonl` and is added to every
   count except user turns, because a skill that spawns a subagent still spent it.
 
@@ -153,6 +155,21 @@ def skill_of(path: str, bases: dict[str, str]) -> str | None:
     return found.group(1) if found else None
 
 
+def read_bytes(path: str, args: dict) -> int:
+    """The bytes a Read loaded: the whole file, or only the lines `offset`
+    (1-based) and `limit` picked. 0 for a file that no longer exists."""
+    offset, limit = args.get("offset"), args.get("limit")
+    try:
+        if offset is None and limit is None:
+            return Path(path).stat().st_size
+        lines = Path(path).read_bytes().splitlines(keepends=True)
+    except OSError:
+        return 0  # read then, gone now: the skill was still used
+    start = max(int(offset or 1) - 1, 0)
+    end = start + int(limit) if limit is not None else None
+    return sum(len(line) for line in lines[start:end])
+
+
 def measure(session: Path) -> dict:
     files = [session, *sorted((session.parent / session.stem / "subagents").glob("*.jsonl"))]
     usage: dict[str, dict] = {}
@@ -164,7 +181,7 @@ def measure(session: Path) -> dict:
     models: set[str] = set()
     plugin: set[str] = set()
     times: list[datetime] = []
-    reads: list[str] = []
+    reads: list[tuple[str, dict]] = []
     bases: dict[str, str] = {}  # skill base directory -> skill name, from the loaded skills
 
     for path in files:
@@ -197,7 +214,7 @@ def measure(session: Path) -> dict:
                         repeated += 1
                     seen_calls.add(call)
                     if name == "Read" and args.get("file_path"):
-                        reads.append(str(args["file_path"]))  # attributed once every loaded skill is known
+                        reads.append((str(args["file_path"]), args))  # attributed once every loaded skill is known
                 continue
 
             failed += sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and b.get("is_error"))
@@ -212,14 +229,14 @@ def measure(session: Path) -> dict:
                 typed += 1
 
     loaded = set(bases.values())
-    for path in reads:
+    for path, args in reads:
         name = skill_of(path, bases)
-        if name is None or (name in loaded and Path(path).name == "SKILL.md"):
-            continue  # not a skill's file, or the text the load already counted
-        try:
-            skills[name] += Path(path).stat().st_size
-        except OSError:
-            skills[name] += 0  # read then, gone now: the skill was still used
+        if name is None:
+            continue  # not a skill's file
+        plugin.update(PLUGIN_VERSION.findall(path))
+        if name in loaded and Path(path).name == "SKILL.md":
+            continue  # the text the load already counted
+        skills[name] += read_bytes(path, args)
 
     tokens_in = sum(
         u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
