@@ -164,6 +164,16 @@ def main() -> int:
         r = session_metrics.measure(read_only)
         check("plugin version from a Read under the plugin cache, with no skill loaded",
               (r["plugin"], r["skills"]), ("0.9.0", {"catalyst-operate": 0}))
+        # Reads with no limit stop at the client's default line count.
+        long_file = root / "long.md"
+        long_file.write_text("".join(f"{i}\n" for i in range(1, 6)))  # 2 bytes a line
+        with mock.patch.object(session_metrics, "READ_DEFAULT_LIMIT", 3):
+            check("a Read with neither offset nor limit counts the default number of lines",
+                  session_metrics.read_bytes(str(long_file), {}), 6)
+            check("a Read with offset and no limit counts the default number of lines from offset",
+                  session_metrics.read_bytes(str(long_file), {"offset": 4}), 4)
+            check("a Read with a limit is not capped by the default",
+                  session_metrics.read_bytes(str(long_file), {"offset": 1, "limit": 5}), 10)
         check("client and model", (m["client"], m["model"]), ("claude-code 2.1.325", "claude-opus-5-5"))
         check("wall time from first to last line, subagent included; bad and naive timestamps "
               "do not stop the run", m["wall_seconds"], 10)

@@ -34,9 +34,10 @@ What it counts, and the shape of the log that decides how:
   messages named, or under the plugin cache (`catalyst-ai/<version>/skills/`),
   so a `skills/` folder in the working tree is not taken for a skill. A Read of
   `SKILL.md` for a skill already loaded is not counted again, and a file that no
-  longer exists names its skill with 0 bytes. A Read with `offset` or `limit`
-  counts only the lines it loaded, so a file read in pages is counted once. A
-  Read under the plugin cache also gives the plugin version. Bytes, not tokens:
+  longer exists names its skill with 0 bytes. A Read counts only the lines it
+  loaded: from `offset` for `limit` lines, or for the 2000 lines Claude Code's
+  Read stops at when it is given no limit, so a file read in pages is counted
+  once. A Read under the plugin cache also gives the plugin version. Bytes, not tokens:
   the tokenizer differs by model.
 - Subagent work lives in `<session>/subagents/*.jsonl` and is added to every
   count except user turns, because a skill that spawns a subagent still spent it.
@@ -61,6 +62,7 @@ from pathlib import Path
 SKILL_PREAMBLE = "Base directory for this skill:"
 CATALYST_TOOL = re.compile(r"(?:^|__)(?:catalyst|diagrid)_[a-z0-9_]+$")
 PLUGIN_VERSION = re.compile(r"/catalyst-ai/(\d+\.\d+\.\d+[^/]*)/skills/")
+READ_DEFAULT_LIMIT = 2000  # lines Claude Code's Read returns when it is given no limit
 PLUGIN_SKILL = re.compile(r"/catalyst-ai/\d+\.\d+\.\d+[^/]*/skills/([^/]+)/")
 NOT_TYPED = (
     "<system-reminder>", "<task-notification>", "<local-command-", "<bash-stdout>", "<bash-stderr>",
@@ -156,17 +158,16 @@ def skill_of(path: str, bases: dict[str, str]) -> str | None:
 
 
 def read_bytes(path: str, args: dict) -> int:
-    """The bytes a Read loaded: the whole file, or only the lines `offset`
-    (1-based) and `limit` picked. 0 for a file that no longer exists."""
+    """The bytes a Read loaded: the lines from `offset` (1-based, default 1)
+    for `limit` lines, or for the client's default when no limit was given.
+    0 for a file that no longer exists."""
     offset, limit = args.get("offset"), args.get("limit")
     try:
-        if offset is None and limit is None:
-            return Path(path).stat().st_size
         lines = Path(path).read_bytes().splitlines(keepends=True)
     except OSError:
         return 0  # read then, gone now: the skill was still used
     start = max(int(offset or 1) - 1, 0)
-    end = start + int(limit) if limit is not None else None
+    end = start + int(limit if limit is not None else READ_DEFAULT_LIMIT)
     return sum(len(line) for line in lines[start:end])
 
 
