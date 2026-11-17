@@ -104,7 +104,7 @@ jobs:
     # comma-joined string as one unknown agent name, print `Invalid agents:`,
     # and install nothing.
     #
-    # Installed from the local checkout, not from `diagridio/catalyst-ai`, so
+    # Installed from the local checkout, not from `diagridio/diagrid-ai`, so
     # the job needs no GitHub auth and tests the working tree rather than what
     # is already on main. Node and network are the only requirements — the gate
     # is stdlib Python, so there is nothing to pip install.

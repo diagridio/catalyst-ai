@@ -111,7 +111,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("an unlisted diagrid host in a skill", {"skills/a/SKILL.md": "https://api.r1.diagrid.io/v1\n"}, True, "not an allowed host"),
     ("a bare unlisted diagrid host in an eval", {"evals/e/prompt.md": "call api.r1.diagrid.io\n"}, True, "not an allowed host"),
     ("allowlisted hosts pass", {"README.md": "https://catalyst.diagrid.io/x https://docs.diagrid.io https://diagrid.io mail a@diagrid.io\n"}, False, ""),
-    ("marketplace id and repo path pass", {"README.md": "claude plugin install diagrid@diagrid    # ok\nclaude plugin marketplace update diagrid\nclaude plugin update x\nhttps://github.com/diagridio/catalyst-ai\n"}, False, ""),
+    ("marketplace id and repo path pass", {"README.md": "claude plugin install diagrid@diagrid    # ok\nclaude plugin marketplace update diagrid\nclaude plugin update x\nhttps://github.com/diagridio/diagrid-ai\n"}, False, ""),
     # The old names. The plugin is offered only the diagrid_* names, so each is an unknown tool.
     ("a retired name in a skill", {"skills/a/SKILL.md": "Call `catalyst_whoami`.\n"}, True, "old name"),
     ("a retired name in a command", {"commands/try.md": "Call `catalyst_get_app`.\n"}, True, "old name"),

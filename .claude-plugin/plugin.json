@@ -1,12 +1,12 @@
 {
   "name": "diagrid",
   "description": "Durable execution for AI agents and workflows on Diagrid: build and operate Dapr Workflows, Durable Agents and the running system by prompting.",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "author": {
     "name": "Diagrid",
     "url": "https://diagrid.io"
   },
-  "homepage": "https://github.com/diagridio/catalyst-ai",
+  "homepage": "https://github.com/diagridio/diagrid-ai",
   "license": "Apache-2.0",
   "keywords": [
     "durable-execution",
@@ -27,7 +27,7 @@
       "type": "http",
       "url": "${DIAGRID_MCP_URL:-https://mcp.cloud.r1.diagrid.io/mcp}",
       "headers": {
-        "X-Diagrid-Plugin-Version": "0.10.1"
+        "X-Diagrid-Plugin-Version": "0.10.2"
       },
       "oauth": {
         "clientId": "claude-code",

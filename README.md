@@ -1,4 +1,4 @@
-# catalyst-ai
+# diagrid-ai
 
 Build and operate apps on [Diagrid](https://diagrid.io) (formerly Diagrid Catalyst) by
 prompting — Dapr Workflows, Durable Agents, and the running system.
@@ -21,12 +21,15 @@ question here, for reasons that are
 ### Claude Code
 
 ```bash
-claude plugin marketplace add diagridio/catalyst-ai
+claude plugin marketplace add diagridio/diagrid-ai
 claude plugin install diagrid@diagrid
 ```
 
 If you installed `catalyst-ai@diagrid` before, that is this plugin under its old name.
 See [Moving from catalyst-ai](#moving-from-catalyst-ai).
+
+This repo used to be `diagridio/catalyst-ai`. GitHub redirects the old name, so a
+marketplace you added from it keeps updating, and you don't need to add it again.
 
 Then check it landed — **both commands, not just the second**:
 
@@ -93,7 +96,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.10.1"
+X-Diagrid-Plugin-Version = "0.10.2"
 ```
 
 **GitHub Copilot CLI**
@@ -107,7 +110,7 @@ X-Diagrid-Plugin-Version = "0.10.1"
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.1" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -125,7 +128,7 @@ Then run `/mcp` inside Copilot and authenticate the server in the browser.
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.1" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -206,7 +209,7 @@ To check, ask *"Who am I in Diagrid?"* The answer should come from `diagrid_whoa
 ### GitHub Copilot CLI
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes
 ```
 
 Use **repeated `--agent` flags** if you pass more than one. The comma form
@@ -243,7 +246,7 @@ These read the shared `.agents/skills/` project directory, not `~/.copilot/skill
 install per project, from your repository's root:
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --yes
 ```
 
 Without `--global`, the `github-copilot` target writes that shared directory.
@@ -257,7 +260,7 @@ run the per-project command above from your workspace root, which writes `.agent
 ### Codex
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent codex --skill '*' --yes
 ```
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`

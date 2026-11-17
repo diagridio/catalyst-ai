@@ -16,7 +16,7 @@ name: Release npm package
 #      a package that already exists, so the very first version (0.1.0) may need one
 #      manual `npm publish --access public` by a maintainer. It will have no provenance.
 #   2. On npmjs.com, open @diagrid/catalyst-ai-install > Settings > Trusted Publisher
-#      and add: GitHub Actions, organisation `diagridio`, repository `catalyst-ai`,
+#      and add: GitHub Actions, organisation `diagridio`, repository `diagrid-ai`,
 #      workflow `npm-release.yaml`, environment `npm`.
 #   3. In this repository, create the GitHub environment `npm` and configure it. The
 #      environment is the only gate between a workflow_dispatch and the npm scope, so it

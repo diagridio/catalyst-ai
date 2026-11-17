@@ -15,7 +15,7 @@
       "name": "catalyst-ai",
       "source": {
         "source": "github",
-        "repo": "diagridio/catalyst-ai",
+        "repo": "diagridio/diagrid-ai",
         "sha": "587131a45e76ede61bcd5668774340e592caed7f"
       },
       "description": "The previous name of the diagrid plugin, held at its final release (0.9.1), which tells existing installs to switch. Install diagrid@diagrid instead."

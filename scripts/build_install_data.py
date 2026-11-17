@@ -106,7 +106,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     "install",
                     "Install the plugin",
                     "Adds the skills and the Diagrid MCP server.",
-                    item("marketplace-add", "marketplace add", "claude plugin marketplace add diagridio/catalyst-ai", readme=EXACT),
+                    item("marketplace-add", "marketplace add", "claude plugin marketplace add diagridio/diagrid-ai", readme=EXACT),
                     item("plugin-install", "plugin install", f"claude plugin install {PLUGIN_NAME}@diagrid", readme=EXACT),
                 ),
                 step(
@@ -129,8 +129,8 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     item(
                         "skills",
                         "install skills",
-                        "npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes",
-                        readme=["npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes"],
+                        "npx -y skills add diagridio/diagrid-ai --agent codex --skill '*' --yes",
+                        readme=["npx -y skills add diagridio/diagrid-ai --agent codex --skill '*' --yes"],
                     ),
                 ),
                 step(
@@ -167,8 +167,8 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     item(
                         "skills",
                         "install skills",
-                        "npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes",
-                        readme=["npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes"],
+                        "npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes",
+                        readme=["npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes"],
                     ),
                 ),
                 step(

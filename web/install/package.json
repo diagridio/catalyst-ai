@@ -30,12 +30,12 @@
   "keywords": ["diagrid", "catalyst", "dapr", "mcp", "web-component", "custom-element"],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/diagridio/catalyst-ai.git",
+    "url": "git+https://github.com/diagridio/diagrid-ai.git",
     "directory": "web/install"
   },
-  "homepage": "https://github.com/diagridio/catalyst-ai/tree/main/web/install#readme",
+  "homepage": "https://github.com/diagridio/diagrid-ai/tree/main/web/install#readme",
   "bugs": {
-    "url": "https://github.com/diagridio/catalyst-ai/issues"
+    "url": "https://github.com/diagridio/diagrid-ai/issues"
   },
   "publishConfig": {
     "access": "public",
