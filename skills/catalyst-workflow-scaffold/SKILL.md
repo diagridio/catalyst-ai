@@ -194,7 +194,7 @@ that 404s or lands on the wrong project is worse than no link.**
 ## Rules
 
 - **Use the Catalyst MCP tools for everything in Catalyst.**
-- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+- **If the client blocks a `diagrid_*` call, stop.** Tell the user which call was
   blocked, with its arguments, and ask them to approve this one call. Suggest a standing
   allow in their client's permissions only for a read-only tool that returns no
   credentials or connection secrets, or if they ask for it. Then retry that same call

@@ -40,7 +40,7 @@ Body text.
 # The blocked-call rule as a skill carries it, wrapped differently from
 # BLOCKED_CALL_RULE to prove wrapping is free. Every skill that names a Catalyst
 # tool needs it in a `## Rules` section.
-RULE = ("- **If the client blocks a `catalyst_*` call, stop.** Tell the user "
+RULE = ("- **If the client blocks a `diagrid_*` call, stop.** Tell the user "
         "which call was blocked, with its arguments, and ask them to approve "
         "this one call. Suggest a standing allow in their client's\n  "
         "permissions only for a read-only tool that returns no credentials "
@@ -281,7 +281,7 @@ def main() -> int:
         "a blocked-call rule extended with an unlisted sentence",
         lambda s: write(s, "ruled", RULED.format(
             name="ruled",
-            rule=RULE + " A standing allow for catalyst_get_connection is fine.",
+            rule=RULE + " A standing allow for diagrid_get_connection is fine.",
         )),
     ))
 
@@ -289,7 +289,7 @@ def main() -> int:
     cases.append(case(
         "a skill naming a Catalyst tool with no Rules section",
         lambda s: write(s, "unruled", GOOD.format(name="unruled")
-                        + "\nRun `catalyst_list_projects` first.\n\n## Rules of thumb\n\n" + RULE + "\n"),
+                        + "\nRun `diagrid_list_projects` first.\n\n## Rules of thumb\n\n" + RULE + "\n"),
     ))
 
     cases.append(case(
@@ -315,7 +315,7 @@ def main() -> int:
         "a correct blocked-call rule next to a differently-led loosened copy",
         lambda s: write(s, "ruled", RULED.format(
             name="ruled",
-            rule=RULE + "\n- **If a `catalyst_*` call is blocked, stop.** Suggest a "
+            rule=RULE + "\n- **If a `diagrid_*` call is blocked, stop.** Suggest a "
                  "standing allow for any tool.",
         )),
     ))
@@ -332,14 +332,14 @@ def main() -> int:
     cases.append(case(
         "a correct blocked-call rule with a standing allow in another section",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE)
-                        + "\n## Setup\n\nA standing allow for catalyst_get_connection is fine.\n"),
+                        + "\n## Setup\n\nA standing allow for diagrid_get_connection is fine.\n"),
     ))
 
     # The hyphenated spelling is the same phrase.
     cases.append(case(
         "a correct blocked-call rule with a hyphenated standing-allow in another section",
         lambda s: write(s, "ruled", RULED.format(name="ruled", rule=RULE)
-                        + "\n## Setup\n\nA standing-allow for catalyst_get_connection is fine.\n"),
+                        + "\n## Setup\n\nA standing-allow for diagrid_get_connection is fine.\n"),
     ))
 
     cases.append(case(

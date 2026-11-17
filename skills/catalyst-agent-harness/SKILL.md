@@ -323,7 +323,7 @@ other four take the harness's existing model client behind a one-method interfac
 - **Key side effects on `<instance-id>:<tool-call-id>`**, passed in the input.
 - **No secrets in inputs.** Every input and output is persisted and printable.
 - **Do not stop at a run that completes.** Kill one mid-tool and check the process ids.
-- **If the client blocks a `catalyst_*` call, stop.** Tell the user which call was
+- **If the client blocks a `diagrid_*` call, stop.** Tell the user which call was
   blocked, with its arguments, and ask them to approve this one call. Suggest a standing
   allow in their client's permissions only for a read-only tool that returns no
   credentials or connection secrets, or if they ask for it. Then retry that same call

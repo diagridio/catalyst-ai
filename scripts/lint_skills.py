@@ -184,12 +184,12 @@ def check_scope_rule(skill_dirs: list[Path], f: Findings) -> None:
 # The blocked-call rule, copied into the Rules section of every skill because,
 # as above, there is no shared fragment. Its standing-allow limit is a security
 # boundary: loosened in one copy, that skill would suggest a permanent allow for
-# a call that hands out a credential (`catalyst_get_connection` returns the
+# a call that hands out a credential (`diagrid_get_connection` returns the
 # sidecar token). The whole bullet is compared with whitespace collapsed, so
 # line wrapping is free but its wording is not: it must equal this rule, or this
 # rule plus the skill's entry in BLOCKED_CALL_RULE_SUFFIXES.
 BLOCKED_CALL_RULE = (
-    "- **If the client blocks a `catalyst_*` call, stop.** Tell the user which "
+    "- **If the client blocks a `diagrid_*` call, stop.** Tell the user which "
     "call was blocked, with its arguments, and ask them to approve this one "
     "call. Suggest a standing allow in their client's permissions only for a "
     "read-only tool that returns no credentials or connection secrets, or if "
@@ -200,13 +200,13 @@ BLOCKED_CALL_RULE = (
 
 # The only text a skill may append to the blocked-call bullet, by skill name.
 # Exact, not a prefix match: a free-form tail could re-grant what the rule
-# withholds ("A standing allow for catalyst_get_connection is fine.").
+# withholds ("A standing allow for diagrid_get_connection is fine.").
 BLOCKED_CALL_RULE_SUFFIXES: dict[str, str] = {
     "catalyst-app-tunnels": "The tunnel commands above are the only CLI use, not a workaround.",
     "catalyst-debug": "Client approval does not replace asking the user for consent before a change.",
 }
 
-_BLOCKED_CALL_START = "- **If the client blocks a `catalyst_*` call, stop.**"
+_BLOCKED_CALL_START = "- **If the client blocks a `diagrid_*` call, stop.**"
 
 # "standing allow" however it is spaced or hyphenated ("standing-allow").
 _STANDING_ALLOW = re.compile(r"standing[\s-]+allow", re.I)
@@ -265,7 +265,7 @@ def check_blocked_call_rule(skill_dirs: list[Path], f: Findings) -> None:
             # Only a skill that never touches a Catalyst tool may go without
             # the rule. Any other skill with no `## Rules` heading has had it
             # renamed or removed, and skipping it would let the rule go with it.
-            if TOOL_REFERENCE.search(text) or "`catalyst_*`" in text:
+            if TOOL_REFERENCE.search(text) or "`diagrid_*`" in text:
                 f.error(
                     where,
                     "names a Catalyst tool but has no `## Rules` section, so it "
