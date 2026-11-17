@@ -22,9 +22,8 @@ Checked:
                are at least one TOML (Codex) and two JSON (Copilot CLI and VS
                Code) in each file, so deleting a snippet cannot make the check pass.
 * none of them  names the old header, `X-Catalyst-Plugin-Version`. The server
-               offers the old `catalyst_*` tool names to any request that carries
-               it, so a setup that still sent it would get names the skills no
-               longer use. The one exception is the `Upgrading from 0.8.x`
+               no longer reads it, so a setup that still sent it would report no
+               plugin version at all. The one exception is the `Upgrading from 0.8.x`
                section of README.md and the setup skill, which has to name the
                old header to tell people to replace it. Even there, nothing may
                set it (`X-Catalyst-Plugin-Version:` or `= ...`).

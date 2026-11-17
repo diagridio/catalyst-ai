@@ -96,7 +96,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.10.2"
+X-Diagrid-Plugin-Version = "0.10.3"
 ```
 
 **GitHub Copilot CLI**
@@ -110,7 +110,7 @@ X-Diagrid-Plugin-Version = "0.10.2"
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -128,7 +128,7 @@ Then run `/mcp` inside Copilot and authenticate the server in the browser.
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -189,11 +189,11 @@ rm -rf ~/.copilot/skills/catalyst-*     # a Copilot install with --global
 
 0.9.0 renamed two things. A client set up for 0.8.x needs both of them changed.
 
-- **The header.** The server chooses tool names by the header a request sends. A request
-  that still sends the old `X-Catalyst-Plugin-Version` header gets the old `catalyst_*`
-  tool names. The 0.9.0 skills call only `diagrid_*` tools, so every call they make fails
-  as an unknown tool. Updating the version number on the old header does not fix this.
-  Replace the header itself with `X-Diagrid-Plugin-Version`, set to the current version:
+- **The header.** 0.9.0 renamed `X-Catalyst-Plugin-Version` to `X-Diagrid-Plugin-Version`.
+  The server offers the `diagrid_*` tools whichever header a request sends, so a client
+  that still sends the old one keeps working, but the server cannot tell which plugin
+  version it runs. Replace the header with `X-Diagrid-Plugin-Version`, set to the current
+  version:
   - Codex: in `~/.codex/config.toml`, find the `http_headers` table under your Catalyst
     server and change the key to `X-Diagrid-Plugin-Version`.
   - Copilot CLI (`~/.copilot/mcp-config.json`) and VS Code (`mcp.json`): change the key
@@ -501,10 +501,8 @@ substrings that each shipped somewhere and broke.
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
 surface. Every `diagrid_*` name must appear in `contracts/diagrid-mcp-tools.txt`, which
 is a copy of what the server's `tools/list` returns; update it when the server's tool list
-changes. An old `catalyst_*` tool name, or the old server key `catalyst`, fails it.
-`contracts/catalyst-mcp-tools.txt` keeps the same list under the old names, because
-plugins up to 0.8.x still call them and the server's CI checks it still serves them; leave
-it as it is until those names are retired. The gate also fails on any invocation of the
+changes. An old `catalyst_*` tool name, or the old server key `catalyst`, fails it: the
+server no longer serves those names. The gate also fails on any invocation of the
 Diagrid CLI, except the tunnel commands (install check, sign-in and the two tunnel commands) inside
 `skills/diagrid-app-tunnels/` and `evals/tunnel-*/`, on anything
 that points at a server other than the remote one, and on any host under Diagrid's
