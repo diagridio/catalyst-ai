@@ -157,7 +157,9 @@ so clients with a registry-backed server gallery can find it there. The earlier 
 
 0.10.0 renamed the plugin from `catalyst-ai` to `diagrid`. Claude Code treats a renamed
 plugin as a new one, so `claude plugin update` does not move you across. The
-`catalyst-ai` entry stays in the marketplace, held at 0.9.0, and gets no new skills.
+`catalyst-ai` entry stays in the marketplace, held at its final release, 0.9.1. That release
+still works, gets no new skills, and at the start of every session shows these steps
+as one command, with a reminder to sign in again through `/mcp`.
 
 ```bash
 claude plugin marketplace update diagrid
