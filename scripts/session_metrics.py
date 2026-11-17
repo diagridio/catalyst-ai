@@ -160,15 +160,26 @@ def skill_of(path: str, bases: dict[str, str]) -> str | None:
 def read_bytes(path: str, args: dict) -> int:
     """The bytes a Read loaded: the lines from `offset` (1-based, default 1)
     for `limit` lines, or for the client's default when no limit was given.
+    An offset or limit that is not a number falls back to those defaults.
     0 for a file that no longer exists."""
-    offset, limit = args.get("offset"), args.get("limit")
     try:
         lines = Path(path).read_bytes().splitlines(keepends=True)
     except OSError:
         return 0  # read then, gone now: the skill was still used
-    start = max(int(offset or 1) - 1, 0)
-    end = start + int(limit if limit is not None else READ_DEFAULT_LIMIT)
+    start = max(as_int(args.get("offset"), 1) - 1, 0)
+    end = start + as_int(args.get("limit"), READ_DEFAULT_LIMIT)
     return sum(len(line) for line in lines[start:end])
+
+
+def as_int(value, default: int) -> int:
+    """A logged Read argument as a number, or `default` when it is absent or
+    not one (the model can write any value; the client rejects it later)."""
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def measure(session: Path) -> dict:
