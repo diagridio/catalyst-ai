@@ -1,12 +1,12 @@
 ---
 name: workflow-from-diagram
-description: Turn a diagram into a durable workflow on Diagrid Catalyst — a Mermaid flowchart, a sequence diagram, a BPMN export, a whiteboard photo or a hand sketch. Use when the design arrives as boxes, arrows and swimlanes rather than as a written request.
+description: Turn a diagram into a durable workflow on Diagrid — a Mermaid flowchart, a sequence diagram, a BPMN export, a whiteboard photo or a hand sketch. Use when the design arrives as boxes, arrows and swimlanes rather than as a written request.
 ---
 
 # From a diagram to a running workflow
 
 Goal: end this skill with a workflow whose structure a reader can check line by line
-against the picture that produced it, registered and started once against Catalyst.
+against the picture that produced it, registered and started once against Diagrid.
 
 The picture is the specification. Everything here exists to keep it that way, because
 the failure that matters is not code that will not compile — you find that in seconds —
@@ -182,7 +182,7 @@ for the orchestrator body and `activity-idempotency` for the activities. Reach
 for those when reviewing a workflow. Here they are a checklist you run per box as you
 write it.
 
-## 7. Wire it into Catalyst
+## 7. Wire it into Diagrid
 
 **Do not create a project.** Every organization gets one named `default` at signup,
 with the managed pub/sub, the managed KV store, the workflow store and agent
@@ -213,7 +213,7 @@ applying a second `Pubsub` or `KVStore` is **rejected on quota** —
 name. Emit a create only for a project made without the managed ones, which is not the
 project you should be in.
 
-Then run it against Catalyst:
+Then run it against Diagrid:
 
 - Make sure the app exists: `diagrid_get_app`, else `diagrid_apply` an `App` (read
   `diagrid_get_resource_schema` first and run with `dry_run`). A write role is needed.
@@ -221,8 +221,8 @@ Then run it against Catalyst:
   section 3 is the one place that says how, using `diagrid_get_connection`.
 
 **Give the app no endpoint and no port.** What a diagram translates into is a workflow
-worker: it dials Catalyst outbound and polls for work items, so there is no inbound
-endpoint to expose. Give it an endpoint only if Catalyst must call *into* the
+worker: it dials Diagrid outbound and polls for work items, so there is no inbound
+endpoint to expose. Give it an endpoint only if Diagrid must call *into* the
 application — service invocation, pub/sub delivery, an agent endpoint. Building an HTTP
 server just to answer a port you do not need is a common first-run failure, and it fails
 confusingly: the worker registers every workflow and activity, then dies at bind because
@@ -271,7 +271,7 @@ Alongside it, state plainly:
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Never generate code from a diagram without emitting the IR first.** The IR is what
   makes the translation reviewable, and it is the only artefact that survives.
 - **Never generate code from IR that failed validation.** Report the failed `check_id`s
@@ -297,7 +297,7 @@ licensed. The record shapes, field names and `check_id` values are kept as they 
 upstream, because they are a contract and a renamed field is a broken generator.
 
 Everything around them was rewritten: that skill targets Dapr run locally with Docker
-and a hand-written state store, where this one targets a Catalyst project that already
+and a hand-written state store, where this one targets a Diagrid project that already
 has the workflow store. The Mermaid and sequence-diagram paths are new — upstream
 rejects Mermaid outright. The upstream repository also carries two incompatible
 descriptions of the IR, and

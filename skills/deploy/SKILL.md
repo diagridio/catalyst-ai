@@ -1,9 +1,9 @@
 ---
 name: deploy
-description: Move an application from a laptop into Diagrid Catalyst. Covers budgeting headroom, creating the app, agent or MCP server first, attaching connections and topic subscriptions, the order these must be created in, and proving each one came up.
+description: Move an application from a laptop into Diagrid (formerly Catalyst). Covers budgeting headroom, creating the app, agent or MCP server first, attaching connections and topic subscriptions, the order these must be created in, and proving each one came up.
 ---
 
-# Get an application running in Catalyst
+# Get an application running in Diagrid
 
 Goal: end this skill with a named resource the user can open in the console, whose
 readiness you confirmed by reading it back rather than by watching an apply succeed. An
@@ -134,9 +134,9 @@ do.
 Read `diagrid_get_resource_schema` for the fields each takes. An `App` takes an
 endpoint and an endpoint token; an `Agent` takes an endpoint and archive settings.
 
-An endpoint is optional. Created without one you get an identity that Catalyst can
+An endpoint is optional. Created without one you get an identity that Diagrid can
 route *from* but not *to*, which is exactly what an app running as a pure worker wants.
-Set one only when the app runs a server there for Catalyst to call. With the app's
+Set one only when the app runs a server there for Diagrid to call. With the app's
 health check enabled, while nothing answers it the app's workflows, actors and message
 delivery stay blocked.
 
@@ -215,7 +215,7 @@ back:
 - For the components and subscriptions attached to it, `diagrid_list_components`; read
   each one's `scopes`.
 
-**Ready is not one field.** Catalyst's own readiness check requires the identity's status to
+**Ready is not one field.** Diagrid's own readiness check requires the identity's status to
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
 nothing works". No read tool returns the API token; only `diagrid_get_connection`
@@ -314,7 +314,7 @@ rejected. Send one only when the user has explicitly asked for a new project.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Name the organization before the first write.** Before the session's first
   `diagrid_apply`, `diagrid_delete_resource` or any other call that creates, changes
   or deletes something, call `diagrid_whoami` and tell the user which organization the
