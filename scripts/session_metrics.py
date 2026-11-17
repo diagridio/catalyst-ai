@@ -218,7 +218,8 @@ def measure(session: Path) -> dict:
                 for b in blocks(entry):
                     if b.get("type") != "tool_use":
                         continue
-                    name, args = b.get("name", "?"), b.get("input") or {}
+                    name, args = b.get("name", "?"), b.get("input")
+                    args = args if isinstance(args, dict) else {}  # a malformed call can log any value
                     tools[name] += 1
                     if main and name == "AskUserQuestion":
                         questions += 1
@@ -233,7 +234,10 @@ def measure(session: Path) -> dict:
             failed += sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and b.get("is_error"))
             text = text_of(entry)
             if entry.get("isMeta") and text.startswith(SKILL_PREAMBLE):
-                base = text[len(SKILL_PREAMBLE):].splitlines()[0].strip()
+                first = text[len(SKILL_PREAMBLE):].strip().splitlines()
+                if not first:
+                    continue  # names no directory: nothing to attribute
+                base = first[0].strip()
                 name = Path(base).name
                 skills[name] += len(text.encode("utf-8"))
                 bases[base] = name
@@ -252,7 +256,8 @@ def measure(session: Path) -> dict:
         skills[name] += read_bytes(path, args)
 
     tokens_in = sum(
-        u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
+        (u.get("input_tokens") or 0) + (u.get("cache_read_input_tokens") or 0)
+        + (u.get("cache_creation_input_tokens") or 0)
         for u in usage.values()
     )
     catalyst = {n: c for n, c in tools.items() if CATALYST_TOOL.search(n)}
@@ -263,7 +268,7 @@ def measure(session: Path) -> dict:
         "model": ",".join(sorted(models)) or "-",
         "plugin": ",".join(sorted(plugin)) or "-",
         "tokens_in": tokens_in,
-        "tokens_out": sum(u.get("output_tokens", 0) for u in usage.values()),
+        "tokens_out": sum((u.get("output_tokens") or 0) for u in usage.values()),
         "model_requests": len(usage),
         "tool_calls": sum(tools.values()),
         "catalyst_calls": sum(catalyst.values()),

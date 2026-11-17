@@ -164,6 +164,19 @@ def main() -> int:
         r = session_metrics.measure(read_only)
         check("plugin version from a Read under the plugin cache, with no skill loaded",
               (r["plugin"], r["skills"]), ("0.9.0", {"catalyst-operate": 0}))
+        # Lines a log should not hold, which must not stop the run.
+        odd = root / "projects" / "-odd" / "s3.jsonl"
+        odd.parent.mkdir(parents=True)
+        odd.write_text("\n".join(json.dumps(line) for line in [
+            user(session_metrics.SKILL_PREAMBLE + "  \n", 0, isMeta=True),  # names no directory
+            assistant("m4", {"input_tokens": 4, "cache_read_input_tokens": None,
+                             "cache_creation_input_tokens": None, "output_tokens": None}, 1,
+                      {"type": "tool_use", "id": "t-x", "name": "Read", "input": ["not", "an", "object"]},
+                      {"type": "tool_use", "id": "t-y", "name": "Read", "input": "a string"}),
+        ]) + "\n")
+        o = session_metrics.measure(odd)
+        check("an empty skill preamble, a non-object tool input and null token counts are skipped",
+              (o["skills"], o["tool_calls"], o["tokens_in"], o["tokens_out"]), ({}, 2, 4, 0))
         # Reads with no limit stop at the client's default line count.
         long_file = root / "long.md"
         long_file.write_text("".join(f"{i}\n" for i in range(1, 6)))  # 2 bytes a line
