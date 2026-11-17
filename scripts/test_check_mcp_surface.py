@@ -133,6 +133,8 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
         False,
         "",
     ),
+    # Only the /mcp entry name is exempt after a colon; any other `x:diagrid <word>` is still a call.
+    ("a CLI invocation after a colon", {"skills/a/SKILL.md": "run:diagrid login\n"}, True, "CLI invocation"),
     ("a quota field holding catalyst_ passes", {"skills/a/SKILL.md": "`number_of_catalyst_subscriptions`\n"}, False, ""),
     ("an all-caps environment variable passes", {"README.md": "Set `DIAGRID_MCP_URL`.\n"}, False, ""),
     ("the override variable alone passes", {".claude-plugin/plugin.json": '{"u": "${DIAGRID_MCP_URL:-https://mcp.cloud.r1.diagrid.io/mcp}"}\n'}, False, ""),

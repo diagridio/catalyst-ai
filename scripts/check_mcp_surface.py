@@ -60,7 +60,7 @@ RETIRED_SERVER_KEY = re.compile(r"mcp__(?:plugin_catalyst-ai_)?catalyst__|plugin
 # CLI invocations either: `plugin:catalyst-ai:diagrid`, `codex mcp add diagrid --url`,
 # `codex mcp login diagrid`, `copilot mcp add --transport http diagrid <url>`.
 NOT_A_CLI_INVOCATION = (
-    r"(?<![\w./@:-])(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
+    r"(?<![\w./@-])(?<!plugin:catalyst-ai:)(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
 )
 CLI_INVOCATION = re.compile(NOT_A_CLI_INVOCATION + r"diagrid`?\s+[A-Za-z-]+")
 # Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
