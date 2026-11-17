@@ -9,7 +9,7 @@ expected_outcome: >
   Loads catalyst-app-tunnels. Creates an MCPServer named travel whose URL path is /mcp,
   waits for its identity to be ready, opens a tunnel on that same identity with
   `diagrid dev run --project default --id travel --app-port 8000`, and grants the agent
-  weather-assistant access to the named tools with catalyst_grant_access, leaving
+  weather-assistant access to the named tools with diagrid_grant_access, leaving
   cancel_booking out. Does not suggest cloudflared, ngrok or any other public URL, does
   not create a separate App ID for the server, and does not tunnel the agent.
 ---

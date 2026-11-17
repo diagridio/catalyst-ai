@@ -177,7 +177,7 @@ For a tool that needs a human, the workflow waits, not the tool:
 The approval service sends the decision with the SDK's workflow client — the raise-event
 call in each language file — naming the run, the event `approval:<tool-call-id>` and a
 payload such as `{"approved": true}`. On Catalyst, an assistant can send the same event
-with `catalyst_raise_workflow_event`.
+with `diagrid_raise_workflow_event`.
 
 Two measured facts, both on a local Dapr 1.18.1 sidecar. The wait survives a worker
 kill: after a restart the run was still waiting with the same

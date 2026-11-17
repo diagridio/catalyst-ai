@@ -17,7 +17,7 @@ Sources of truth:
                  have no slash command.
 * .claude-plugin/plugin.json
                  the plugin `version`, which the hand-written MCP setups send as the
-                 `X-Catalyst-Plugin-Version` header, as the plugin does.
+                 `X-Diagrid-Plugin-Version` header, as the plugin does.
 * CLIENTS below  the per-client install steps. Every step is checked against README.md,
                  so the page cannot say something the README does not.
 
@@ -39,7 +39,9 @@ OUT_DIR = Path("web") / "install"
 MCP_URL = "https://mcp.cloud.r1.diagrid.io/mcp"
 PLUGIN_NAME = "catalyst-ai"
 MANIFEST = Path(".claude-plugin") / "plugin.json"
-VERSION_HEADER = "X-Catalyst-Plugin-Version"
+VERSION_HEADER = "X-Diagrid-Plugin-Version"
+# The key the plugin registers the MCP server under, and the name the hand-written setups give it.
+SERVER_KEY = "diagrid"
 SCHEMA = 1
 
 # Commands the page offers, in display order. A new file in commands/ must be added
@@ -72,7 +74,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
     copilot_json = (
         "{\n"
         '  "mcpServers": {\n'
-        '    "catalyst": {\n'
+        f'    "{SERVER_KEY}": {{\n'
         '      "type": "http",\n'
         f'      "url": "{MCP_URL}",\n'
         f'      "headers": {{ "{VERSION_HEADER}": "{version}" }},\n'
@@ -85,7 +87,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
     vscode_json = (
         "{\n"
         '  "servers": {\n'
-        '    "catalyst": {\n'
+        f'    "{SERVER_KEY}": {{\n'
         '      "type": "http",\n'
         f'      "url": "{MCP_URL}",\n'
         f'      "headers": {{ "{VERSION_HEADER}": "{version}" }},\n'
@@ -94,7 +96,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
         "  }\n"
         "}"
     )
-    codex_toml = f'[mcp_servers.catalyst.http_headers]\n{VERSION_HEADER} = "{version}"'
+    codex_toml = f'[mcp_servers.{SERVER_KEY}.http_headers]\n{VERSION_HEADER} = "{version}"'
     return [
         {
             "id": "claude-code",
@@ -110,7 +112,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 step(
                     "sign-in",
                     "Sign in once",
-                    "In Claude Code, run /mcp, pick plugin:catalyst-ai:catalyst and finish the browser sign-in.",
+                    f"In Claude Code, run /mcp, pick plugin:{PLUGIN_NAME}:{SERVER_KEY} and finish the browser sign-in.",
                     item("mcp", "/mcp", "/mcp", lang="text", readme=["`/mcp`"]),
                 ),
                 step("try", "Try it", "One line each, nothing to paste.", *slash),
@@ -135,7 +137,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     "mcp-add",
                     "Add the Catalyst MCP server",
                     "Codex uses its registered OAuth client ID.",
-                    item("mcp-add", "mcp add", f"codex mcp add catalyst --url {MCP_URL} --oauth-client-id codex", readme=EXACT),
+                    item("mcp-add", "mcp add", f"codex mcp add {SERVER_KEY} --url {MCP_URL} --oauth-client-id codex", readme=EXACT),
                 ),
                 step(
                     "mcp-headers",
@@ -147,7 +149,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                     "mcp-login",
                     "Sign in",
                     "Opens the browser sign-in.",
-                    item("mcp-login", "mcp login", "codex mcp login catalyst", readme=EXACT),
+                    item("mcp-login", "mcp login", f"codex mcp login {SERVER_KEY}", readme=EXACT),
                 ),
                 prompts_step(commands),
             ],
@@ -178,7 +180,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 step(
                     "sign-in",
                     "Sign in",
-                    "Run /mcp inside Copilot and choose Authenticate on the catalyst server.",
+                    f"Run /mcp inside Copilot and choose Authenticate on the server named {SERVER_KEY}.",
                     item("mcp", "/mcp", "/mcp", lang="text", readme=["`/mcp`"]),
                 ),
                 prompts_step(commands),

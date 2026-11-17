@@ -23,11 +23,11 @@
   "skills": "./skills/",
   "commands": "./commands/",
   "mcpServers": {
-    "catalyst": {
+    "diagrid": {
       "type": "http",
       "url": "${DIAGRID_MCP_URL:-https://mcp.cloud.r1.diagrid.io/mcp}",
       "headers": {
-        "X-Catalyst-Plugin-Version": "0.9.0"
+        "X-Diagrid-Plugin-Version": "0.9.0"
       },
       "oauth": {
         "clientId": "claude-code",

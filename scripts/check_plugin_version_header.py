@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Fail when the `X-Catalyst-Plugin-Version` header disagrees with the plugin version.
+"""Fail when the `X-Diagrid-Plugin-Version` header disagrees with the plugin version.
 
-The `catalyst` MCP server in `.claude-plugin/plugin.json` sends the header
-`X-Catalyst-Plugin-Version` so the server can tell a plugin install from a server
+The `diagrid` MCP server in `.claude-plugin/plugin.json` sends the header
+`X-Diagrid-Plugin-Version` so the server can tell a plugin install from a server
 someone added by hand, and see who is on an old version. The README and the
 catalyst-setup skill tell Codex, Copilot CLI and VS Code users to set the same
 header by hand.
@@ -15,12 +15,19 @@ header follow.
 
 Checked:
 
-* plugin.json  `mcpServers.catalyst.headers["X-Catalyst-Plugin-Version"]` equals
+* plugin.json  `mcpServers.diagrid.headers["X-Diagrid-Plugin-Version"]` equals
                `version`.
 * README.md and skills/catalyst-setup/SKILL.md
                every snippet that sets the header sets it to `version`, and there
                are at least one TOML (Codex) and two JSON (Copilot CLI and VS
                Code) in each file, so deleting a snippet cannot make the check pass.
+* none of them  names the old header, `X-Catalyst-Plugin-Version`. The server
+               offers the old `catalyst_*` tool names to any request that carries
+               it, so a setup that still sent it would get names the skills no
+               longer use. The one exception is the `Upgrading from 0.8.x`
+               section of README.md and the setup skill, which has to name the
+               old header to tell people to replace it. Even there, nothing may
+               set it (`X-Catalyst-Plugin-Version:` or `= ...`).
 
 web/install/ is generated from plugin.json and checked against the README by
 build_install_data.py --check, so it follows from these two.
@@ -40,14 +47,33 @@ MANIFEST = Path(".claude-plugin") / "plugin.json"
 README = Path("README.md")
 SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
 HAND_SET_DOCS = (README, SETUP_SKILL)
-HEADER = "X-Catalyst-Plugin-Version"
-SERVER = "catalyst"
+HEADER = "X-Diagrid-Plugin-Version"
+RETIRED_HEADER = "X-Catalyst-Plugin-Version"
+SERVER = "diagrid"
 MIN_TOML_SNIPPETS = 1  # Codex
 MIN_JSON_SNIPPETS = 2  # Copilot CLI and VS Code
 
 # Matches the header as a JSON key (`"X-...": "0.7.2"`) or a TOML key
 # (`X-... = "0.7.2"`), and captures the separator and the value.
 SNIPPET_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*([:=])\s*"([^"]*)"')
+# The old header used as a key, in either form. Rejected even in the upgrade note.
+RETIRED_SNIPPET = re.compile(rf'"?{re.escape(RETIRED_HEADER)}"?\s*[:=]')
+# The one section allowed to name the old header, to tell people to replace it.
+UPGRADE_NOTE = re.compile(r"^#{2,4} Upgrading from 0\.8\.x\s*$")
+
+
+def retired_header_lines(text: str) -> list[int]:
+    """Lines that name the old header outside the upgrade note, or set it anywhere."""
+    found: list[int] = []
+    in_fence = in_note = False
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence and line.startswith("#"):
+            in_note = bool(UPGRADE_NOTE.match(line))
+        if RETIRED_HEADER in line and (not in_note or RETIRED_SNIPPET.search(line)):
+            found.append(n)
+    return found
 
 
 def check(root: Path) -> list[str]:
@@ -70,6 +96,19 @@ def check(root: Path) -> list[str]:
             problems.append(
                 f"{MANIFEST}: mcpServers.{SERVER}.headers[{HEADER!r}] is {sent!r}, "
                 f"but `version` is {version!r}"
+            )
+
+    if RETIRED_HEADER in (root / MANIFEST).read_text(encoding="utf-8"):
+        problems.append(f"{MANIFEST}: still names {RETIRED_HEADER}; the header is {HEADER} now")
+    for doc in HAND_SET_DOCS:
+        try:
+            lines = retired_header_lines((root / doc).read_text(encoding="utf-8"))
+        except OSError:
+            continue  # reported below
+        for n in lines:
+            problems.append(
+                f"{doc}:{n}: names {RETIRED_HEADER}; the header is {HEADER} now. Only the "
+                "`Upgrading from 0.8.x` section may name the old one, and nothing may set it"
             )
 
     for doc in HAND_SET_DOCS:

@@ -9,14 +9,14 @@ Goal: end this skill able to say what exists, what state each thing is in, and w
 call told you. A value you cannot attribute to a call you made is a guess, and to the
 person reading your answer a guess is indistinguishable from a fact.
 
-Everything here goes through the Catalyst MCP server, the `catalyst_*` tools. If they are
+Everything here goes through the Catalyst MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, this is a connection problem rather than an
 inspection problem: the `catalyst-setup` skill covers it, and there is nothing useful to
 read until the user has signed in. Do not guess a project's state to fill the gap.
 
 ## 1. Start at the project, not at the resource
 
-Call `catalyst_whoami` first. It reports the organization, its projects and its regions,
+Call `diagrid_whoami` first. It reports the organization, its projects and its regions,
 so you do not have to ask the user for something the platform already knows.
 
 ### Answer about one project
@@ -24,7 +24,7 @@ so you do not have to ask the user for something the platform already knows.
 An unqualified question — "my project", "is anything broken", "what is deployed" — is
 about **one** project. Resolve it, name it in your answer, and stay inside it.
 
-`catalyst_whoami` and `catalyst_list_projects` both return every project in the
+`diagrid_whoami` and `diagrid_list_projects` both return every project in the
 organization. That is an inventory, not an instruction to read all of them. An
 organization holds other people's projects, and each one you add multiplies every read in
 section 3. Measured on an organization with ten projects, answering "is anything broken
@@ -47,7 +47,7 @@ that follow it.
 broken anywhere", "across the organization", a named second project — and any plural or
 comparing question, which needs more than one project by its nature. "Which of my
 projects uses the most quota" has no single call behind it: metrics are per project or
-per app, agent or MCP server, and `catalyst_get_usage` reports per scope and region, so
+per app, agent or MCP server, and `diagrid_get_usage` reports per scope and region, so
 ranking projects means reading each one, and that is the correct answer rather than a
 violation. All of these are worth one sentence first saying how many projects you are
 about to read.
@@ -57,7 +57,7 @@ do not go looking for a project called `prod`. If you cannot resolve which proje
 meant, ask. Enumerating an organization to avoid asking a question costs the user more
 than the question would have.
 
-Then read the project with `catalyst_get_project`, even when the question is about one
+Then read the project with `diagrid_get_project`, even when the question is about one
 app. The project is the only object that names the managed infrastructure everything else
 sits on, and a large share of "X is missing" turns out to be "X's backing store was never
 enabled here".
@@ -74,7 +74,7 @@ Two project-scoped limits matter for designs:
 | `number_of_pubsubs_per_project` | 1 | Every topic shares one broker |
 | `number_of_kvstores_per_project` | 1 | Every state key shares one store |
 
-The default is 1 on every plan, and confirming it is one call to `catalyst_get_usage`. A
+The default is 1 on every plan, and confirming it is one call to `diagrid_get_usage`. A
 multi-agent topology separates traffic by topic and by key prefix, not by broker or
 store. State it as a platform default. Never present it as a free-tier limit or a reason
 to upgrade: no plan upgrade raises it, and a user who upgrades on your advice has been
@@ -90,28 +90,28 @@ is a guess.
 
 | To read | Tool |
 | --- | --- |
-| Org, projects, regions | `catalyst_whoami` |
-| Projects | `catalyst_list_projects`, `catalyst_get_project` |
-| Apps, and any tunnel on them | `catalyst_list_apps`, `catalyst_get_app` |
-| Agents, declared and runtime-registered | `catalyst_list_agents`, `catalyst_get_agent` |
-| The runtime agent registry | `catalyst_get_agent`, with `appId` also passed, for the registry record |
-| MCP servers and their tools | `catalyst_list_mcp_servers`, `catalyst_get_mcp_server` |
-| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `catalyst_list_components`, `catalyst_get_component` |
-| Workflow definitions and their activity graph | `catalyst_list_workflows`, `catalyst_get_workflow` |
-| Workflow runs | `catalyst_list_workflow_runs`, `catalyst_get_workflow_run` |
-| One region in detail | `catalyst_get_region` |
-| Access policies — why a workflow or MCP call was refused | `catalyst_list_access_policies`, `catalyst_get_access_policy` |
-| Dev tunnels open on a project | `catalyst_list_app_tunnels` |
-| Resource templates to start from | `catalyst_list_templates`, `catalyst_get_template` |
-| Who changed what, and when | `catalyst_list_audit_events` |
-| Request rates, error rates, quota consumption | `catalyst_get_metrics` |
-| Plan limits and how much of each is used | `catalyst_get_usage` |
-| Token budgets and their spend | `catalyst_list_token_budgets` |
-| Logs | `catalyst_get_logs` (full data sharing only) |
+| Org, projects, regions | `diagrid_whoami` |
+| Projects | `diagrid_list_projects`, `diagrid_get_project` |
+| Apps, and any tunnel on them | `diagrid_list_apps`, `diagrid_get_app` |
+| Agents, declared and runtime-registered | `diagrid_list_agents`, `diagrid_get_agent` |
+| The runtime agent registry | `diagrid_get_agent`, with `appId` also passed, for the registry record |
+| MCP servers and their tools | `diagrid_list_mcp_servers`, `diagrid_get_mcp_server` |
+| Components, pub/sub, KV, subscriptions, configurations, resiliency, HTTP endpoints | `diagrid_list_components`, `diagrid_get_component` |
+| Workflow definitions and their activity graph | `diagrid_list_workflows`, `diagrid_get_workflow` |
+| Workflow runs | `diagrid_list_workflow_runs`, `diagrid_get_workflow_run` |
+| One region in detail | `diagrid_get_region` |
+| Access policies — why a workflow or MCP call was refused | `diagrid_list_access_policies`, `diagrid_get_access_policy` |
+| Dev tunnels open on a project | `diagrid_list_app_tunnels` |
+| Resource templates to start from | `diagrid_list_templates`, `diagrid_get_template` |
+| Who changed what, and when | `diagrid_list_audit_events` |
+| Request rates, error rates, quota consumption | `diagrid_get_metrics` |
+| Plan limits and how much of each is used | `diagrid_get_usage` |
+| Token budgets and their spend | `diagrid_list_token_budgets` |
+| Logs | `diagrid_get_logs` (full data sharing only) |
 
 Three limits in that table are deliberate, not oversights:
 
-- **`catalyst_get_logs` refuses at the default data-sharing level.** Log lines carry
+- **`diagrid_get_logs` refuses at the default data-sharing level.** Log lines carry
   whatever the application chose to send, so at `metadata` the tool returns
   `DATA_SHARING_RESTRICTED` instead of a redacted, empty-looking log. That refusal is
   policy, not a fault: do not retry it. Say so, name the level, and stop. Only an org
@@ -120,7 +120,7 @@ Three limits in that table are deliberate, not oversights:
   own standard output. Reading the application's own output is not available over MCP
   yet.
 - **This skill only reads, even where the MCP server can write.** For a role that allows
-  writes, the server also has `catalyst_apply`, `catalyst_delete_resource` and workflow-run
+  writes, the server also has `diagrid_apply`, `diagrid_delete_resource` and workflow-run
   actions (see `catalyst-deploy` and `catalyst-debug`). This skill uses none of them.
   Anything the user wants changed goes to those skills, with their consent.
 - **Some reads have no tool.** Invoking an app, publishing to a topic, and reading or
@@ -154,22 +154,22 @@ An agent is an `Agent` resource: a Catalyst front for an agent **your** app runs
 identified by its endpoint and its archive settings. Say `agent` or `app`, never leave
 it ambiguous: they are different resources.
 
-`catalyst_get_agent` returns the runtime registry record when `appId` is also passed, and that is often the one
+`diagrid_get_agent` returns the runtime registry record when `appId` is also passed, and that is often the one
 that answers the question: the registry lists what is actually registered in the project's
 runtime, including externally deployed OSS Dapr agents. A name in the registry but not in
-`catalyst_list_agents` is an agent nobody declared to Catalyst; the reverse is a
+`diagrid_list_agents` is an agent nobody declared to Catalyst; the reverse is a
 declaration whose workload is not running.
 
 ## 4. Workflow runs
 
-`catalyst_get_workflow_run` returns the execution graph — which step a run is on or
+`diagrid_get_workflow_run` returns the execution graph — which step a run is on or
 failed at. Use it whenever the question is "where is it".
 
-`catalyst_list_workflow_runs` covers every app in the project and takes filters worth
+`diagrid_list_workflow_runs` covers every app in the project and takes filters worth
 using before you ask the user to narrow anything down. Read its schema for the exact
 names; they include the run's status (`running`, `completed`, `failed`, `terminated`,
 `suspended`, `canceled`), the app identity, the workflow name, and start and end time
-windows. `catalyst_list_workflows` and `catalyst_get_workflow` describe the definitions
+windows. `diagrid_list_workflows` and `diagrid_get_workflow` describe the definitions
 and their activity graph.
 
 Workflow reads require the project's managed workflow store. On a project without it,
@@ -204,7 +204,7 @@ The same trap applies twice more:
 - Secrets are scrubbed at **every** level, `full` included — `apiToken`, `appToken`,
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app,
-  agent or MCP server has no token. No read tool returns its token; only `catalyst_get_connection`
+  agent or MCP server has no token. No read tool returns its token; only `diagrid_get_connection`
   does (see `catalyst-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's
@@ -217,11 +217,11 @@ themselves.
 
 ## 5. Quotas and metrics
 
-`catalyst_get_metrics` reads request rates, error rates and quota consumption, scoped to
+`diagrid_get_metrics` reads request rates, error rates and quota consumption, scoped to
 a project or to one app, agent or MCP server. Use it before proposing a design that adds
 resources — headroom is cheaper to check than to discover.
 
-`catalyst_get_usage` reports `used` and `limit` per key across the organization. Limits
+`diagrid_get_usage` reports `used` and `limit` per key across the organization. Limits
 are scoped, not global: `catalyst.per_cloud_region` and `catalyst.per_private_region` are
 enforced **per region**, so usage arrives as one entry per scope and region. Summing
 across regions, or reading one region's entry as the organization total, produces a wrong
@@ -242,7 +242,7 @@ limits, so a remembered figure is often wrong for the one in front of you. The t
 exceptions are the pub/sub and KV counts in section 1, which are 1 everywhere.
 
 For anything metrics cannot answer — a specific error, an ordering question — go to
-`catalyst_get_logs`, which shows each Dapr API call an app made through its sidecar with
+`diagrid_get_logs`, which shows each Dapr API call an app made through its sidecar with
 its status and any error. It works only at `full` data sharing; at the default level say
 so and stop. The application's own standard output is not available over MCP yet.
 
@@ -269,7 +269,7 @@ Use only these routes, appended to that host:
 | Project list | `/admin/projects` |
 
 An agent's `:agentId` is not its name. It is the `agent_id` on the agent's registry record,
-from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+from `diagrid_list_agents` or `diagrid_get_agent`, and looks like
 `O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
 opens a page that cannot find the agent. An agent with no registry record yet takes its
 app ID in both places: `/agents/:appId/:appId`.

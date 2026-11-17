@@ -188,7 +188,7 @@ write it.
 with the managed pub/sub, the managed KV store, the workflow store and agent
 infrastructure already attached. Workflow history lives in that managed store, so a
 hand-rolled project is the most common reason a freshly generated workflow starts and
-then cannot be found. Confirm `default` exists with `catalyst_list_projects` rather than
+then cannot be found. Confirm `default` exists with `diagrid_list_projects` rather than
 assuming it; if it is absent, ask which project to use rather than making one.
 
 The generated project needs **no local state-store component and no Docker**. The
@@ -215,10 +215,10 @@ project you should be in.
 
 Then run it against Catalyst:
 
-- Make sure the app exists: `catalyst_get_app`, else `catalyst_apply` an `App` (read
-  `catalyst_get_resource_schema` first and run with `dry_run`). A write role is needed.
+- Make sure the app exists: `diagrid_get_app`, else `diagrid_apply` an `App` (read
+  `diagrid_get_resource_schema` first and run with `dry_run`). A write role is needed.
 - Start the worker with the connection values in its environment. `catalyst-develop`
-  section 3 is the one place that says how, using `catalyst_get_connection`.
+  section 3 is the one place that says how, using `diagrid_get_connection`.
 
 **Give the app no endpoint and no port.** What a diagram translates into is a workflow
 worker: it dials Catalyst outbound and polls for work items, so there is no inbound
@@ -232,16 +232,16 @@ something else holds the port.
 
 A generated workflow that has never run is not a result.
 
-- `catalyst_start_workflow` with the project, the app identity and the workflow name, and
+- `diagrid_start_workflow` with the project, the app identity and the workflow name, and
   the input. It assigns the run id and returns it; keep it.
-- `catalyst_list_workflow_runs` for the project, if you lost the id.
-- `catalyst_get_workflow_run` for the run.
+- `diagrid_list_workflow_runs` for the project, if you lost the id.
+- `diagrid_get_workflow_run` for the run.
 
-`catalyst_start_workflow` is a write tool, absent for a role that cannot write. Name the
+`diagrid_start_workflow` is a write tool, absent for a role that cannot write. Name the
 input after the diagram's happy path so the first run is recognisable later.
 
 Pick the input for that first run off the diagram's own happy path, and check the
-result against the boxes it should have visited. `catalyst_get_workflow_run` returns the graph;
+result against the boxes it should have visited. `diagrid_get_workflow_run` returns the graph;
 comparing that list to the picture is the only end-to-end proof the translation was
 faithful, and it is cheaper than reading the generated code again.
 
