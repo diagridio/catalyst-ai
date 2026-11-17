@@ -1,0 +1,63 @@
+# The curated Diagrid MCP tool surface.
+#
+# A copy of the tool names the Diagrid MCP server returns from `tools/list`, one
+# per line. The skills, commands, evals and README name these tools, and
+# scripts/check_mcp_surface.py and scripts/lint_skills.py hold them to this list,
+# so this repo can check its prose against the tools that really ship without
+# calling the server from CI.
+#
+# Why it needs a check at all: a skill is prose a model acts on. A skill naming a
+# tool that does not exist does not crash — the model calls it, gets "unknown
+# tool", and improvises. And a tool that ships with no skill mentioning it is
+# invisible: the model never learns it is there. Both are silent.
+#
+# Update it whenever the server's tool list changes: the lines below must equal
+# the names `tools/list` returns, sorted. A write tool is absent from `tools/list`
+# for a caller whose role cannot write, so take the list as a caller who can.
+#
+# catalyst-mcp-tools.txt next to this file is the same list under the old
+# `catalyst_*` names. Plugins up to 0.8.x call those, and the server keeps serving
+# them until they are retired, so it stays until then.
+#
+# Last synced: 2026-11-13, against cloudgrid's served-tools-diagrid.txt.
+diagrid_apply
+diagrid_delete_resource
+diagrid_export_workflow_run
+diagrid_get_access_policy
+diagrid_get_agent
+diagrid_get_app
+diagrid_get_component
+diagrid_get_connection
+diagrid_get_logs
+diagrid_get_mcp_server
+diagrid_get_metrics
+diagrid_get_project
+diagrid_get_region
+diagrid_get_resource_schema
+diagrid_get_template
+diagrid_get_usage
+diagrid_get_workflow
+diagrid_get_workflow_run
+diagrid_grant_access
+diagrid_list_access_policies
+diagrid_list_agents
+diagrid_list_app_tunnels
+diagrid_list_apps
+diagrid_list_audit_events
+diagrid_list_components
+diagrid_list_mcp_servers
+diagrid_list_projects
+diagrid_list_templates
+diagrid_list_token_budgets
+diagrid_list_workflow_runs
+diagrid_list_workflows
+diagrid_pause_workflow_run
+diagrid_purge_workflow_runs
+diagrid_raise_workflow_event
+diagrid_rerun_workflow_run
+diagrid_rerun_workflow_runs
+diagrid_resume_workflow_run
+diagrid_revoke_access
+diagrid_start_workflow
+diagrid_terminate_workflow_run
+diagrid_whoami

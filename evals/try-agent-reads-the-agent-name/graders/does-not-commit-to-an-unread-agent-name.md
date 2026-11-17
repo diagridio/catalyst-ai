@@ -16,7 +16,7 @@ the name before reading it.
 FAIL if the response does any of these:
 - states an agent name for crewai as a settled fact;
 - uses `schedule-planner` as crewai's agent, in prose or in the console link;
-- calls `catalyst_apply` for an agent under a name it has not read.
+- calls `diagrid_apply` for an agent under a name it has not read.
 
 Naming `schedule-planner` only to say it is langgraph's and not crewai's is a
 PASS. Judge whether the response commits to a name it has not read, not whether

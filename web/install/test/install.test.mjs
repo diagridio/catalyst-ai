@@ -43,7 +43,9 @@ test('data shape: four clients, unique ids, non-empty text, the production MCP U
     }
   }
   const all = JSON.stringify(json);
-  assert.ok(!/diagrid\s+[a-z]/.test(all.replace(/diagrid(io)?\//g, '')), 'no CLI invocation');
+  // `diagrid` is also the MCP server's key, so the setups that name it are not CLI invocations.
+  const scrubbed = all.replace(/diagrid(io)?\//g, '').replace(/(plugin:catalyst-ai:|mcp (add|login) )diagrid\b/g, '');
+  assert.ok(!/diagrid\s+[a-z]/.test(scrubbed), 'no CLI invocation');
   for (const host of all.match(/[a-z0-9.-]+\.diagrid\.(io|dev)/gi) ?? []) {
     assert.ok(['mcp.cloud.r1.diagrid.io', 'catalyst.diagrid.io'].includes(host), host);
   }

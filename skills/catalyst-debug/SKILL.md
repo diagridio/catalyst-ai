@@ -9,7 +9,7 @@ Goal: end this skill with a named cause and the line of evidence that proves it,
 explicit statement of what you could not see and why. "Try restarting it" is not a
 diagnosis, and neither is a plausible story with no read behind it.
 
-Everything here goes through the Catalyst MCP server, the `catalyst_*` tools. If they are
+Everything here goes through the Catalyst MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, that is a connection problem, not the failure
 you were sent to debug: the `catalyst-setup` skill covers it.
 
@@ -17,11 +17,11 @@ you were sent to debug: the `catalyst-setup` skill covers it.
 
 | Symptom | Start with | Then |
 | --- | --- | --- |
-| A workflow run failed, or hangs | `catalyst_get_workflow_run` | section 3 |
-| An app never became ready | `catalyst_get_app` | section 4 |
-| An agent does not answer | `catalyst_get_agent` | section 5 |
-| A component will not connect | `catalyst_get_component` | section 6 |
-| Nothing named — "is anything broken?" | `catalyst_list_projects`, then the project | below |
+| A workflow run failed, or hangs | `diagrid_get_workflow_run` | section 3 |
+| An app never became ready | `diagrid_get_app` | section 4 |
+| An agent does not answer | `diagrid_get_agent` | section 5 |
+| A component will not connect | `diagrid_get_component` | section 6 |
+| Nothing named — "is anything broken?" | `diagrid_list_projects`, then the project | below |
 
 Say which call produced each finding.
 
@@ -42,7 +42,7 @@ need every one of them. Say how many you are about to read before you start. Do 
 hunting for a project called `staging` or `prod`: those are usually separate
 deployments, not projects in this organization.
 
-Read the project first, in every case: `catalyst_get_project`. Managed workflow storage
+Read the project first, in every case: `diagrid_get_project`. Managed workflow storage
 and agent infrastructure are project settings, and when one is off the symptoms are
 indistinguishable from broken resources. The project named `default` already has managed
 pub/sub, KV, workflow store and agent infrastructure attached. **Never create a project**
@@ -65,7 +65,7 @@ into two.
 
   Two more error strings sit outside that structure and are easy to miss: a pub/sub's
   `status.topicError` and a KV store's `status.itemsError`.
-- **`catalyst_get_logs` works only at `full` data sharing.** It returns the sidecar's API
+- **`diagrid_get_logs` works only at `full` data sharing.** It returns the sidecar's API
   request log, each Dapr call an app made with its status and error, not the
   application's own standard output. At the default `metadata` level the tool returns
   `DATA_SHARING_RESTRICTED`. That is policy, not a fault: do not retry it. Say the logs
@@ -81,10 +81,10 @@ into two.
 
 ## 3. A workflow run that failed
 
-1. Find it: `catalyst_list_workflow_runs`, filtered to failed runs for the app's identity
+1. Find it: `diagrid_list_workflow_runs`, filtered to failed runs for the app's identity
    and a start-time window. Statuses are `running`, `completed`, `failed`, `terminated`,
    `suspended`, `canceled`.
-2. Read it: `catalyst_get_workflow_run`. It returns the execution graph showing which
+2. Read it: `diagrid_get_workflow_run`. It returns the execution graph showing which
    step the run is on or failed at, which is the answer to "where is it stuck".
 3. Diagnose at the failing step, not at the top. The run-level failure is almost always
    an activity's error re-surfaced. Quoting the top-level message alone tells the user
@@ -166,12 +166,12 @@ permission because nothing in it suggests otherwise.
 
 | Intent | Tool | Consequence to state |
 | --- | --- | --- |
-| Hold it | `catalyst_pause_workflow_run` / `catalyst_resume_workflow_run` | Reversible; history is kept. |
-| Unblock a waiting run | `catalyst_raise_workflow_event` | Not idempotent: a run awaiting two events consumes two. |
-| Retry from a point | `catalyst_rerun_workflow_run` | Creates a **new** run from the original's input, resuming from a chosen event. Both the event and an id for the new run are required — nothing generates the id. The original is untouched, so any id the user recorded still points at the failure. |
-| Retry many from the same point | `catalyst_rerun_workflow_runs` | Starts new runs from several existing ones, all resuming from one event. The new runs execute for real, so side effects run again. Two calls: the first changes nothing and lists every run it would restart; show the user that list, and call again with the returned confirmation value only after they agree. |
-| Stop it | `catalyst_terminate_workflow_run` | Irreversible: it cannot be resumed. History is kept. Confirm before calling. |
-| Delete history | `catalyst_purge_workflow_runs` | Irreversible, and it destroys the evidence for this diagnosis. Always two calls: the first changes nothing and lists every run it would purge; show the user that list, and call again with the returned confirmation value only after they agree. Export first if the user may need the record: `catalyst_export_workflow_run`, which works only at `full` data sharing. |
+| Hold it | `diagrid_pause_workflow_run` / `diagrid_resume_workflow_run` | Reversible; history is kept. |
+| Unblock a waiting run | `diagrid_raise_workflow_event` | Not idempotent: a run awaiting two events consumes two. |
+| Retry from a point | `diagrid_rerun_workflow_run` | Creates a **new** run from the original's input, resuming from a chosen event. Both the event and an id for the new run are required — nothing generates the id. The original is untouched, so any id the user recorded still points at the failure. |
+| Retry many from the same point | `diagrid_rerun_workflow_runs` | Starts new runs from several existing ones, all resuming from one event. The new runs execute for real, so side effects run again. Two calls: the first changes nothing and lists every run it would restart; show the user that list, and call again with the returned confirmation value only after they agree. |
+| Stop it | `diagrid_terminate_workflow_run` | Irreversible: it cannot be resumed. History is kept. Confirm before calling. |
+| Delete history | `diagrid_purge_workflow_runs` | Irreversible, and it destroys the evidence for this diagnosis. Always two calls: the first changes nothing and lists every run it would purge; show the user that list, and call again with the returned confirmation value only after they agree. Export first if the user may need the record: `diagrid_export_workflow_run`, which works only at `full` data sharing. |
 
 Each of these names the run by its instance id and the app identity it belongs to. Read
 the tool's schema for the exact argument names rather than guessing them.
@@ -181,14 +181,14 @@ managed workflow store and the Workflows API is unavailable there. That is a pro
 setting, not a broken run.
 
 If every start fails with `failed to create workflow instance: context canceled`, read
-the app (`catalyst_get_app`). An app tunnel opened with `--app-port`, or an app
+the app (`diagrid_get_app`). An app tunnel opened with `--app-port`, or an app
 endpoint with its health check enabled, with no server answering there keeps the app's
 health check failing, and Catalyst starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
 `catalyst-develop` section 7 has the fix.
 
 ## 4. An app, agent or MCP server that is not ready
 
-Read `catalyst_get_app` (or `catalyst_get_agent`, `catalyst_get_mcp_server`), then work
+Read `diagrid_get_app` (or `diagrid_get_agent`, `diagrid_get_mcp_server`), then work
 down this list. The backing identity, with its own status and messages, is under
 `status.appIds`. Stop at the first thing that explains it.
 
@@ -199,18 +199,18 @@ down this list. The backing identity, with its own status and messages, is under
    that mattered gets lost. Agents report from a narrower set: `ready`, `error`, `pending`,
    or empty before their first reconcile.
 2. **The components it depends on.** An app that cannot initialise a component does
-   not come up. `catalyst_list_components`, reading each one's `scopes`, then section 6.
-3. **Recent activity.** `catalyst_get_metrics` for that app shows, as request rates and
+   not come up. `diagrid_list_components`, reading each one's `scopes`, then section 6.
+3. **Recent activity.** `diagrid_get_metrics` for that app shows, as request rates and
    error rates, whether it has served or sent anything recently. Then, if the organization
-   shares at `full`, `catalyst_get_logs` for the sidecar's API calls and their errors.
-4. **Whether a workflow app works end to end.** `catalyst_start_workflow` (a write) then
-   `catalyst_get_workflow_run` separates the platform from the application.
+   shares at `full`, `diagrid_get_logs` for the sidecar's API calls and their errors.
+4. **Whether a workflow app works end to end.** `diagrid_start_workflow` (a write) then
+   `diagrid_get_workflow_run` separates the platform from the application.
 
 Probing the app directly, publishing a test message and reading state back are not
 available over MCP yet. Say so rather than implying you ruled them out. Seeing inbound
 requests as they arrive needs an app tunnel (`catalyst-app-tunnels`).
 
-A missing tunnel is an ordinary answer, not an error: `catalyst_list_app_tunnels` showing
+A missing tunnel is an ordinary answer, not an error: `diagrid_list_app_tunnels` showing
 none means no one is running that App ID from a local machine. For an app meant to run
 locally and be called by Catalyst (an invocation target, a subscriber, an agent endpoint,
 the MCP server behind an `MCPServer`), no tunnel is the cause.
@@ -221,7 +221,7 @@ The agent resource is an `Agent`: a Catalyst front for an agent **your** app run
 identified by its endpoint and archive settings. It stops answering when your application
 is down or its endpoint points somewhere unreachable.
 
-Then check the runtime registry, which `catalyst_get_agent` returns when `appId` is also passed. The registry is the
+Then check the runtime registry, which `diagrid_get_agent` returns when `appId` is also passed. The registry is the
 project's runtime view and includes externally deployed OSS Dapr agents, so it separates
 the two failures you cannot otherwise tell apart: a declared agent with no running
 workload, versus a running workload nobody declared.
@@ -230,29 +230,29 @@ What to check:
 
 - **The endpoint and the app.** The failure is nearly always the endpoint or the
   application behind it. Confirm the endpoint on the resource, and confirm the app's
-  readiness and recent request rates with `catalyst_get_app` and `catalyst_get_metrics`.
+  readiness and recent request rates with `diagrid_get_app` and `diagrid_get_metrics`.
 - **Access to the MCP servers it uses.** A tool call the agent is not authorized for is
   refused, which looks like an agent that stops mid-task. Read the per-tool policy with
-  `catalyst_get_access_policy`, and grant a missing tool with `catalyst_grant_access` only
+  `diagrid_get_access_policy`, and grant a missing tool with `diagrid_grant_access` only
   after the user agrees.
 - **Token budgets.** A budget in `enforce` mode **rejects** requests once
   the window's allowance is spent, which looks like an unresponsive agent rather than an
-  error. `catalyst_list_token_budgets` shows the limit, the spend in the current window
+  error. `diagrid_list_token_budgets` shows the limit, the spend in the current window
   and whether the cap is reached.
 
 ## 6. A component that will not connect
 
-1. `catalyst_get_component`. Read the status, then the messages under
+1. `diagrid_get_component`. Read the status, then the messages under
    `status.appIdStatus[]` — for a component that is where the reason nearly always is, per
    section 2. Inline setting values are withheld; secret references are shown, which is
    enough to tell whether it points at the secret you think it does.
-2. If the organization shares at `full`, `catalyst_get_logs` for the scoped app carries
+2. If the organization shares at `full`, `diagrid_get_logs` for the scoped app carries
    the sidecar's failing calls with the underlying broker or store error. At the default
    level say it was not shared and rely on step 1.
 3. If this is a second pub/sub or a second KV store in one project, read the limit before
    concluding anything. It is 1 per project on **every** plan, so the create normally fails
    no matter how often you retry — but the per-project limits carry a per-organization
-   override, so read the live quota with `catalyst_get_usage` rather than asserting the 1.
+   override, so read the live quota with `diagrid_get_usage` rather than asserting the 1.
    When it really is 1, say so as a platform default and describe the shape that works:
    one broker, many topics; one store, many keys. Do not call it a free-tier limit and do
    not suggest an upgrade — no plan upgrade raises it.
@@ -261,7 +261,7 @@ An MCP server is the same shape of problem with one extra trap: a **disabled** M
 reports `ready`, because disabled is a fully reconciled state. Its message says it is
 disabled and loaded by no app. `ready` is not the answer to "is it serving" — read the
 message before looking for a connection fault that does not exist. Enabling it is a
-change, so propose it (an `catalyst_apply` of the read-back manifest with it enabled)
+change, so propose it (an `diagrid_apply` of the read-back manifest with it enabled)
 rather than making it.
 
 Cluster-level diagnostics for a self-hosted Catalyst are not available over MCP yet.
@@ -311,7 +311,7 @@ Use only these routes, appended to that host:
 | Project list | `/admin/projects` |
 
 An agent's `:agentId` is not its name. It is the `agent_id` on the agent's registry record,
-from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+from `diagrid_list_agents` or `diagrid_get_agent`, and looks like
 `O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
 opens a page that cannot find the agent. An agent with no registry record yet takes its
 app ID in both places: `/agents/:appId/:appId`.

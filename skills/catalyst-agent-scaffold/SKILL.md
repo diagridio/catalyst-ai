@@ -14,7 +14,7 @@ crashes is a chat loop, not a Durable Agent.
 The Catalyst resource for an agent is the **`Agent`** kind: a connectivity and archiving
 resource in front of an agent that **your** app runs. Your process runs the loop, you
 write the code, and the resource takes an endpoint and archive settings. You create it
-with `catalyst_apply` (read `catalyst_get_resource_schema` for the `Agent` kind first, run
+with `diagrid_apply` (read `diagrid_get_resource_schema` for the `Agent` kind first, run
 with `dry_run`, show the user, then apply), which needs a write role.
 
 If the user asks for Catalyst to host or run the agent for them, say it is not something
@@ -26,7 +26,7 @@ fronting their app, or their own agent code.
 
 ## 2. Read the schema before writing the manifest
 
-Do not write an `Agent` manifest from memory. `catalyst_get_resource_schema` returns the
+Do not write an `Agent` manifest from memory. `diagrid_get_resource_schema` returns the
 fields the kind takes and the platform rejects unknown ones; a guessed field name that
 happens to be accepted can mean something else. An `App` is a different resource with
 different fields, so check which one you are writing.
@@ -137,7 +137,7 @@ managed KV store, the workflow store and agent infrastructure already attached. 
 infrastructure comes with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
-recreated if someone deletes it. Check with `catalyst_list_projects`; if it is gone, ask
+recreated if someone deletes it. Check with `diagrid_list_projects`; if it is gone, ask
 which project to use rather than creating one. The managed components have fixed names,
 `pubsub` and `kvstore`, and the managed workflow store has none.
 
@@ -153,15 +153,15 @@ it is not a workaround.
 
 Budget the resource slots before scaffolding: every app, agent and MCP server counts as
 one identity against a per-region allowance, and a coordinator plus four specialists is
-five of them. Read the allowance with `catalyst_get_usage` rather than quoting a figure,
+five of them. Read the allowance with `diagrid_get_usage` rather than quoting a figure,
 and do the same for throughput limits.
 
 ## 8. Run it, then kill it
 
-- Make sure the `App` and the `Agent` exist (`catalyst_get_app`, `catalyst_get_agent`).
+- Make sure the `App` and the `Agent` exist (`diagrid_get_app`, `diagrid_get_agent`).
 - Start the agent process with the connection values in its environment:
   `catalyst-develop` section 3 is the one place that says how, using
-  `catalyst_get_connection`.
+  `diagrid_get_connection`.
 - Send a prompt, wait for it to be mid-run, kill the process, start it again.
 - The run must resume rather than restart. If it restarts, the agent is not durable and
   the scaffold is not finished — usually the workflow store or a component name.
@@ -202,7 +202,7 @@ is enforced:
   `connect.path` (`/v1.0/diagrid/mcp/<mcpserver-name>`), with the same header. There is
   no Catalyst-specific MCP SDK. The framework's own MCP client or the `mcp` package works
   unchanged.
-- **Access is deny-all until granted.** Use `catalyst_grant_access` with
+- **Access is deny-all until granted.** Use `diagrid_grant_access` with
   `target_kind: mcp_server`, and grant only the tools the user asked for. A
   caller's `tools/list` then shows only the granted tools, and a call to any other tool
   is refused with 403. To verify a grant, make exactly those two calls as the
@@ -232,7 +232,7 @@ transcript. The console for the production server is `https://catalyst.diagrid.i
 | An MCP server | `/mcp-servers/<id>` |
 
 An agent's `<agentId>` is not its name. It is the `agent_id` on the agent's registry record,
-from `catalyst_list_agents` or `catalyst_get_agent`, and looks like
+from `diagrid_list_agents` or `diagrid_get_agent`, and looks like
 `O5SWC5DIMVZC2YLTONUXG5DBNZ2A`. Copy it from that answer; a link built from the name
 opens a page that cannot find the agent. An agent with no registry record yet takes its
 app ID in both places: `/agents/<appId>/<appId>`.
@@ -259,7 +259,7 @@ that 404s or lands on the wrong project is worse than no link.**
 - **Use the Catalyst MCP tools for everything in Catalyst.**
 - **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
   an `Agent` resource.
-- **Read `catalyst_get_resource_schema` before applying a manifest.** A remembered field
+- **Read `diagrid_get_resource_schema` before applying a manifest.** A remembered field
   name can quietly mean something else.
 - **Do not create a project.** Use `default`.
 - **Do not name a package coordinate you have not resolved**, and say plainly when a
