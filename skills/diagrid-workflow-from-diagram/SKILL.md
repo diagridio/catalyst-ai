@@ -190,7 +190,7 @@ pub/sub, the managed KV store, the workflow store and agent infrastructure alrea
 attached. Workflow history lives in that managed store, so a hand-rolled project is the
 most common reason a freshly generated workflow starts and then cannot be found. Confirm
 `default` exists with `diagrid_list_projects` rather than assuming it. If it is absent,
-follow "If `default` is absent" in `catalyst-setup`; it covers a project the user names
+follow "If `default` is absent" in `diagrid-setup`; it covers a project the user names
 and creating a new one.
 
 The generated project needs **no local state-store component and no Docker**. The

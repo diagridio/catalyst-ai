@@ -139,7 +139,7 @@ with the managed KV store.
 
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Check with `diagrid_list_projects`. If it is gone,
-follow "If `default` is absent" in `catalyst-setup`; it covers a project the user names
+follow "If `default` is absent" in `diagrid-setup`; it covers a project the user names
 and creating a new one. The managed components have fixed names, `pubsub` and `kvstore`,
 and the managed workflow store has none.
 

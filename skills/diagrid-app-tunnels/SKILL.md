@@ -59,7 +59,7 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
 - **`--project` has no short form here.** In `dev run`, `-p` means `--app-port`. Always
   write `--project <name>` in full. It is the user's existing project, normally `default`;
   `dev run` creates a project it cannot find, so make sure the project exists first (see
-  "If `default` is absent" in `catalyst-setup`) rather than letting `dev run` create one.
+  "If `default` is absent" in `diagrid-setup`) rather than letting `dev run` create one.
 - **`--app-port` is what opens the tunnel.** Without it the process gets outbound access
   only, exactly as with `diagrid_get_connection`.
 - **Give `--app-port` only to a process that serves on that port.** Diagrid

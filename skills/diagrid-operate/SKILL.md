@@ -67,7 +67,7 @@ store and agent infrastructure already attached. Use it. **Do not create a proje
 operating** — a hand-made project that behaves differently is indistinguishable from a
 broken one to the person asking for help. If the user has not named a project and
 `default` is absent, stop, tell the user, and only continue with project setup (see
-`catalyst-setup`) if they ask for it. If they named one, operate in that project.
+`diagrid-setup`) if they ask for it. If they named one, operate in that project.
 
 Two project-scoped limits matter for designs:
 

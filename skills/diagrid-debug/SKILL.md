@@ -48,7 +48,7 @@ indistinguishable from broken resources. The project named `default` already has
 pub/sub, KV, workflow store and agent infrastructure attached. **Do not create a project**
 while debugging — a new project with different settings turns one unexplained failure
 into two. If the user has not named a project and `default` is absent, stop debugging,
-tell the user, and only continue with project setup (see `catalyst-setup`) if they ask for
+tell the user, and only continue with project setup (see `diagrid-setup`) if they ask for
 it. If they named one, debug in that project.
 
 ## 2. Rules of evidence
