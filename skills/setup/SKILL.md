@@ -1,5 +1,5 @@
 ---
-name: catalyst-setup
+name: setup
 description: Connect this session to Diagrid Catalyst and confirm it works. Use when Catalyst tools are missing, a Catalyst call fails with an auth or organization error, the user is new to Catalyst, or they ask to sign in, set up, or check their connection.
 ---
 
@@ -18,7 +18,7 @@ Do not start by changing anything. Most sessions are already connected, and a re
 sign-in is the fastest way to make a working setup stop working.
 
 Call `diagrid_whoami`. Clients prefix tool names (in Claude Code it appears as
-`mcp__plugin_catalyst-ai_diagrid__diagrid_whoami`), so match the ending.
+`mcp__plugin_diagrid_diagrid__diagrid_whoami`), so match the ending.
 
 - **It returns an organization.** Connected. Confirm it the way section 5 says, and stop.
 - **The tool is not there, or it returns `NOT_AUTHENTICATED`.** The server is missing or
@@ -36,18 +36,18 @@ client set up from these instructions from one added by hand.
 
 | Client | Do |
 | --- | --- |
-| Claude Code | Installing this plugin registers the server, listed as `plugin:catalyst-ai:diagrid`. Open `/mcp`, pick that server and complete the browser sign-in |
+| Claude Code | Installing this plugin registers the server, listed as `plugin:diagrid:diagrid`. Open `/mcp`, pick that server and complete the browser sign-in |
 | Codex | `codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login diagrid` |
-| GitHub Copilot CLI | `copilot mcp add --transport http diagrid https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Diagrid-Plugin-Version": "0.9.0"}` to that server's entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| GitHub Copilot CLI | `copilot mcp add --transport http diagrid https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Diagrid-Plugin-Version": "0.10.0"}` to that server's entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
 | claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Diagrid-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
-| VS Code | In `.vscode/mcp.json`: `"diagrid": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Diagrid-Plugin-Version": "0.9.0"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| VS Code | In `.vscode/mcp.json`: `"diagrid": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Diagrid-Plugin-Version": "0.10.0"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 For Codex, add this to `~/.codex/config.toml` as its own two-line table:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.9.0"
+X-Diagrid-Plugin-Version = "0.10.0"
 ```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
@@ -79,9 +79,12 @@ entry for the server:
 Changing only the version number on the old header does not help. Do not call the
 `catalyst_*` tools in the meantime.
 
-In Claude Code, the plugin now registers the server as `plugin:catalyst-ai:diagrid`. If
-it shows it needs authentication after the update, ask the user to pick it in `/mcp`
-and sign in again.
+In Claude Code, the plugin registers the server as `plugin:diagrid:diagrid`. If it shows
+it needs authentication, ask the user to pick it in `/mcp` and sign in. If `/mcp` also
+lists `plugin:catalyst-ai:diagrid`, the plugin's old name is still installed beside it and
+every tool appears twice: ask the user to run `claude plugin uninstall catalyst-ai@diagrid`.
+
+<!-- lint-allow-banned: catalyst-ai: — names the old plugin's /mcp entry so the user can remove it -->
 
 ## 3. Know what the connection depends on
 
@@ -147,7 +150,7 @@ Catalyst, and cluster diagnostics are not available over MCP yet.
 
 The one exception is an app tunnel, which lets Catalyst call into a process on the
 user's machine and print inbound requests as they arrive. No tool opens one, so the
-`catalyst-app-tunnels` skill uses the Diagrid CLI for that, and only for that.
+`app-tunnels` skill uses the Diagrid CLI for that, and only for that.
 
 ## Rules
 
@@ -159,6 +162,6 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
   hand-made project that behaves differently is indistinguishable from a broken one to the
   person asking for help.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
-  tunnel needs the Diagrid CLI, and `catalyst-app-tunnels` installs it when one is needed.
+  tunnel needs the Diagrid CLI, and `app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `diagrid_whoami` has actually returned an
   organization, and you have said so. Configuration that looks right is not proof.

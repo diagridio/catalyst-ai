@@ -12,7 +12,7 @@ Two files are written, with identical content in two shapes:
 
 Sources of truth:
 
-* commands/*.md  each command's name (`/catalyst-ai:<file>`), its description and its
+* commands/*.md  each command's name (`/diagrid:<file>`), its description and its
                  body, which the page offers as the paste-in prompt for clients that
                  have no slash command.
 * .claude-plugin/plugin.json
@@ -37,7 +37,7 @@ from typing import Any
 REPO = Path(__file__).resolve().parent.parent
 OUT_DIR = Path("web") / "install"
 MCP_URL = "https://mcp.cloud.r1.diagrid.io/mcp"
-PLUGIN_NAME = "catalyst-ai"
+PLUGIN_NAME = "diagrid"
 MANIFEST = Path(".claude-plugin") / "plugin.json"
 VERSION_HEADER = "X-Diagrid-Plugin-Version"
 # The key the plugin registers the MCP server under, and the name the hand-written setups give it.

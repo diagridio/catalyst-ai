@@ -160,6 +160,16 @@ def main() -> int:
 
 
     cases.append(case(
+        "a command under the old plugin name",
+        lambda s: write(s, "old-cmd", "---\nname: old-cmd\ndescription: Fine.\n---\n\nRun `/catalyst-ai:try-agent`.\n"),
+    ))
+
+    cases.append(case(
+        "a tool under the old plugin prefix",
+        lambda s: write(s, "old-prefix", "---\nname: old-prefix\ndescription: Fine.\n---\n\nCall `mcp__plugin_catalyst-ai_diagrid__diagrid_whoami`.\n"),
+    ))
+
+    cases.append(case(
         "no description at all",
         lambda s: write(s, "no-desc", "---\nname: no-desc\n---\n\nBody.\n"),
     ))
@@ -212,10 +222,10 @@ def main() -> int:
     # The scope rule, which lives in two skills' prose because this repo has no
     # shared-fragment mechanism. The defect being guarded is real and measured:
     # before the rule existed, "is anything broken in my project?" made
-    # catalyst-operate read every project in a ten-project organization, well
+    # operate read every project in a ten-project organization, well
     # over half its calls landing on projects nobody asked about. The rule then
-    # went into catalyst-operate only — and the very next measured run routed to
-    # catalyst-debug instead, which did not have it. Same question, same defect,
+    # went into operate only — and the very next measured run routed to
+    # debug instead, which did not have it. Same question, same defect,
     # different front door. That is what this case exists to stop recurring.
     SCOPED = ("---\nname: {n}\ndescription: {d}\n---\n\n"
               "Resolve the current project, name it, and stay inside it.\n\n"
@@ -226,10 +236,10 @@ def main() -> int:
                "Covers a failed run, an unready app, a silent agent.")
 
     def scope_rule_dropped(s: Path) -> None:
-        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
-        # catalyst-debug keeps its body but loses the bounding rule entirely.
-        write(s, "catalyst-debug",
-              f"---\nname: catalyst-debug\ndescription: {DEBUG_D}\n---\n\n"
+        write(s, "operate", SCOPED.format(n="operate", d=OPERATE_D))
+        # debug keeps its body but loses the bounding rule entirely.
+        write(s, "debug",
+              f"---\nname: debug\ndescription: {DEBUG_D}\n---\n\n"
               "Route by symptom, then read the project.\n")
 
     cases.append(case("a scope-bounded skill that lost the one-project rule", scope_rule_dropped))
@@ -237,8 +247,8 @@ def main() -> int:
     # Control for that rule: both skills carrying it must pass, or the gate would
     # fail the very state it is meant to protect.
     def scope_rule_present(s: Path) -> None:
-        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
-        write(s, "catalyst-debug", SCOPED.format(n="catalyst-debug", d=DEBUG_D))
+        write(s, "operate", SCOPED.format(n="operate", d=OPERATE_D))
+        write(s, "debug", SCOPED.format(n="debug", d=DEBUG_D))
 
     cases.append(case(
         "both scope-bounded skills carrying the rule",

@@ -1,5 +1,5 @@
 ---
-name: catalyst-app-tunnels
+name: app-tunnels
 description: Open an app tunnel so Diagrid Catalyst can call into a process on this machine, with `diagrid dev run` or `diagrid listen`. Use for service invocation between laptop apps, pub/sub delivery, or an agent calling an MCP server on localhost.
 ---
 
@@ -9,7 +9,7 @@ Goal: end this skill with Catalyst able to reach a process on the user's machine
 port of their choosing, under a Catalyst identity, and with a request proven to have
 arrived through it.
 
-`diagrid_get_connection` (the `catalyst-develop` skill) gives a local process
+`diagrid_get_connection` (the `develop` skill) gives a local process
 **outbound** access only: it can call its sidecar, start workflows, publish. Nothing in
 Catalyst can call **back** into it. That needs an app tunnel, and no `diagrid_*` tool
 opens one. This is the one place these skills use the Diagrid CLI, and only for the
@@ -25,8 +25,8 @@ it can call the process.
 
 | The local process… | Needs a tunnel? | Use |
 | --- | --- | --- |
-| Is a workflow worker that registers workflows and polls for work | No | `catalyst-develop` |
-| Only calls its sidecar (starts workflows, publishes, reads state, calls an MCP server through Catalyst) | No | `catalyst-develop` |
+| Is a workflow worker that registers workflows and polls for work | No | `develop` |
+| Only calls its sidecar (starts workflows, publishes, reads state, calls an MCP server through Catalyst) | No | `develop` |
 | Is the **target** of service invocation from another app | Yes | Section 4 |
 | Receives pub/sub messages or input bindings | Yes | Section 3 |
 | Is the endpoint behind an `Agent` resource that Catalyst calls into | Yes | Section 3 |
@@ -124,7 +124,7 @@ What it does to the platform:
   change to undo.
 - **For an `Agent` or an `MCPServer`, create that resource first** with `diagrid_apply`.
   Run `dev run` before it exists, and `dev run` creates a plain App ID of that name. The
-  Agent or MCP server then refuses to adopt it and stays in error (`catalyst-deploy`).
+  Agent or MCP server then refuses to adopt it and stays in error (`deploy`).
   For a resource that already exists, `dev run` prints that the App ID is managed by it
   and skips provisioning. That is correct.
 - **The tunnel needs the App ID to be `ready`, and `dev run` gives up after about 100
@@ -205,7 +205,7 @@ not tunnel the caller.
    server's access policy, not its App ID, so it works while the tunnel is open.
 6. **Run the caller under its own identity**: an `Agent`'s App ID, or an app's. Use
    `dev run` without `--app-port` if it is only a caller, or `diagrid_get_connection`
-   (`catalyst-develop`).
+   (`develop`).
 7. **The caller reaches the server through its own sidecar**, never at the local URL:
    - Discovery: `GET $DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp` with
      `dapr-api-token: $DAPR_API_TOKEN` lists the servers this caller is granted, each

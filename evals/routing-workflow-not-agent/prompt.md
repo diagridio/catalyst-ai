@@ -1,12 +1,12 @@
 ---
 name: routing-workflow-not-agent
-description: A multi-step orchestration request fires catalyst-workflow-scaffold and must not fire catalyst-agent-scaffold. Half of the sharpest trigger pair in the plugin.
+description: A multi-step orchestration request fires workflow-scaffold and must not fire agent-scaffold. Half of the sharpest trigger pair in the plugin.
 tags: [routing]
 plugins: ["../.."]
 max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  catalyst-workflow-scaffold fires. catalyst-agent-scaffold does not. The prompt
+  workflow-scaffold fires. agent-scaffold does not. The prompt
   deliberately avoids the literal words "workflow" and "Dapr" so the routing
   decision is made on the description's distinctive terms rather than on a
   keyword echo.
