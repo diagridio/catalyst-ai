@@ -158,8 +158,8 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
 # neighbouring "Link to the console" sections in these same two skills have
 # already drifted in wording and section number, which is what this guards.
 SCOPE_BOUNDED_SKILLS: dict[str, str] = {
-    "operate": "an unqualified inspection question",
-    "debug": "a question with no symptom in it",
+    "diagrid-operate": "an unqualified inspection question",
+    "diagrid-debug": "a question with no symptom in it",
 }
 
 # Substrings that together mean the rule is present and complete: bound the

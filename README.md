@@ -13,7 +13,7 @@ question here, for reasons that are
 > **Early release.** The skills drive Diagrid through the remote Diagrid MCP server:
 > you add the server and sign in once. The one exception is an app tunnel, which lets
 > Diagrid call into a process on your machine. No MCP tool opens one, so
-> `app-tunnels` installs the Diagrid CLI and uses it for that alone. Read [What works today](#what-works-today) for what is and is not available
+> `diagrid-app-tunnels` installs the Diagrid CLI and uses it for that alone. Read [What works today](#what-works-today) for what is and is not available
 > over MCP yet.
 
 ## Install
@@ -168,7 +168,7 @@ claude plugin uninstall catalyst-ai@diagrid
 Uninstall the old plugin. With both installed, every skill and every tool shows up twice.
 Then run `/mcp`, and if `plugin:diagrid:diagrid` shows it needs authentication, pick it
 and sign in. The commands are now `/diagrid:try-workflow` and `/diagrid:try-agent`, and the
-skills dropped their `catalyst-` prefix: `diagrid:deploy`, `diagrid:setup` and so on.
+skills are `diagrid:diagrid-deploy`, `diagrid:diagrid-setup` and so on.
 
 ### Upgrading from 0.8.x
 
@@ -263,8 +263,8 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
 | GitHub Copilot 1.0.80 | ✅ 2.0 s (per-project install; `--global` not yet re-measured) | ✅ 10/10 | not yet verified |
 
-These were measured with the first ten skills. `app-tunnels` and
-`agent-harness` have not been re-measured on these clients yet.
+These were measured with the first ten skills. `diagrid-app-tunnels` and
+`diagrid-agent-harness` have not been re-measured on these clients yet.
 
 If you can get Codex or Copilot to answer a Diagrid question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
@@ -327,18 +327,18 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 
 | skill | what it's for |
 | --- | --- |
-| `setup` | Connect this session to Diagrid and confirm it works |
-| `workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
-| `workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
-| `agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Diagrid agent |
-| `agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
-| `develop` | The edit → rerun → observe loop against live Diagrid infrastructure |
-| `app-tunnels` | Let Diagrid call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
-| `deploy` | Move an application from your laptop into Diagrid |
-| `operate` | Inspect a running project, read-only |
-| `debug` | Diagnose why something isn't working |
-| `workflow-determinism` | Replay-safety rails for an orchestrator body |
-| `activity-idempotency` | Make activities safe to run twice |
+| `diagrid-setup` | Connect this session to Diagrid and confirm it works |
+| `diagrid-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
+| `diagrid-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
+| `diagrid-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Diagrid agent |
+| `diagrid-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
+| `diagrid-develop` | The edit → rerun → observe loop against live Diagrid infrastructure |
+| `diagrid-app-tunnels` | Let Diagrid call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
+| `diagrid-deploy` | Move an application from your laptop into Diagrid |
+| `diagrid-operate` | Inspect a running project, read-only |
+| `diagrid-debug` | Diagnose why something isn't working |
+| `diagrid-workflow-determinism` | Replay-safety rails for an orchestrator body |
+| `diagrid-activity-idempotency` | Make activities safe to run twice |
 
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
@@ -361,7 +361,7 @@ Being explicit, because the gap matters and you'll notice it:
 | Creating, changing, deleting and deploying resources | ✅ `diagrid_apply` and `diagrid_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
 | Running your app, agent or MCP server locally, calling out to Diagrid | ✅ works now, through `diagrid_get_connection` |
-| Letting Diagrid call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`app-tunnels`) |
+| Letting Diagrid call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`diagrid-app-tunnels`) |
 | An agent calling an MCP server on your machine through Diagrid's workflow path (`dapr.internal.mcp.*` child workflows) | ⛔ the workflow path does not reach a tunneled MCP server yet; the skill points agents at Diagrid's HTTP MCP endpoint, which works |
 | Logs | ⚠️ `diagrid_get_logs` only at the `full` data-sharing level, and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, cluster diagnostics | ⛔ not available over MCP yet |
@@ -497,7 +497,7 @@ changes. An old `catalyst_*` tool name, or the old server key `catalyst`, fails 
 plugins up to 0.8.x still call them and the server's CI checks it still serves them; leave
 it as it is until those names are retired. The gate also fails on any invocation of the
 Diagrid CLI, except the tunnel commands (install check, sign-in and the two tunnel commands) inside
-`skills/app-tunnels/` and `evals/tunnel-*/`, on anything
+`skills/diagrid-app-tunnels/` and `evals/tunnel-*/`, on anything
 that points at a server other than the remote one, and on any host under Diagrid's
 domains that is not on its allowlist (the MCP server, the console, the docs and downloads
 hosts, and the main site).
@@ -510,7 +510,7 @@ If you add a skill, or change any skill's content, bump `version` in
 otherwise, and nothing tells them. Every bump also changes the `X-Diagrid-Plugin-Version`
 header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.json` and
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
-in the same three setups in `skills/setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
+in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
 
 To measure a run of the plugin, finish the Claude Code session and run
 `python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log

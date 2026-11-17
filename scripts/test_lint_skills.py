@@ -222,10 +222,10 @@ def main() -> int:
     # The scope rule, which lives in two skills' prose because this repo has no
     # shared-fragment mechanism. The defect being guarded is real and measured:
     # before the rule existed, "is anything broken in my project?" made
-    # operate read every project in a ten-project organization, well
+    # diagrid-operate read every project in a ten-project organization, well
     # over half its calls landing on projects nobody asked about. The rule then
-    # went into operate only — and the very next measured run routed to
-    # debug instead, which did not have it. Same question, same defect,
+    # went into diagrid-operate only — and the very next measured run routed to
+    # diagrid-debug instead, which did not have it. Same question, same defect,
     # different front door. That is what this case exists to stop recurring.
     SCOPED = ("---\nname: {n}\ndescription: {d}\n---\n\n"
               "Resolve the current project, name it, and stay inside it.\n\n"
@@ -236,10 +236,10 @@ def main() -> int:
                "Covers a failed run, an unready app, a silent agent.")
 
     def scope_rule_dropped(s: Path) -> None:
-        write(s, "operate", SCOPED.format(n="operate", d=OPERATE_D))
-        # debug keeps its body but loses the bounding rule entirely.
-        write(s, "debug",
-              f"---\nname: debug\ndescription: {DEBUG_D}\n---\n\n"
+        write(s, "diagrid-operate", SCOPED.format(n="diagrid-operate", d=OPERATE_D))
+        # diagrid-debug keeps its body but loses the bounding rule entirely.
+        write(s, "diagrid-debug",
+              f"---\nname: diagrid-debug\ndescription: {DEBUG_D}\n---\n\n"
               "Route by symptom, then read the project.\n")
 
     cases.append(case("a scope-bounded skill that lost the one-project rule", scope_rule_dropped))
@@ -247,8 +247,8 @@ def main() -> int:
     # Control for that rule: both skills carrying it must pass, or the gate would
     # fail the very state it is meant to protect.
     def scope_rule_present(s: Path) -> None:
-        write(s, "operate", SCOPED.format(n="operate", d=OPERATE_D))
-        write(s, "debug", SCOPED.format(n="debug", d=DEBUG_D))
+        write(s, "diagrid-operate", SCOPED.format(n="diagrid-operate", d=OPERATE_D))
+        write(s, "diagrid-debug", SCOPED.format(n="diagrid-debug", d=DEBUG_D))
 
     cases.append(case(
         "both scope-bounded skills carrying the rule",

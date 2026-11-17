@@ -1,5 +1,5 @@
 ---
-name: debug
+name: diagrid-debug
 description: Diagnose why something in Diagrid (formerly Catalyst) is broken or stuck, then pause, terminate, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
 ---
 
@@ -11,7 +11,7 @@ diagnosis, and neither is a plausible story with no read behind it.
 
 Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, that is a connection problem, not the failure
-you were sent to debug: the `setup` skill covers it.
+you were sent to debug: the `diagrid-setup` skill covers it.
 
 ## 1. Route by symptom
 
@@ -150,7 +150,7 @@ effect nobody triggered twice:
   designed.
 
 Check both before blaming infrastructure; both present as intermittent. The
-`workflow-determinism` and `activity-idempotency` skills carry the full
+`diagrid-workflow-determinism` and `diagrid-activity-idempotency` skills carry the full
 hazard tables and the fixes.
 
 ### Acting on a run
@@ -184,7 +184,7 @@ If every start fails with `failed to create workflow instance: context canceled`
 the app (`diagrid_get_app`). An app tunnel opened with `--app-port`, or an app
 endpoint with its health check enabled, with no server answering there keeps the app's
 health check failing, and Diagrid starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
-`develop` section 7 has the fix.
+`diagrid-develop` section 7 has the fix.
 
 ## 4. An app, agent or MCP server that is not ready
 
@@ -208,7 +208,7 @@ down this list. The backing identity, with its own status and messages, is under
 
 Probing the app directly, publishing a test message and reading state back are not
 available over MCP yet. Say so rather than implying you ruled them out. Seeing inbound
-requests as they arrive needs an app tunnel (`app-tunnels`).
+requests as they arrive needs an app tunnel (`diagrid-app-tunnels`).
 
 A missing tunnel is an ordinary answer, not an error: `diagrid_list_app_tunnels` showing
 none means no one is running that App ID from a local machine. For an app meant to run
@@ -278,7 +278,7 @@ Two unrelated families, with different remedies. Do not conflate them.
 **Connection.** `NOT_AUTHENTICATED`, `NO_ORG`, `ORG_MISMATCH`, `ORG_UNAVAILABLE`,
 `CATALYST_NOT_ENABLED`. These carry a cause, an instruction written for you, and a
 retryable flag. You never reached Diagrid: say so and stop, rather than reporting a
-resource as broken on the strength of a call that never landed. The `setup` skill
+resource as broken on the strength of a call that never landed. The `diagrid-setup` skill
 covers them. If the flag says retryable, wait briefly and retry once; if it does not, do
 not retry at all, because a permanent refusal retried presents to the user as a hang.
 

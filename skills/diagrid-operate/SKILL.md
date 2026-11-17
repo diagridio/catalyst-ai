@@ -1,5 +1,5 @@
 ---
-name: operate
+name: diagrid-operate
 description: Inspect a running Diagrid (formerly Catalyst) project, read-only — projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use for what is deployed and its state, a limit being hit, or whether a pasted run or log response is clean.
 ---
 
@@ -11,7 +11,7 @@ person reading your answer a guess is indistinguishable from a fact.
 
 Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, this is a connection problem rather than an
-inspection problem: the `setup` skill covers it, and there is nothing useful to
+inspection problem: the `diagrid-setup` skill covers it, and there is nothing useful to
 read until the user has signed in. Do not guess a project's state to fill the gap.
 
 ## 1. Start at the project, not at the resource
@@ -121,11 +121,11 @@ Three limits in that table are deliberate, not oversights:
   yet.
 - **This skill only reads, even where the MCP server can write.** For a role that allows
   writes, the server also has `diagrid_apply`, `diagrid_delete_resource` and workflow-run
-  actions (see `deploy` and `debug`). This skill uses none of them.
+  actions (see `diagrid-deploy` and `diagrid-debug`). This skill uses none of them.
   Anything the user wants changed goes to those skills, with their consent.
 - **Some reads have no tool.** Invoking an app, publishing to a topic, and reading or
   writing state are not available over MCP yet. Say that in one line; do not substitute
-  a guess. Streaming inbound requests needs an app tunnel (`app-tunnels`).
+  a guess. Streaming inbound requests needs an app tunnel (`diagrid-app-tunnels`).
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
 Where a tool asks for or returns `appId`, it means that identity's name. Read it from the
@@ -205,7 +205,7 @@ The same trap applies twice more:
   `token`, `apiKey`, `clientSecret`, `privateKey`. A secret *reference* survives, so you
   can still answer "which secret does this use". An absent `apiToken` never means the app,
   agent or MCP server has no token. No read tool returns its token; only `diagrid_get_connection`
-  does (see `develop` section 3).
+  does (see `diagrid-develop` section 3).
 
 Tell the user the field was withheld and why: "it was not shared at this organization's
 data-sharing level (`metadata`)". Name the level. The payload cannot be read through this

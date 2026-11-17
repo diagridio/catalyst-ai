@@ -1,5 +1,5 @@
 ---
-name: agent-scaffold
+name: diagrid-agent-scaffold
 description: Build or stand up a Durable Agent on Diagrid (formerly Catalyst) — your own agent app, fronted by a Diagrid agent resource. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
 ---
 
@@ -80,7 +80,7 @@ as a required peer, so following the README leaves an unmet peer dependency.
 On **any other TypeScript framework** there is still no adapter, and the honest options
 are unchanged: write the agent in a language whose framework has a published adapter,
 or drive Dapr Workflows directly with `@dapr/dapr`, which is published and does support
-workflows — that loses the framework bridge, not durability. `agent-harness`
+workflows — that loses the framework bridge, not durability. `diagrid-agent-harness`
 covers that route, for any language: it maps a hand-written loop onto a workflow, one
 activity per model call and per tool call. There is no other route (section 1).
 
@@ -160,7 +160,7 @@ and do the same for throughput limits.
 
 - Make sure the `App` and the `Agent` exist (`diagrid_get_app`, `diagrid_get_agent`).
 - Start the agent process with the connection values in its environment:
-  `develop` section 3 is the one place that says how, using
+  `diagrid-develop` section 3 is the one place that says how, using
   `diagrid_get_connection`.
 - Send a prompt, wait for it to be mid-run, kill the process, start it again.
 - The run must resume rather than restart. If it restarts, the agent is not durable and
@@ -173,7 +173,7 @@ own code, it's the `appId` on its registry record.
 
 An agent exposes an endpoint Diagrid calls into, so unlike a pure workflow worker it
 needs an inbound port and a registered endpoint. Run on a laptop, that endpoint is
-reached through an app tunnel on the agent's App ID (`app-tunnels`). The same
+reached through an app tunnel on the agent's App ID (`diagrid-app-tunnels`). The same
 goes for an MCP server on this machine that the agent calls tools on: it is tunneled
 behind its own `MCPServer`, and the agent is granted access to its tools.
 

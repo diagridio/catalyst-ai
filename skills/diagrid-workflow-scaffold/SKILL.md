@@ -1,5 +1,5 @@
 ---
-name: workflow-scaffold
+name: diagrid-workflow-scaffold
 description: Add, create or generate a Dapr Workflow that runs on Diagrid (formerly Catalyst), not a local sidecar — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process.
 ---
 
@@ -104,7 +104,7 @@ instead and let the old instances drain. Workflow versioning is not solved for y
    it is absent, `diagrid_apply` an `App` (read `diagrid_get_resource_schema` first, run
    with `dry_run`, show the user, then apply). A write role is needed: if
    `diagrid_apply` is not in the tool list, say so and stop.
-2. **Run the worker.** `develop` section 3 is the one place that says how to
+2. **Run the worker.** `diagrid-develop` section 3 is the one place that says how to
    start the process with the connection values from `diagrid_get_connection` in its
    environment. Follow it
    rather than improvising.

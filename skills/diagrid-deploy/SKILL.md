@@ -1,5 +1,5 @@
 ---
-name: deploy
+name: diagrid-deploy
 description: Move an application from a laptop into Diagrid (formerly Catalyst). Covers budgeting headroom, creating the app, agent or MCP server first, attaching connections and topic subscriptions, the order these must be created in, and proving each one came up.
 ---
 
@@ -219,7 +219,7 @@ back:
 be `ready` **and** its API token to be present; a status of `ready` with no token yet is
 not usable, and that is the state a caller most often reports as "it says ready but
 nothing works". No read tool returns the API token; only `diagrid_get_connection`
-does (see `develop` section 3).
+does (see `diagrid-develop` section 3).
 
 The status vocabulary is `ready`, `pending`, `processing`, `provisioning`, `updating`,
 `deleting`, `deleted`, `error`, `unknown` — but the set is not closed and the API declares
@@ -250,7 +250,7 @@ reading state back are not available over MCP yet; say so rather than claiming y
 checked them.
 
 The API token of an app, agent or MCP server is the credential for that identity. No read tool returns it; only
-`diagrid_get_connection` does (see `develop` section 3). Do not ask the user
+`diagrid_get_connection` does (see `diagrid-develop` section 3). Do not ask the user
 to paste one, and do not write one into a summary, a file or a commit.
 
 ## 6. Hand back a link so the user can see it
@@ -319,7 +319,7 @@ rejected. Send one only when the user has explicitly asked for a new project.
   `diagrid_apply`, `diagrid_delete_resource` or any other call that creates, changes
   or deletes something, call `diagrid_whoami` and tell the user which organization the
   change lands in. A user with more than one organization cannot otherwise tell where it
-  went. If it fails, follow `setup` and write nothing.
+  went. If it fails, follow `diagrid-setup` and write nothing.
 - **Check headroom before designing, not after building.** `diagrid_get_usage`.
   Identities, connections and subscriptions are capped per region across the whole
   organization, so a second project adds no headroom for them.

@@ -1,5 +1,5 @@
 ---
-name: activity-idempotency
+name: diagrid-activity-idempotency
 description: Make Dapr Workflow activities on Diagrid safe to run twice. Use when writing, changing or reviewing an activity with a side effect — payment, email, write, third-party call — or when a retry duplicated work. Activities run at least once, never exactly once.
 ---
 
@@ -248,5 +248,5 @@ than reconstructing it in the body, so it is visible to a reviewer.
   instance, or modify state to prove a point. Do not create a project — the organization's
   `default` project already has a managed workflow store.
 - For hazards in the *orchestrator* body rather than the activity body, use the
-  `workflow-determinism` skill. Non-determinism inside an activity is intended
+  `diagrid-workflow-determinism` skill. Non-determinism inside an activity is intended
   and is not a finding.

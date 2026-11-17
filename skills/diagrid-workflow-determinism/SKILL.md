@@ -1,5 +1,5 @@
 ---
-name: workflow-determinism
+name: diagrid-workflow-determinism
 description: Replay-safety rails for a Dapr Workflow orchestrator on Diagrid. Use when writing, changing or reviewing code inside a workflow function, or when a run diverges on replay — clocks, randomness, ids, iteration order, direct I/O, threads, global state.
 ---
 
@@ -253,4 +253,4 @@ only mechanism that catches a determinism regression before deployment does.
   Do not create a project — the organization's `default` project already has a managed
   workflow store.
 - For hazards in the *activity* body — duplicate side effects under retry — use the
-  `activity-idempotency` skill.
+  `diagrid-activity-idempotency` skill.

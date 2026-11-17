@@ -18,7 +18,7 @@ compile:
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.
   One exception: opening an app tunnel, so Catalyst can call into a process on
-  the user's machine, has no `diagrid_*` tool. The `app-tunnels` skill
+  the user's machine, has no `diagrid_*` tool. The `diagrid-app-tunnels` skill
   and its evals may name the CLI commands that do that, and no others.
 * A local MCP server (`mcp serve`, `mcp install`) or a host outside the allowlist.
   The only server is the remote one at https://mcp.cloud.r1.diagrid.io/mcp, and
@@ -85,7 +85,7 @@ CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 # subcommands that installing, signing in and tunnelling need. `dev` passes only as
 # `dev run`, `dev stop` or `dev scaffold`. Every other subcommand still fails there, so
 # the skill cannot drift into doing with the CLI what a `diagrid_*` tool already does.
-TUNNEL_SKILL = Path("skills") / "app-tunnels"
+TUNNEL_SKILL = Path("skills") / "diagrid-app-tunnels"
 TUNNEL_EVAL_PREFIX = "tunnel-"
 TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "listen"})
 TUNNEL_DEV_SUBCOMMAND = re.compile(r"`?\s+(?:run|stop|scaffold)(?![\w-])")

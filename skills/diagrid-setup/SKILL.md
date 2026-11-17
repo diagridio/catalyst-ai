@@ -1,5 +1,5 @@
 ---
-name: setup
+name: diagrid-setup
 description: Connect this session to Diagrid (formerly Catalyst) and confirm it works. Use when Diagrid tools are missing, a Diagrid call fails with an auth or organization error, the user is new to Diagrid, or they ask to sign in, set up, or check their connection.
 ---
 
@@ -150,7 +150,7 @@ Diagrid, and cluster diagnostics are not available over MCP yet.
 
 The one exception is an app tunnel, which lets Diagrid call into a process on the
 user's machine and print inbound requests as they arrive. No tool opens one, so the
-`app-tunnels` skill uses the Diagrid CLI for that, and only for that.
+`diagrid-app-tunnels` skill uses the Diagrid CLI for that, and only for that.
 
 ## Rules
 
@@ -162,6 +162,6 @@ user's machine and print inbound requests as they arrive. No tool opens one, so 
   hand-made project that behaves differently is indistinguishable from a broken one to the
   person asking for help.
 - **Do not install anything.** Everything here runs through the MCP server. Only an app
-  tunnel needs the Diagrid CLI, and `app-tunnels` installs it when one is needed.
+  tunnel needs the Diagrid CLI, and `diagrid-app-tunnels` installs it when one is needed.
 - **Name the proof.** This skill is done when `diagrid_whoami` has actually returned an
   organization, and you have said so. Configuration that looks right is not proof.

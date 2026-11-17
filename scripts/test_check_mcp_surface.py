@@ -87,21 +87,21 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     (
         "the tunnel skill may name the tunnel commands",
         {
-            "skills/app-tunnels/SKILL.md": "Run `diagrid version`, `diagrid login`, `diagrid whoami`,\n"
+            "skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid version`, `diagrid login`, `diagrid whoami`,\n"
             "`diagrid dev run --id x --app-port 8000` and `diagrid listen --id x`.\n",
             "evals/tunnel-mcp/graders/g.md": "diagrid dev run --id travel\n",
         },
         False,
         "",
     ),
-    ("the tunnel skill may name dev stop and dev scaffold", {"skills/app-tunnels/SKILL.md": "Run `diagrid dev stop --id x -p p`, then\n`diagrid dev scaffold -p p`.\n"}, False, ""),
-    ("the tunnel skill may not name other dev subcommands", {"skills/app-tunnels/SKILL.md": "Run `diagrid dev deploy x`.\n"}, True, "diagrid dev"),
-    ("the tunnel skill may not name a bare diagrid dev", {"skills/app-tunnels/SKILL.md": "Run `diagrid dev`.\n"}, True, "diagrid dev"),
-    ("the tunnel skill may not name other CLI commands", {"skills/app-tunnels/SKILL.md": "Run `diagrid mcpserver create x`.\n"}, True, "diagrid mcpserver"),
+    ("the tunnel skill may name dev stop and dev scaffold", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev stop --id x -p p`, then\n`diagrid dev scaffold -p p`.\n"}, False, ""),
+    ("the tunnel skill may not name other dev subcommands", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev deploy x`.\n"}, True, "diagrid dev"),
+    ("the tunnel skill may not name a bare diagrid dev", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev`.\n"}, True, "diagrid dev"),
+    ("the tunnel skill may not name other CLI commands", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid mcpserver create x`.\n"}, True, "diagrid mcpserver"),
     ("a tunnel eval may not name other CLI commands", {"evals/tunnel-mcp/prompt.md": "diagrid project list\n"}, True, "diagrid project"),
-    ("another skill may not name the tunnel commands", {"skills/develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
+    ("another skill may not name the tunnel commands", {"skills/diagrid-develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
     ("an eval outside the tunnel prefix may not name them", {"evals/other/prompt.md": "diagrid listen --id x\n"}, True, "diagrid listen"),
-    ("the tunnel skill may still not name a local MCP server", {"skills/app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
+    ("the tunnel skill may still not name a local MCP server", {"skills/diagrid-app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
     ("local MCP server in the web demo", {"web/demo.html": "<p>Start the local MCP server.</p>\n"}, True, "local MCP server"),
     ("staging host in the web component", {"web/install/data.js": "x = 'https://mcp.cloud.staging.diagrid.dev/mcp'\n"}, True, "non-production"),
     ("unlisted host in the embed snippet", {"web/embed/diagrid-io.html": "<a href='https://api.r1.diagrid.io'>\n"}, True, "not an allowed host"),

@@ -1,5 +1,5 @@
 ---
-name: workflow-from-diagram
+name: diagrid-workflow-from-diagram
 description: Turn a diagram into a durable workflow on Diagrid — a Mermaid flowchart, a sequence diagram, a BPMN export, a whiteboard photo or a hand sketch. Use when the design arrives as boxes, arrows and swimlanes rather than as a written request.
 ---
 
@@ -177,8 +177,8 @@ here, while the code is being written:
   logical step. Key the idempotency on the instance id plus the activity name, both of
   which the IR already gives you.
 
-Both hazards have their own skills in this collection — `workflow-determinism`
-for the orchestrator body and `activity-idempotency` for the activities. Reach
+Both hazards have their own skills in this collection — `diagrid-workflow-determinism`
+for the orchestrator body and `diagrid-activity-idempotency` for the activities. Reach
 for those when reviewing a workflow. Here they are a checklist you run per box as you
 write it.
 
@@ -217,7 +217,7 @@ Then run it against Diagrid:
 
 - Make sure the app exists: `diagrid_get_app`, else `diagrid_apply` an `App` (read
   `diagrid_get_resource_schema` first and run with `dry_run`). A write role is needed.
-- Start the worker with the connection values in its environment. `develop`
+- Start the worker with the connection values in its environment. `diagrid-develop`
   section 3 is the one place that says how, using `diagrid_get_connection`.
 
 **Give the app no endpoint and no port.** What a diagram translates into is a workflow

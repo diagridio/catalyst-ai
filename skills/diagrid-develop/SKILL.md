@@ -1,5 +1,5 @@
 ---
-name: develop
+name: diagrid-develop
 description: Run an app or agent locally against Diagrid — get its connection with diagrid_get_connection, start it, trigger runs, and crash and restart it to watch a workflow resume. Use for local runs, a crash-and-recover demo, or a worker that never connects.
 ---
 
@@ -11,7 +11,7 @@ edit is not this loop; if you find yourself recreating resources to test a code 
 something above is wrong.
 
 Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
-missing or refuse with `NOT_AUTHENTICATED`, the `setup` skill covers it.
+missing or refuse with `NOT_AUTHENTICATED`, the `diagrid-setup` skill covers it.
 
 ## 1. The shape of the loop
 
@@ -47,9 +47,9 @@ own code, it's the `appId` on its registry record.
    the user, then apply. The project's managed `pubsub` and `kvstore` are already
    there. Apply a component only if the app needs one beyond them,
    and apply it before the app, then any subscriptions scoped to the app in a second
-   call (see `deploy` for the full ordering), so they exist when its sidecar
+   call (see `diagrid-deploy` for the full ordering), so they exist when its sidecar
    boots. An agent needs none: apply its `Agent` resource and Diagrid provides its
-   state, pub/sub and registry (`agent-scaffold`). A sample's local
+   state, pub/sub and registry (`diagrid-agent-scaffold`). A sample's local
    `resources/` files are for running without Diagrid, so leave them out. An app with
    no endpoint is the correct shape for a pure workflow worker, which dials Diagrid
    outbound.
@@ -110,13 +110,13 @@ Two things about the worker process itself:
   start (section 7).
 - **An app that Diagrid must call into** (service invocation, pub/sub delivery, an agent
   endpoint, the MCP server behind an `MCPServer`) needs an app tunnel as well, and these
-  three values do not open one. The `app-tunnels` skill covers it. Never use a
+  three values do not open one. The `diagrid-app-tunnels` skill covers it. Never use a
   public tunnel instead. `diagrid_list_app_tunnels` lists the tunnels open on the
   project, so you can see whether Diagrid currently reaches a local process.
 - **An app or agent that calls an MCP server** calls it through its own sidecar, at
   `$DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp/<mcpserver-name>` with its `DAPR_API_TOKEN`. It
   never calls the server's own URL, and never calls `dapr.internal.mcp.*` workflows
-  (`DaprMCPClient` in the Dapr SDK). `agent-scaffold` section 9 has the details.
+  (`DaprMCPClient` in the Dapr SDK). `diagrid-agent-scaffold` section 9 has the details.
 
 If the process cannot connect, read the app back (`diagrid_get_app`) before changing
 code. Status and the per-identity messages under `status.appIds` say whether the platform
@@ -146,7 +146,7 @@ see which step the run is on or failed at. `diagrid_list_workflow_runs` finds ru
 you lost the id.
 
 Stopping a run is a separate matter and is deliberately not in this skill — it is
-irreversible and belongs with diagnosis rather than iteration (`debug`).
+irreversible and belongs with diagnosis rather than iteration (`diagrid-debug`).
 
 ### Watch a run survive a crash
 
@@ -161,7 +161,7 @@ This is the quickest way to see what durability buys:
    crash ran once, and only the step the crash cut off ran again.
 
 That re-run is expected, because activities run at least once. Never say "nothing ran
-twice". An activity with a side effect must be safe to repeat (`activity-idempotency`).
+twice". An activity with a side effect must be safe to repeat (`diagrid-activity-idempotency`).
 
 ## 5. Read the output while you develop
 
@@ -208,10 +208,10 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 | --- | --- | --- |
 | `diagrid_get_connection` missing or refused | Not available to this role or server | Say so and stop |
 | `diagrid_get_app` says the app does not exist | Wrong name or project | Check the name with `diagrid_list_apps` |
-| The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `diagrid_list_components` and then `debug` |
+| The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `diagrid_list_components` and then `diagrid-debug` |
 | The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `diagrid_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
 | The worker is connected but a run fails | An application error | `diagrid_get_workflow_run` for the failing step |
-| Every workflow start fails with `failed to create workflow instance: context canceled` | The worker runs behind an app tunnel opened with `--app-port`, or its App ID has an app endpoint with the health check enabled, and nothing answers there. Diagrid starts no workflows or actors until the app's health check passes | Remove the app port: clear the endpoint on the App ID (read it, drop the endpoint, apply it whole), or run it without `--app-port` (`app-tunnels`). Keep one only for a process that serves Diagrid's calls |
+| Every workflow start fails with `failed to create workflow instance: context canceled` | The worker runs behind an app tunnel opened with `--app-port`, or its App ID has an app endpoint with the health check enabled, and nothing answers there. Diagrid starts no workflows or actors until the app's health check passes | Remove the app port: clear the endpoint on the App ID (read it, drop the endpoint, apply it whole), or run it without `--app-port` (`diagrid-app-tunnels`). Keep one only for a process that serves Diagrid's calls |
 | Bind error on startup in a worker that never needed a port | An HTTP server was added unnecessarily | Remove it; see section 3 |
 | A component is not ready | A component, not your app | `diagrid_get_component`, then `status.appIdStatus[]` |
 | `component must be deleted to be updated ...` | You changed a component's type | Delete it and apply it again |
@@ -224,7 +224,7 @@ Two quieter failure modes with no error to search for:
   effect, read the resource back before debugging your code.
 - **The app is ready and requests still do not arrive.** Check
   `diagrid_list_app_tunnels`: with no tunnel open on that App ID, nothing in Diagrid can
-  reach the local process (`app-tunnels`, which can also print requests as they
+  reach the local process (`diagrid-app-tunnels`, which can also print requests as they
   arrive). Then check `diagrid_get_metrics` for the app.
 
 ## Rules
@@ -234,7 +234,7 @@ Two quieter failure modes with no error to search for:
   `diagrid_apply`, `diagrid_delete_resource` or any other call that creates, changes
   or deletes something, call `diagrid_whoami` and tell the user which organization the
   change lands in. A user with more than one organization cannot otherwise tell where it
-  went. If it fails, follow `setup` and write nothing.
+  went. If it fails, follow `diagrid-setup` and write nothing.
 - **Do not create a project.** Use `default`, and check the project name before the first
   call of a session.
 - **Set the connection values inline, in a gitignored `.env`, or through your tool's
