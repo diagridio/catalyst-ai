@@ -177,6 +177,8 @@ def main() -> int:
             check("a Read whose offset or limit is not a number falls back to the defaults",
                   (session_metrics.read_bytes(str(long_file), {"offset": "abc", "limit": [2]}),
                    session_metrics.read_bytes(str(long_file), {"offset": "4", "limit": None})), (6, 4))
+            check("a Read with a negative limit counts nothing",
+                  session_metrics.read_bytes(str(long_file), {"limit": -1}), 0)
         check("client and model", (m["client"], m["model"]), ("claude-code 2.1.325", "claude-opus-5-5"))
         check("wall time from first to last line, subagent included; bad and naive timestamps "
               "do not stop the run", m["wall_seconds"], 10)

@@ -160,14 +160,15 @@ def skill_of(path: str, bases: dict[str, str]) -> str | None:
 def read_bytes(path: str, args: dict) -> int:
     """The bytes a Read loaded: the lines from `offset` (1-based, default 1)
     for `limit` lines, or for the client's default when no limit was given.
-    An offset or limit that is not a number falls back to those defaults.
+    An offset or limit that is not a number falls back to those defaults, and a
+    negative limit counts nothing (the client rejects such a Read).
     0 for a file that no longer exists."""
     try:
         lines = Path(path).read_bytes().splitlines(keepends=True)
     except OSError:
         return 0  # read then, gone now: the skill was still used
     start = max(as_int(args.get("offset"), 1) - 1, 0)
-    end = start + as_int(args.get("limit"), READ_DEFAULT_LIMIT)
+    end = start + max(as_int(args.get("limit"), READ_DEFAULT_LIMIT), 0)
     return sum(len(line) for line in lines[start:end])
 
 
