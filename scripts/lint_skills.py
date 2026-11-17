@@ -76,6 +76,15 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
+    "catalyst-ai:": (
+        "the old plugin name. The plugin is `diagrid`, so its commands are "
+        "`/diagrid:try-agent` and `/diagrid:try-workflow` and its skills are "
+        "`diagrid:<skill>`. A `/catalyst-ai:` command does not exist in the new plugin."
+    ),
+    "plugin_catalyst-ai_": (
+        "the old plugin's prefix on Claude Code tool names. The plugin is `diagrid`, "
+        "so the tools are `mcp__plugin_diagrid_diagrid__diagrid_*`."
+    ),
     "managed-agent": (
         "a hidden command for a feature that is not released to customers. Naming "
         "it, even to warn against it, only advertises it. The agent path is the "
@@ -147,8 +156,8 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
 # neighbouring "Link to the console" sections in these same two skills have
 # already drifted in wording and section number, which is what this guards.
 SCOPE_BOUNDED_SKILLS: dict[str, str] = {
-    "catalyst-operate": "an unqualified inspection question",
-    "catalyst-debug": "a question with no symptom in it",
+    "operate": "an unqualified inspection question",
+    "debug": "a question with no symptom in it",
 }
 
 # Substrings that together mean the rule is present and complete: bound the

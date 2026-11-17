@@ -128,8 +128,8 @@ activity, so "Charge card", "Send email" and "Create shipment" will occasionally
 execute twice for one logical step. Key each one on the instance id plus the activity
 name — both already in the IR — and never let two activities own the same write.
 
-Both are covered at length by the `catalyst-workflow-determinism` and
-`catalyst-activity-idempotency` skills in this collection. Here they are a per-box
+Both are covered at length by the `workflow-determinism` and
+`activity-idempotency` skills in this collection. Here they are a per-box
 checklist.
 
 One more, specific to generated code: **renaming or reordering activities breaks runs

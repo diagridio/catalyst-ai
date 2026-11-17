@@ -1,5 +1,5 @@
 ---
-name: catalyst-agent-harness
+name: agent-harness
 description: Make a hand-written agent loop durable on Catalyst with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
 ---
 
@@ -22,9 +22,9 @@ them, appends the results and calls again.
 
 | What the user has | Go to |
 | --- | --- |
-| A framework with a Diagrid adapter — the 11 Python frameworks, Microsoft Agent Framework, Spring AI, langchaingo, Eino, Mastra | `catalyst-agent-scaffold`. The adapter already does this mapping for that framework; hand-rolling it again is duplicate work with new bugs |
+| A framework with a Diagrid adapter — the 11 Python frameworks, Microsoft Agent Framework, Spring AI, langchaingo, Eino, Mastra | `agent-scaffold`. The adapter already does this mapping for that framework; hand-rolling it again is duplicate work with new bugs |
 | Their own loop, or a framework with no adapter whose loop they are willing to take over | This skill |
-| Fixed steps with a model called inside some of them, and no step chosen by the model | `catalyst-workflow-scaffold` — that is a workflow, not an agent loop |
+| Fixed steps with a model called inside some of them, and no step chosen by the model | `workflow-scaffold` — that is a workflow, not an agent loop |
 
 A loop you cannot split cannot be made durable from outside. A framework's `run()`, an
 SDK's tool runner, or an agent SDK's query loop makes every model call and tool call
@@ -74,7 +74,7 @@ adds history and round trips for nothing.
 
 ## 4. The workflow body decides; it never acts
 
-The general replay rules are in `catalyst-workflow-determinism`. These are the ones an
+The general replay rules are in `workflow-determinism`. These are the ones an
 agent loop breaks, and none of them fails on the first run:
 
 - **Pin the configuration per run.** Read the system prompt, model id, tool schemas and
@@ -157,7 +157,7 @@ provider, rather than rebuilding it inside the tool where no reviewer will see i
 
 It is not a semantic dedupe. A model that asks for the same payment in two turns produces
 two ids. Guard that with a natural key such as the order id and a conditional write — the
-patterns are in `catalyst-activity-idempotency`.
+patterns are in `activity-idempotency`.
 
 ## 8. Human approval is a durable wait
 
@@ -242,7 +242,7 @@ results stop parsing.
 
 Changing the loop itself — a new activity before `call_llm`, a reordered step — changes
 the action sequence for every run in flight. Use the SDK's patching API or a new workflow
-name and let old runs drain; `catalyst-workflow-determinism` covers both. A redeploy also
+name and let old runs drain; `workflow-determinism` covers both. A redeploy also
 swaps tool *implementations* under runs whose recorded configuration lists the old ones,
 so keep tool signatures backward compatible or version the tool name.
 
@@ -250,7 +250,7 @@ so keep tool signatures backward compatible or version the tool name.
 
 The loop needs the Dapr Workflow SDK for its language and no Diagrid package:
 `dapr-ext-workflow`, `@dapr/dapr`, `github.com/dapr/durabletask-go`, `Dapr.Workflow` or
-`io.dapr:dapr-sdk-workflows`. Section 2 of `catalyst-workflow-scaffold` has the versions
+`io.dapr:dapr-sdk-workflows`. Section 2 of `workflow-scaffold` has the versions
 and the coordinate traps. Any Dapr 1.18 sidecar runs it. On a laptop that is `dapr init`
 once, then the worker under `dapr run --app-id <app-id> -- <run command>` with no app
 port: a worker dials its sidecar and polls for work, so it has nothing to listen on.
@@ -276,8 +276,8 @@ finished; look for a boundary coarser than section 3 allows.
 ## 13. On Catalyst
 
 Nothing above changes on Catalyst: the harness code is identical, and the worker only
-needs the sidecar's address and token in its environment. `catalyst-develop` covers
-connecting it and starting runs, and `catalyst-operate` and `catalyst-debug` read runs
+needs the sidecar's address and token in its environment. `develop` covers
+connecting it and starting runs, and `operate` and `debug` read runs
 back.
 
 One difference changes what you can see. At the default data-sharing level Catalyst's MCP
@@ -323,6 +323,6 @@ other four take the harness's existing model client behind a one-method interfac
 - **Key side effects on `<instance-id>:<tool-call-id>`**, passed in the input.
 - **No secrets in inputs.** Every input and output is persisted and printable.
 - **Do not stop at a run that completes.** Kill one mid-tool and check the process ids.
-- For determinism in general use `catalyst-workflow-determinism`; for the write side of a
-  tool, `catalyst-activity-idempotency`; for a framework with an adapter,
-  `catalyst-agent-scaffold`; to run the worker on Catalyst, `catalyst-develop`.
+- For determinism in general use `workflow-determinism`; for the write side of a
+  tool, `activity-idempotency`; for a framework with an adapter,
+  `agent-scaffold`; to run the worker on Catalyst, `develop`.
