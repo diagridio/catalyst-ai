@@ -64,8 +64,8 @@ scaffolded workflow starts but never appears.
 `default` is bootstrapped once, when the organization is first reconciled, and it is not
 recreated if someone deletes it. Confirm it with `diagrid_list_projects` rather than
 assuming. If it is gone, follow "If `default` is absent" in `catalyst-setup`; it covers a
-project the user names and creating a new one.
-There is no current project, so pass the project on every call.
+project the user names and creating a new one. There is no current project, so pass the
+project on every call.
 
 The managed components have fixed names — `pubsub` for the broker and `kvstore` for the
 KV store. The managed workflow store is wired in implicitly and has no component name.
