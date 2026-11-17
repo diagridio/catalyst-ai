@@ -106,6 +106,19 @@ def replace_toml_with_json_duplicate(s: str) -> str:
     return "".join(lines)
 
 
+UPGRADE_NOTE_HEADING = "### Upgrading from 0.8.x\n"
+
+
+def rename_upgrade_note(s: str) -> str:
+    assert UPGRADE_NOTE_HEADING in s, "no upgrade note to rename"
+    return s.replace(UPGRADE_NOTE_HEADING, "### Moving on from older versions\n")
+
+
+def set_retired_in_upgrade_note(s: str) -> str:
+    assert UPGRADE_NOTE_HEADING in s, "no upgrade note to add to"
+    return s.replace(UPGRADE_NOTE_HEADING, f'{UPGRADE_NOTE_HEADING}\n"{RETIRED_HEADER}": "{CURRENT}"\n')
+
+
 def case(name: str, mutate: Callable[[Path], None], expect: str) -> tuple[str, str, bool, str]:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -159,6 +172,17 @@ def main() -> int:
              lambda r: edit_readme(r, lambda s: s.replace(f'"{HEADER}"', f'"{RETIRED_HEADER}"', 1)), "reject"),
         case("the setup skill naming the old header",
              lambda r: edit_skill(r, lambda s: s + f"\nSend {RETIRED_HEADER} too.\n"), "reject"),
+        case("the README naming the old header outside the upgrade note",
+             lambda r: edit_readme(r, lambda s: s + f"\nSend {RETIRED_HEADER} too.\n"), "reject"),
+        # The upgrade note may name the old header, but only there, and never set it.
+        case("the README upgrade note renamed, leaving the old header outside it",
+             lambda r: edit_readme(r, rename_upgrade_note), "reject"),
+        case("the setup skill upgrade note renamed, leaving the old header outside it",
+             lambda r: edit_skill(r, rename_upgrade_note), "reject"),
+        case("the README upgrade note setting the old header",
+             lambda r: edit_readme(r, set_retired_in_upgrade_note), "reject"),
+        case("the setup skill upgrade note setting the old header",
+             lambda r: edit_skill(r, set_retired_in_upgrade_note), "reject"),
 
         # Deleting a snippet must not be a way to pass.
         case("a README snippet removed", lambda r: edit_readme(r, drop_first_snippet), "reject"),

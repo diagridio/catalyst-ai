@@ -45,6 +45,7 @@ Catalyst — see [Also in this marketplace](#also-in-this-marketplace-dapr-skill
 The plugin also registers the Catalyst MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
 It stays empty until you sign in once. In Claude Code, run `/mcp`, pick
 `plugin:catalyst-ai:diagrid` and complete the browser sign-in. There is no API key.
+If you are upgrading from 0.8.x, see [Upgrading from 0.8.x](#upgrading-from-08x).
 
 If you already added the server yourself with `claude mcp add`, remove that entry
 (`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
@@ -72,7 +73,8 @@ without one, because the server reads the client metadata they publish.
 Each snippet below also sets an `X-Diagrid-Plugin-Version` header to the plugin version,
 which lets the server see which version of these instructions a client was set up from.
 It goes only on the MCP requests the client already makes. When you update the skills,
-update the header to match.
+update the header to match. If you set up a client for 0.8.x, the header's name changed
+as well. See [Upgrading from 0.8.x](#upgrading-from-08x).
 
 Install the skills for the client first (below), then:
 
@@ -146,6 +148,27 @@ those connectors but has not been tried separately.
 The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
 ([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
 so clients with a registry-backed server gallery can find it there.
+
+### Upgrading from 0.8.x
+
+0.9.0 renamed two things. A client set up for 0.8.x needs both of them changed.
+
+- **The header.** The server chooses tool names by the header a request sends. A request
+  that still sends the old `X-Catalyst-Plugin-Version` header gets the old `catalyst_*`
+  tool names. The 0.9.0 skills call only `diagrid_*` tools, so every call they make fails
+  as an unknown tool. Updating the version number on the old header does not fix this.
+  Replace the header itself with `X-Diagrid-Plugin-Version`, set to the current version:
+  - Codex: in `~/.codex/config.toml`, find the `http_headers` table under your Catalyst
+    server and change the key to `X-Diagrid-Plugin-Version`.
+  - Copilot CLI (`~/.copilot/mcp-config.json`) and VS Code (`mcp.json`): change the key
+    in that server's `headers`.
+
+  You can also remove the old entry and add the server again from the snippets above.
+- **The server name in Claude Code.** The plugin now registers the server as
+  `plugin:catalyst-ai:diagrid`. After `claude plugin update`, run `/mcp`. If that server
+  shows it needs authentication, pick it and sign in again.
+
+To check, ask *"Who am I in Catalyst?"* The answer should come from `diagrid_whoami`.
 
 ### GitHub Copilot CLI
 

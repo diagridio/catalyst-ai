@@ -24,7 +24,10 @@ Checked:
 * none of them  names the old header, `X-Catalyst-Plugin-Version`. The server
                offers the old `catalyst_*` tool names to any request that carries
                it, so a setup that still sent it would get names the skills no
-               longer use.
+               longer use. The one exception is the `Upgrading from 0.8.x`
+               section of README.md and the setup skill, which has to name the
+               old header to tell people to replace it. Even there, nothing may
+               set it (`X-Catalyst-Plugin-Version:` or `= ...`).
 
 web/install/ is generated from plugin.json and checked against the README by
 build_install_data.py --check, so it follows from these two.
@@ -53,6 +56,24 @@ MIN_JSON_SNIPPETS = 2  # Copilot CLI and VS Code
 # Matches the header as a JSON key (`"X-...": "0.7.2"`) or a TOML key
 # (`X-... = "0.7.2"`), and captures the separator and the value.
 SNIPPET_VALUE = re.compile(rf'"?{re.escape(HEADER)}"?\s*([:=])\s*"([^"]*)"')
+# The old header used as a key, in either form. Rejected even in the upgrade note.
+RETIRED_SNIPPET = re.compile(rf'"?{re.escape(RETIRED_HEADER)}"?\s*[:=]')
+# The one section allowed to name the old header, to tell people to replace it.
+UPGRADE_NOTE = re.compile(r"^#{2,4} Upgrading from 0\.8\.x\s*$")
+
+
+def retired_header_lines(text: str) -> list[int]:
+    """Lines that name the old header outside the upgrade note, or set it anywhere."""
+    found: list[int] = []
+    in_fence = in_note = False
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence and line.startswith("#"):
+            in_note = bool(UPGRADE_NOTE.match(line))
+        if RETIRED_HEADER in line and (not in_note or RETIRED_SNIPPET.search(line)):
+            found.append(n)
+    return found
 
 
 def check(root: Path) -> list[str]:
@@ -77,12 +98,18 @@ def check(root: Path) -> list[str]:
                 f"but `version` is {version!r}"
             )
 
-    for doc in (MANIFEST, *HAND_SET_DOCS):
+    if RETIRED_HEADER in (root / MANIFEST).read_text(encoding="utf-8"):
+        problems.append(f"{MANIFEST}: still names {RETIRED_HEADER}; the header is {HEADER} now")
+    for doc in HAND_SET_DOCS:
         try:
-            if RETIRED_HEADER in (root / doc).read_text(encoding="utf-8"):
-                problems.append(f"{doc}: still names {RETIRED_HEADER}; the header is {HEADER} now")
+            lines = retired_header_lines((root / doc).read_text(encoding="utf-8"))
         except OSError:
-            pass  # reported below, or above for the manifest
+            continue  # reported below
+        for n in lines:
+            problems.append(
+                f"{doc}:{n}: names {RETIRED_HEADER}; the header is {HEADER} now. Only the "
+                "`Upgrading from 0.8.x` section may name the old one, and nothing may set it"
+            )
 
     for doc in HAND_SET_DOCS:
         try:
