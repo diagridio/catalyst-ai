@@ -490,13 +490,7 @@ python3 scripts/test_check_plugin_version_header.py
 python3 scripts/check_server_json.py      # server.json: registry name, and the same URL as the plugin
 python3 scripts/test_check_server_json.py
 python3 scripts/test_plan_registry_version.py   # the MCP Registry version planner
-python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
-(cd web/install && npm test)
 ```
-
-`web/install/` is the npm package `@diagrid/catalyst-ai-install`, a `<catalyst-ai-install>` web
-component for docs and the website. Its data is generated: after changing `commands/` or the
-install steps here, run `python3 scripts/build_install_data.py` and commit the result.
 
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
@@ -525,7 +519,7 @@ If you add a skill, or change any skill's content, bump `version` in
 otherwise, and nothing tells them. Every bump also changes the `X-Diagrid-Plugin-Version`
 header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.json` and
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
-in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
+in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both).
 
 To measure a run of the plugin, finish the Claude Code session and run
 `python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log

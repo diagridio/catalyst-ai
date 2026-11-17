@@ -29,9 +29,6 @@ Checked:
                old header to tell people to replace it. Even there, nothing may
                set it (`X-Catalyst-Plugin-Version:` or `= ...`).
 
-web/install/ is generated from plugin.json and checked against the README by
-build_install_data.py --check, so it follows from these two.
-
 Run: python3 scripts/check_plugin_version_header.py [repo-root]
 """
 
@@ -141,7 +138,7 @@ def main(argv: list[str]) -> int:
             print(f"  {p}", file=sys.stderr)
         print(
             f"\nSet {HEADER} to the `version` in {MANIFEST}, in the manifest and in every\n"
-            "README and diagrid-setup snippet, then run `python3 scripts/build_install_data.py`.",
+            "README and diagrid-setup snippet.",
             file=sys.stderr,
         )
         return 1

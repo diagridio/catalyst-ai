@@ -27,7 +27,7 @@ name: Publish to the MCP Registry
 #      `preflight` checks for it and fails before anything is published if it is absent.
 #   2. The GitHub environment `mcp-registry`, holding the secret MCP_REGISTRY_PRIVATE_KEY
 #      (the hex Ed25519 private key), with required reviewers and a deployment-branch
-#      rule limited to `main`. Like npm-release.yaml, a workflow cannot verify this.
+#      rule limited to `main`. A workflow cannot verify this.
 #
 # Any number of registry names may point at the same remote URL, so the registry would
 # accept a wrong name; scripts/check_server_json.py pins it instead. A published name and

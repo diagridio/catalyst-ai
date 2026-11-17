@@ -78,12 +78,6 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("a mixed-case tool name", {"skills/a/SKILL.md": "Call `Diagrid_Get_App`.\n"}, True, "Diagrid_Get_App"),
     ("a tool name with digits", {"skills/a/SKILL.md": "Call `diagrid_get_app2`.\n"}, True, "diagrid_get_app2"),
     ("an all-caps error kind passes", {"skills/a/SKILL.md": "`CATALYST_NOT_ENABLED` means no entitlement.\n"}, False, ""),
-    ("clean web component passes", {"web/install/c.js": "const u = 'https://mcp.cloud.r1.diagrid.io/mcp'; // diagrid_whoami\n", "web/install/package.json": '{"name": "@diagrid/catalyst-ai-install"}\n'}, False, ""),
-    ("prose after diagrid in web code passes", {"web/install/c.js": "// diagrid site embed\nconst t = 'see the diagrid docs';\n"}, False, ""),
-    ("prose after diagrid in the web demo passes", {"web/demo.html": "<p>on the diagrid site embed it</p>\n"}, False, ""),
-    ("CLI invocation in web html", {"web/demo.html": "<code>diagrid project list</code>\n"}, True, "CLI invocation"),
-    ("prose after diagrid in a README under web stays strict", {"web/install/README.md": "run diagrid site embed\n"}, True, "CLI invocation"),
-    ("CLI invocation in the web component", {"web/install/c.js": "const t = 'diagrid login';\n"}, True, "CLI invocation"),
     (
         "the tunnel skill may name the tunnel commands",
         {
@@ -102,11 +96,6 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("another skill may not name the tunnel commands", {"skills/diagrid-develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
     ("an eval outside the tunnel prefix may not name them", {"evals/other/prompt.md": "diagrid listen --id x\n"}, True, "diagrid listen"),
     ("the tunnel skill may still not name a local MCP server", {"skills/diagrid-app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
-    ("local MCP server in the web demo", {"web/demo.html": "<p>Start the local MCP server.</p>\n"}, True, "local MCP server"),
-    ("staging host in the web component", {"web/install/data.js": "x = 'https://mcp.cloud.staging.diagrid.dev/mcp'\n"}, True, "non-production"),
-    ("unlisted host in the embed snippet", {"web/embed/diagrid-io.html": "<a href='https://api.r1.diagrid.io'>\n"}, True, "not an allowed host"),
-    ("unknown tool in web data", {"web/install/install.json": '{"t": "diagrid_frobnicate"}\n'}, True, "diagrid_frobnicate"),
-    ("web node_modules is skipped", {"web/install/node_modules/x/i.js": "diagrid login\n"}, False, ""),
     ("a yaml file is scanned", {".github/workflows/x.yaml": "x"}, False, ""),
     ("an unlisted diagrid host in a skill", {"skills/a/SKILL.md": "https://api.r1.diagrid.io/v1\n"}, True, "not an allowed host"),
     ("a bare unlisted diagrid host in an eval", {"evals/e/prompt.md": "call api.r1.diagrid.io\n"}, True, "not an allowed host"),
@@ -117,7 +106,6 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("a retired name in a command", {"commands/try.md": "Call `catalyst_get_app`.\n"}, True, "old name"),
     ("a retired name in an eval", {"evals/e/graders/g.md": "match catalyst_get_app\n"}, True, "old name"),
     ("a retired name in the README", {"README.md": "ask `catalyst_whoami`\n"}, True, "old name"),
-    ("a retired name in web code", {"web/install/c.js": "// catalyst_whoami\n"}, True, "old name"),
     ("a mixed-case retired name", {"skills/a/SKILL.md": "Call `Catalyst_Whoami`.\n"}, True, "old name"),
     ("a retired prefixed client name", {"skills/a/SKILL.md": "`mcp__plugin_catalyst-ai_catalyst__catalyst_whoami`\n"}, True, "old server key"),
     ("the old server's /mcp entry", {"README.md": "pick `plugin:catalyst-ai:catalyst`\n"}, True, "old server key"),
@@ -128,7 +116,6 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
             "README.md": "pick `plugin:diagrid:diagrid` and sign in.\n"
             "codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex\n"
             "codex mcp login diagrid\n",
-            "web/install/install.json": '{"t": "codex mcp add diagrid --url x", "u": "codex mcp login diagrid"}\n',
         },
         False,
         "",
