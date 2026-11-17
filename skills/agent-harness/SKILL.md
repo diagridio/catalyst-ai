@@ -1,6 +1,6 @@
 ---
 name: agent-harness
-description: Make a hand-written agent loop durable on Catalyst with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
+description: Make a hand-written agent loop durable on Diagrid with Dapr Workflows — the loop becomes the workflow, each LLM call and each tool call its own activity. Use for a custom agent harness or a raw model-API tool loop no framework adapter covers.
 ---
 
 # Make a hand-written agent loop durable
@@ -12,7 +12,7 @@ that tool, and the model is not asked again for a turn it already answered. A lo
 only survives when nothing crashes has gained nothing.
 
 Nothing here depends on where the Dapr sidecar runs. The same code runs against a local
-sidecar, on Kubernetes or on Catalyst; section 13 is the only part specific to Catalyst.
+sidecar, on Kubernetes or on Diagrid; section 13 is the only part specific to Diagrid.
 
 ## 1. This skill, or an adapter?
 
@@ -165,7 +165,7 @@ For a tool that needs a human, the workflow waits, not the tool:
 
 1. Announce what is pending from an activity — a message on a topic, a row the approval
    UI reads — carrying the run id and the tool-call id. Never publish from the workflow
-   body. Custom status can mirror it, but not every reader can see it — Catalyst's MCP
+   body. Custom status can mirror it, but not every reader can see it — Diagrid's MCP
    tools, for one, withhold it at the default data-sharing level — so it cannot be the
    only notice.
 2. Wait for an event named after the call, `approval:<tool-call-id>`, so concurrent
@@ -176,7 +176,7 @@ For a tool that needs a human, the workflow waits, not the tool:
 
 The approval service sends the decision with the SDK's workflow client — the raise-event
 call in each language file — naming the run, the event `approval:<tool-call-id>` and a
-payload such as `{"approved": true}`. On Catalyst, an assistant can send the same event
+payload such as `{"approved": true}`. On Diagrid, an assistant can send the same event
 with `diagrid_raise_workflow_event`.
 
 Two measured facts, both on a local Dapr 1.18.1 sidecar. The wait survives a worker
@@ -273,14 +273,14 @@ showed up under the base Python's path and the kill pattern missed it. If the mo
 called again for a turn it already answered, the loop is not durable and the work is not
 finished; look for a boundary coarser than section 3 allows.
 
-## 13. On Catalyst
+## 13. On Diagrid
 
-Nothing above changes on Catalyst: the harness code is identical, and the worker only
+Nothing above changes on Diagrid: the harness code is identical, and the worker only
 needs the sidecar's address and token in its environment. `develop` covers
 connecting it and starting runs, and `operate` and `debug` read runs
 back.
 
-One difference changes what you can see. At the default data-sharing level Catalyst's MCP
+One difference changes what you can see. At the default data-sharing level Diagrid's MCP
 tools withhold every `input`, `output` and `customStatus` — removed, not returned empty —
 so a model reply or a tool result that is absent there was not shared, not missing. Never
 report it as "the model returned nothing". The kill test's evidence stays in the worker's
@@ -325,4 +325,4 @@ other four take the harness's existing model client behind a one-method interfac
 - **Do not stop at a run that completes.** Kill one mid-tool and check the process ids.
 - For determinism in general use `workflow-determinism`; for the write side of a
   tool, `activity-idempotency`; for a framework with an adapter,
-  `agent-scaffold`; to run the worker on Catalyst, `develop`.
+  `agent-scaffold`; to run the worker on Diagrid, `develop`.

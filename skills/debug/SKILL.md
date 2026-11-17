@@ -1,15 +1,15 @@
 ---
 name: debug
-description: Diagnose why something in Diagrid Catalyst is broken or stuck, then pause, terminate, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
+description: Diagnose why something in Diagrid (formerly Catalyst) is broken or stuck, then pause, terminate, rerun or purge a workflow run. Covers a run that failed or hangs, an app not ready, an agent not answering, a component that will not connect.
 ---
 
-# Diagnose a Catalyst failure
+# Diagnose a Diagrid failure
 
 Goal: end this skill with a named cause and the line of evidence that proves it, or an
 explicit statement of what you could not see and why. "Try restarting it" is not a
 diagnosis, and neither is a plausible story with no read behind it.
 
-Everything here goes through the Catalyst MCP server, the `diagrid_*` tools. If they are
+Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, that is a connection problem, not the failure
 you were sent to debug: the `setup` skill covers it.
 
@@ -92,7 +92,7 @@ into two.
 
 ### An absent field is not an empty value
 
-Catalyst enforces an organization-wide data-sharing level on every MCP response before it
+Diagrid enforces an organization-wide data-sharing level on every MCP response before it
 leaves the platform. At the default `metadata` level you still get everything a diagnosis
 usually needs — names, statuses, timestamps, durations and **error messages**. What is
 **removed** is business data: a run's `input`, `output` and `customStatus`, and inline
@@ -183,7 +183,7 @@ setting, not a broken run.
 If every start fails with `failed to create workflow instance: context canceled`, read
 the app (`diagrid_get_app`). An app tunnel opened with `--app-port`, or an app
 endpoint with its health check enabled, with no server answering there keeps the app's
-health check failing, and Catalyst starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
+health check failing, and Diagrid starts no workflows until it passes. A workflow worker that serves nothing needs no endpoint;
 `develop` section 7 has the fix.
 
 ## 4. An app, agent or MCP server that is not ready
@@ -212,12 +212,12 @@ requests as they arrive needs an app tunnel (`app-tunnels`).
 
 A missing tunnel is an ordinary answer, not an error: `diagrid_list_app_tunnels` showing
 none means no one is running that App ID from a local machine. For an app meant to run
-locally and be called by Catalyst (an invocation target, a subscriber, an agent endpoint,
+locally and be called by Diagrid (an invocation target, a subscriber, an agent endpoint,
 the MCP server behind an `MCPServer`), no tunnel is the cause.
 
 ## 5. An agent that is not responding
 
-The agent resource is an `Agent`: a Catalyst front for an agent **your** app runs,
+The agent resource is an `Agent`: a Diagrid front for an agent **your** app runs,
 identified by its endpoint and archive settings. It stops answering when your application
 is down or its endpoint points somewhere unreachable.
 
@@ -264,7 +264,7 @@ message before looking for a connection fault that does not exist. Enabling it i
 change, so propose it (an `diagrid_apply` of the read-back manifest with it enabled)
 rather than making it.
 
-Cluster-level diagnostics for a self-hosted Catalyst are not available over MCP yet.
+Cluster-level diagnostics for a self-hosted Diagrid installation are not available over MCP yet.
 
 ## 7. When a call refuses
 
@@ -277,7 +277,7 @@ Two unrelated families, with different remedies. Do not conflate them.
 
 **Connection.** `NOT_AUTHENTICATED`, `NO_ORG`, `ORG_MISMATCH`, `ORG_UNAVAILABLE`,
 `CATALYST_NOT_ENABLED`. These carry a cause, an instruction written for you, and a
-retryable flag. You never reached Catalyst: say so and stop, rather than reporting a
+retryable flag. You never reached Diagrid: say so and stop, rather than reporting a
 resource as broken on the strength of a call that never landed. The `setup` skill
 covers them. If the flag says retryable, wait briefly and retry once; if it does not, do
 not retry at all, because a permanent refusal retried presents to the user as a hang.
@@ -351,7 +351,7 @@ Then the fix, separately, and as a proposal if it mutates anything.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Never report an absent field as an empty value.** See section 3. It is the one error
   here the user cannot catch.
 - **Stay in one project unless asked otherwise, and say which.** A question with no

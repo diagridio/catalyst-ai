@@ -7,7 +7,7 @@ consumes. Read this before emitting a single record.
 > [diagrid-labs/dapr-skills](https://github.com/diagrid-labs/dapr-skills) (MIT). The record
 > shapes, field names, `check_id` values and validation rules are kept as they are
 > upstream — they are a contract, and a renamed field is a broken generator. The prose
-> around them was rewritten for Catalyst.
+> around them was rewritten for Diagrid.
 
 ## Output format
 

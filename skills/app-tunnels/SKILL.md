@@ -1,23 +1,23 @@
 ---
 name: app-tunnels
-description: Open an app tunnel so Diagrid Catalyst can call into a process on this machine, with `diagrid dev run` or `diagrid listen`. Use for service invocation between laptop apps, pub/sub delivery, or an agent calling an MCP server on localhost.
+description: Open an app tunnel so Diagrid (formerly Catalyst) can call into a process on this machine, with `diagrid dev run` or `diagrid listen`. Use for service invocation between laptop apps, pub/sub delivery, or an agent calling an MCP server on localhost.
 ---
 
-# App tunnels: letting Catalyst call into this machine
+# App tunnels: letting Diagrid call into this machine
 
-Goal: end this skill with Catalyst able to reach a process on the user's machine, on a
-port of their choosing, under a Catalyst identity, and with a request proven to have
+Goal: end this skill with Diagrid able to reach a process on the user's machine, on a
+port of their choosing, under a Diagrid identity, and with a request proven to have
 arrived through it.
 
 `diagrid_get_connection` (the `develop` skill) gives a local process
 **outbound** access only: it can call its sidecar, start workflows, publish. Nothing in
-Catalyst can call **back** into it. That needs an app tunnel, and no `diagrid_*` tool
+Diagrid can call **back** into it. That needs an app tunnel, and no `diagrid_*` tool
 opens one. This is the one place these skills use the Diagrid CLI, and only for the
 commands below. Everything else (creating resources, granting access, reading status)
 still goes through the `diagrid_*` tools.
 
 **Never reach for a public tunnel** (cloudflared, ngrok, a port-forward to a public
-address) to give Catalyst a URL. An app tunnel keeps the traffic under the identity and
+address) to give Diagrid a URL. An app tunnel keeps the traffic under the identity and
 access policy of the App ID it serves. A public URL bypasses both, and anyone who learns
 it can call the process.
 
@@ -26,12 +26,12 @@ it can call the process.
 | The local process… | Needs a tunnel? | Use |
 | --- | --- | --- |
 | Is a workflow worker that registers workflows and polls for work | No | `develop` |
-| Only calls its sidecar (starts workflows, publishes, reads state, calls an MCP server through Catalyst) | No | `develop` |
+| Only calls its sidecar (starts workflows, publishes, reads state, calls an MCP server through Diagrid) | No | `develop` |
 | Is the **target** of service invocation from another app | Yes | Section 4 |
 | Receives pub/sub messages or input bindings | Yes | Section 3 |
-| Is the endpoint behind an `Agent` resource that Catalyst calls into | Yes | Section 3 |
+| Is the endpoint behind an `Agent` resource that Diagrid calls into | Yes | Section 3 |
 | Is the MCP server behind an `MCPServer` resource | Yes | Section 5 |
-| Does not exist yet, and you want to see what Catalyst would send it | Yes, with `diagrid listen` | Section 6 |
+| Does not exist yet, and you want to see what Diagrid would send it | Yes, with `diagrid listen` | Section 6 |
 
 A caller that is not itself called needs no tunnel. In "agent calls a tool on an MCP
 server on this machine", only the MCP server is tunneled; the agent is a caller.
@@ -44,7 +44,7 @@ server on this machine", only the MCP server is tunneled; the agent is a caller.
    `curl -o- https://downloads.diagrid.io/cli/install.sh | bash`. On Windows, point the
    user at the PowerShell installer at `https://downloads.diagrid.io/cli/install.ps1`.
 3. `diagrid login` opens a browser to sign in. This is a **separate sign-in** from the
-   Catalyst MCP server, and only the user can complete it. Ask them to run it; never ask
+   Diagrid MCP server, and only the user can complete it. Ask them to run it; never ask
    for a token or key instead.
 4. Confirm both sign-ins land in the same organization: compare `diagrid whoami` with
    `diagrid_whoami`. A tunnel opened in one organization serves nothing that the
@@ -62,7 +62,7 @@ diagrid dev run --project <project> --id <app-id> --app-port <port> --yes -- <co
   projects.
 - **`--app-port` is what opens the tunnel.** Without it the process gets outbound access
   only, exactly as with `diagrid_get_connection`.
-- **Give `--app-port` only to a process that serves on that port.** Catalyst
+- **Give `--app-port` only to a process that serves on that port.** Diagrid
   health-checks the app through the tunnel, and until a check answers it starts no
   workflows or actors and delivers nothing to the app. A workflow worker or a pure caller
   with an app port and no server behind it fails every workflow start with
@@ -118,7 +118,7 @@ starting `dev run` (above). A tunnel left by `listen` is handled differently (se
 What it does to the platform:
 
 - **It creates the App ID if it is missing, and does not provision one that exists.**
-  While the tunnel is open, though, Catalyst points that App ID's endpoint at the tunnel,
+  While the tunnel is open, though, Diagrid points that App ID's endpoint at the tunnel,
   so `diagrid_get_app` shows a different `appEndpoint` and a higher resource version.
   Closing the tunnel restores the original endpoint. That is the tunnel working, not a
   change to undo.
@@ -159,7 +159,7 @@ run file (`apps:` with `appID`, `appPort`, `command`, `env`). Then run
 2. Run the **caller** under its own identity. It needs `--app-port` only if something
    also calls into it:
    `diagrid dev run --project default --id checkout --yes -- <command>`.
-3. The caller invokes the target through Catalyst, never at `localhost:5002`:
+3. The caller invokes the target through Diagrid, never at `localhost:5002`:
    - Over HTTP: `POST $DAPR_HTTP_ENDPOINT/v1.0/invoke/orders/method/<method>` with the
      header `dapr-api-token: $DAPR_API_TOKEN`.
    - With a Dapr SDK, its service-invocation call with app ID `orders`. The SDK reads
@@ -173,7 +173,7 @@ run file (`apps:` with `appID`, `appPort`, `command`, `env`). Then run
    the app when you clean up.
 5. Prove it: the target's own log shows the request, and `diagrid_get_metrics` for the
    target shows it served something. A call that goes straight to `localhost` proves
-   nothing about Catalyst.
+   nothing about Diagrid.
 
 ## 5. An app or agent calling an MCP server on this machine
 
@@ -188,7 +188,7 @@ not tunnel the caller.
 2. **Create the `MCPServer`** with `diagrid_apply`, after reading
    `diagrid_get_resource_schema` for the kind and showing the user a `dry_run`. Set
    `spec.endpoint.streamableHTTP.url` to the local URL, for example
-   `http://127.0.0.1:8000/mcp`. When its identity is tunneled, Catalyst keeps only the
+   `http://127.0.0.1:8000/mcp`. When its identity is tunneled, Diagrid keeps only the
    **path** of that URL and replaces the host with the tunnel's. So the path must be the
    one the server serves, and the host does not matter.
 3. **Wait for its identity to be `ready`** (`diagrid_get_mcp_server`, under
@@ -236,7 +236,7 @@ nothing about the workflow path.
 wait until `diagrid_list_app_tunnels` no longer lists it, then delete the `MCPServer`.
 An open tunnel blocks the delete of its identity.
 
-## 6. `diagrid listen`: see what Catalyst sends, with no app yet
+## 6. `diagrid listen`: see what Diagrid sends, with no app yet
 
 ```
 diagrid listen --id <app-id> -p <project>
@@ -280,7 +280,7 @@ until `diagrid_list_app_tunnels` no longer lists the App ID (section 3). Do not 
 - **The CLI is for tunnels only:** `diagrid version`, `login`, `whoami`, `dev` and
   `listen`. Create, grant, read and delete through the `diagrid_*` tools, as every other
   skill does.
-- **Never use a public tunnel or a public URL** to let Catalyst reach a process on this
+- **Never use a public tunnel or a public URL** to let Diagrid reach a process on this
   machine.
 - **Create the `Agent` or `MCPServer` before running `dev run` on its name.**
 - **Tunnel the identity being called**: the MCP server's own identity, the target app's.
@@ -289,5 +289,5 @@ until `diagrid_list_app_tunnels` no longer lists the App ID (section 3). Do not 
   existing project: `default` unless the user named another.
 - **Never ask the user for a token.** `diagrid login` and `dev run` handle credentials,
   and `DAPR_API_TOKEN` never goes into chat, a pull request, an issue or a commit.
-- **Prove the request arrived through Catalyst**, in the receiving process's own log, and
+- **Prove the request arrived through Diagrid**, in the receiving process's own log, and
   say so. A call made straight to `localhost` proves nothing.

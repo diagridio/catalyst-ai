@@ -102,8 +102,10 @@ BANNED_SUBSTRINGS: dict[str, str] = {
 MAX_DESCRIPTION_SIMILARITY = 0.20
 
 # Similarity is measured on distinctive words only. Stopwords and the product
-# name are shared by construction — every description here says "Catalyst" — so
-# counting them would flag every pair equally and rank nothing.
+# name are shared by construction — every description here says "Diagrid", and
+# the entry-point skills add "(formerly Catalyst)" so a user who still says
+# "Catalyst" is routed — so counting them would flag every pair equally and rank
+# nothing. "formerly" belongs to that rename note, not to any one skill.
 _STOPWORDS = frozenset("""
 a an and are as at be but by can for from has have how if in into is it its make making no not of on or
 that the their them then there these this to use used uses using want wants when where which who why with
@@ -111,7 +113,7 @@ without you your they what while does do so one two both each any all more most 
 rather
 """.split())
 
-_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "dapr"})
+_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "formerly", "dapr"})
 
 
 def distinctive_words(description: str) -> frozenset[str]:

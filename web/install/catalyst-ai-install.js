@@ -1,4 +1,4 @@
-// <catalyst-ai-install>: install steps for Diagrid Catalyst AI, one tab per client,
+// <catalyst-ai-install>: install steps for Diagrid AI, one tab per client,
 // a copy button on every step. Vanilla custom element, Shadow DOM, no dependencies.
 //
 // No network calls: the steps are bundled in ./data.js (generated, see
@@ -200,7 +200,7 @@ export class CatalystAiInstallElement extends Base {
     this.#panel = el('div', { role: 'tabpanel', id: 'panel' });
     root.replaceChildren(
       el('style', { text: STYLE }),
-      el('p', { class: 'intro', text: 'Connect your assistant to Diagrid Catalyst. Pick your client.' }),
+      el('p', { class: 'intro', text: 'Connect your assistant to Diagrid. Pick your client.' }),
       tablist,
       this.#panel,
       el('div', { class: 'status', role: 'status', 'aria-live': 'polite' }),

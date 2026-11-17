@@ -1,9 +1,9 @@
 ---
 name: agent-scaffold
-description: Build or stand up a Durable Agent on Diagrid Catalyst — your own agent app, fronted by a Catalyst agent resource. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
+description: Build or stand up a Durable Agent on Diagrid (formerly Catalyst) — your own agent app, fronted by a Diagrid agent resource. Use for an AI agent, a coordinator-and-specialists topology, or to give an agent memory that survives restarts.
 ---
 
-# Scaffold a Durable Agent on Catalyst
+# Scaffold a Durable Agent on Diagrid
 
 Goal: end this skill with one agent that answers a real prompt and survives being
 killed mid-run. Durability is the whole point — an agent that only works when nothing
@@ -11,13 +11,13 @@ crashes is a chat loop, not a Durable Agent.
 
 ## 1. Know which resource you are looking at
 
-The Catalyst resource for an agent is the **`Agent`** kind: a connectivity and archiving
+The Diagrid resource for an agent is the **`Agent`** kind: a connectivity and archiving
 resource in front of an agent that **your** app runs. Your process runs the loop, you
 write the code, and the resource takes an endpoint and archive settings. You create it
 with `diagrid_apply` (read `diagrid_get_resource_schema` for the `Agent` kind first, run
 with `dry_run`, show the user, then apply), which needs a write role.
 
-If the user asks for Catalyst to host or run the agent for them, say it is not something
+If the user asks for Diagrid to host or run the agent for them, say it is not something
 you can set up, and continue with their own app fronted by an `Agent`. That starts at
 section 3.
 
@@ -51,7 +51,7 @@ different stage in each language, and that difference decides what you can scaff
 
 | Language | Coordinate | State |
 | --- | --- | --- |
-| Python | `diagrid[<framework>]` on PyPI, 0.5.0 | Widest coverage — 11 frameworks — and exercised against live Catalyst |
+| Python | `diagrid[<framework>]` on PyPI, 0.5.0 | Widest coverage — 11 frameworks — and exercised against live Diagrid |
 | .NET | `Diagrid.AI.Microsoft.AgentFramework` on NuGet, 1.2.0 | Published. Microsoft Agent Framework; targets net8.0, net9.0, net10.0 |
 | Java | `io.diagrid:diagrid-spring-ai-starter` on Maven Central, 0.4.0 | Published, Spring AI. Its own README says the APIs are not yet stable |
 | Go | `github.com/diagridio/go-ai` v0.2.0; adapters `github.com/diagridio/go-ai/adapters/langchaingo` v0.1.1 and `github.com/diagridio/go-ai/adapters/eino` v0.1.1 | Published. Each adapter is its own module with its own release tag, built in CI |
@@ -90,7 +90,7 @@ needs at the adapter's version. Do not assume the two share a version number —
 not.
 
 Never emit a package coordinate you have not watched resolve. A confidently wrong
-package id is worse than no skill at all: it sends the user to debug Catalyst for a
+package id is worse than no skill at all: it sends the user to debug Diagrid for a
 problem that is a typo. The `@diagrid/agent-mastra` line above was checked that way —
 installed, not read off a registry page.
 
@@ -113,13 +113,13 @@ Import the runner from the framework's module: `DaprWorkflowAgentRunner` for mos
 `DaprWorkflowGraphRunner` for LangGraph, `DaprWorkflowDeepAgentRunner` for Deep Agents,
 `DaprWorkflowHolmesRunner` for HolmesGPT. Then `runner.serve(...)` exposes the app.
 
-Components are discovered **by name**, not by configuration. Outside Catalyst, ship the
+Components are discovered **by name**, not by configuration. Outside Diagrid, ship the
 app's own components as `agent-memory`, `agent-pubsub`, `agent-registry`, `agent-configuration` and
 `agent-runtime`, or discovery silently finds nothing and the failure looks like a
 connectivity problem. These are the app's components, distinct from the project's managed
-`pubsub` and `kvstore`. On Catalyst, apply the `Agent` resource and let the platform
+`pubsub` and `kvstore`. On Diagrid, apply the `Agent` resource and let the platform
 provide its state, pub/sub and registry. The platform creates `agent-registry` and refuses
-one created by hand. A sample's local `resources/` files are for running without Catalyst.
+one created by hand. A sample's local `resources/` files are for running without Diagrid.
 
 To start from a working tree rather than a blank file, `diagridpy init <name> --framework
 <framework>` clones a template. It covers fewer frameworks than the extras list, so check
@@ -171,7 +171,7 @@ Where a tool asks for or returns `appId`, it means that identity's name. Read it
 resource's `status.appIds` (the get tools include it). For an agent registered from your
 own code, it's the `appId` on its registry record.
 
-An agent exposes an endpoint Catalyst calls into, so unlike a pure workflow worker it
+An agent exposes an endpoint Diagrid calls into, so unlike a pure workflow worker it
 needs an inbound port and a registered endpoint. Run on a laptop, that endpoint is
 reached through an app tunnel on the agent's App ID (`app-tunnels`). The same
 goes for an MCP server on this machine that the agent calls tools on: it is tunneled
@@ -191,8 +191,8 @@ refusal.
 
 ## 9. Give it MCP tools through its own sidecar
 
-An agent calls the tools of a Catalyst `MCPServer` through **its own sidecar's MCP
-proxy**. That is the path Catalyst supports, and the one where the server's access policy
+An agent calls the tools of a Diagrid `MCPServer` through **its own sidecar's MCP
+proxy**. That is the path Diagrid supports, and the one where the server's access policy
 is enforced:
 
 - **Discovery:** `GET $DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp` with
@@ -200,7 +200,7 @@ is enforced:
   a `connect.path`.
 - **Calls:** point any streamable HTTP MCP client at `$DAPR_HTTP_ENDPOINT` + that
   `connect.path` (`/v1.0/diagrid/mcp/<mcpserver-name>`), with the same header. There is
-  no Catalyst-specific MCP SDK. The framework's own MCP client or the `mcp` package works
+  no Diagrid-specific MCP SDK. The framework's own MCP client or the `mcp` package works
   unchanged.
 - **Access is deny-all until granted.** Use `diagrid_grant_access` with
   `target_kind: mcp_server`, and grant only the tools the user asked for. A
@@ -256,8 +256,8 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
-- **Do not offer to host the agent on Catalyst.** The path is their own app fronted by
+- **Use the Diagrid MCP tools for everything in Diagrid.**
+- **Do not offer to host the agent on Diagrid.** The path is their own app fronted by
   an `Agent` resource.
 - **Read `diagrid_get_resource_schema` before applying a manifest.** A remembered field
   name can quietly mean something else.

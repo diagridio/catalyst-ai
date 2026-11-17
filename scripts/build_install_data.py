@@ -105,7 +105,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 step(
                     "install",
                     "Install the plugin",
-                    "Adds the skills and the Catalyst MCP server.",
+                    "Adds the skills and the Diagrid MCP server.",
                     item("marketplace-add", "marketplace add", "claude plugin marketplace add diagridio/catalyst-ai", readme=EXACT),
                     item("plugin-install", "plugin install", f"claude plugin install {PLUGIN_NAME}@diagrid", readme=EXACT),
                 ),
@@ -135,7 +135,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 ),
                 step(
                     "mcp-add",
-                    "Add the Catalyst MCP server",
+                    "Add the Diagrid MCP server",
                     "Codex uses its registered OAuth client ID.",
                     item("mcp-add", "mcp add", f"codex mcp add {SERVER_KEY} --url {MCP_URL} --oauth-client-id codex", readme=EXACT),
                 ),
@@ -173,7 +173,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
                 ),
                 step(
                     "mcp-config",
-                    "Add the Catalyst MCP server",
+                    "Add the Diagrid MCP server",
                     "Put this in ~/.copilot/mcp-config.json. The oauthClientId is Copilot CLI's registered client ID.",
                     item("mcp-config", "~/.copilot/mcp-config.json", copilot_json, lang="json", readme=EXACT),
                 ),
@@ -192,7 +192,7 @@ def clients(commands: list[dict[str, Any]], version: str) -> list[dict[str, Any]
             "steps": [
                 step(
                     "mcp-config",
-                    "Add the Catalyst MCP server",
+                    "Add the Diagrid MCP server",
                     "Put this in .vscode/mcp.json. VS Code opens the browser sign-in on first use.",
                     item("mcp-config", ".vscode/mcp.json", vscode_json, lang="json", readme=EXACT),
                 ),

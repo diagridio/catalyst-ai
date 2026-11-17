@@ -1,15 +1,15 @@
 ---
 name: operate
-description: Inspect a running Diagrid Catalyst project, read-only — projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use for what is deployed and its state, a limit being hit, or a pasted run or log response and whether it is clean.
+description: Inspect a running Diagrid (formerly Catalyst) project, read-only — projects, apps, agents, MCP servers, components, workflow runs, logs and quotas. Use for what is deployed and its state, a limit being hit, or whether a pasted run or log response is clean.
 ---
 
-# Inspect a running Catalyst project
+# Inspect a running Diagrid project
 
 Goal: end this skill able to say what exists, what state each thing is in, and which
 call told you. A value you cannot attribute to a call you made is a guess, and to the
 person reading your answer a guess is indistinguishable from a fact.
 
-Everything here goes through the Catalyst MCP server, the `diagrid_*` tools. If they are
+Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
 missing or refuse with `NOT_AUTHENTICATED`, this is a connection problem rather than an
 inspection problem: the `setup` skill covers it, and there is nothing useful to
 read until the user has signed in. Do not guess a project's state to fill the gap.
@@ -150,14 +150,14 @@ message.
 
 ### Agents
 
-An agent is an `Agent` resource: a Catalyst front for an agent **your** app runs,
+An agent is an `Agent` resource: a Diagrid front for an agent **your** app runs,
 identified by its endpoint and its archive settings. Say `agent` or `app`, never leave
 it ambiguous: they are different resources.
 
 `diagrid_get_agent` returns the runtime registry record when `appId` is also passed, and that is often the one
 that answers the question: the registry lists what is actually registered in the project's
 runtime, including externally deployed OSS Dapr agents. A name in the registry but not in
-`diagrid_list_agents` is an agent nobody declared to Catalyst; the reverse is a
+`diagrid_list_agents` is an agent nobody declared to Diagrid; the reverse is a
 declaration whose workload is not running.
 
 ## 4. Workflow runs
@@ -178,7 +178,7 @@ Check the project before reporting "no runs".
 
 ### An absent field is not an empty value
 
-Catalyst enforces an organization-wide data-sharing level on every MCP response before
+Diagrid enforces an organization-wide data-sharing level on every MCP response before
 it leaves the platform. The default level is `metadata`, and it shares names, statuses,
 timestamps, durations and error messages. It **removes** business data — a workflow run's
 `input`, `output` and `customStatus`, and inline component setting values. Removed means
@@ -296,7 +296,7 @@ with a route from the table above and an identifier whose form you are sure of.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **This skill only reads.** Do not create, update, delete, start, terminate, purge or
   rerun anything. Inspecting a system is not permission to change it, and a caller who
   asked "what state is this in" has not asked for a repair.
