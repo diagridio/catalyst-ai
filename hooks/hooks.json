@@ -1,0 +1,15 @@
+{
+  "description": "Tells catalyst-ai users the plugin is now diagrid.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/hooks/moved.json\""
+          }
+        ]
+      }
+    ]
+  }
+}

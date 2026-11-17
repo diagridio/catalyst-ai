@@ -1,0 +1,7 @@
+{
+  "systemMessage": "catalyst-ai is now the diagrid plugin and gets no more updates. Switch with: claude plugin marketplace update diagrid && claude plugin install diagrid@diagrid && claude plugin uninstall catalyst-ai@diagrid -- then restart Claude Code and sign in again through /mcp. Guide: https://docs.diagrid.io/develop/local-development/plugin-rename",
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "The catalyst-ai plugin has been renamed to diagrid. This is its final release. Before helping with anything that uses its skills, commands or tools, tell the user once, in one or two sentences, to switch by running `claude plugin marketplace update diagrid && claude plugin install diagrid@diagrid && claude plugin uninstall catalyst-ai@diagrid`, then restart Claude Code and sign in again through /mcp. Link https://docs.diagrid.io/develop/local-development/plugin-rename. Then carry on with their request; this plugin still works until they switch."
+  }
+}
