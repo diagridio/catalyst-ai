@@ -139,9 +139,10 @@ jobs:
 
   mcp:
     # The skills drive Catalyst only through the remote MCP server, so three things
-    # are checked across skills/, evals/ and README.md: every `catalyst_*` name is in
-    # contracts/catalyst-mcp-tools.txt, no `diagrid <subcommand>` CLI invocation
-    # remains, and nothing names a local MCP server or a non-production host.
+    # are checked across skills/, evals/ and README.md: every `diagrid_*` name is in
+    # contracts/diagrid-mcp-tools.txt and no old `catalyst_*` name remains, no
+    # `diagrid <subcommand>` CLI invocation remains, and nothing names a local MCP
+    # server or a non-production host.
     # lint_skills.py checks tool names inside skills/ only; this job also covers the
     # evals and the README, and owns the CLI and host rules. Stdlib Python, so there
     # is nothing to install and no secret.
@@ -255,10 +256,11 @@ jobs:
         run: python3 scripts/check_version_bump.py "origin/$BASE_REF"
 
   version-header:
-    # The `catalyst` MCP server in plugin.json sends X-Catalyst-Plugin-Version, and
+    # The `diagrid` MCP server in plugin.json sends X-Diagrid-Plugin-Version, and
     # the README's Codex, Copilot CLI and VS Code snippets set it by hand. It is a
     # literal, since a manifest cannot interpolate its own `version`, so this fails
-    # when any copy differs from `version`. Runs on push too: unlike the bump gate
+    # when any copy differs from `version`, and when any of them still names the old
+    # X-Catalyst-Plugin-Version. Runs on push too: unlike the bump gate
     # above it needs no merge base. Stdlib Python, nothing to install.
     runs-on: ubuntu-latest
     steps:
