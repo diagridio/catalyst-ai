@@ -6,7 +6,7 @@ plugins: ["../.."]
 max_turns: 6
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  Loads a catalyst-* skill (setup or develop, or a scaffold) before acting on the
+  Loads a diagrid skill (setup or develop, or a scaffold) before acting on the
   starter prompt, rather than going straight to the tools the prompt names.
 ---
 

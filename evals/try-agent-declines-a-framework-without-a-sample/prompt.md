@@ -11,7 +11,7 @@ expected_outcome: >
   crash endpoint, a crash-test file or an agent name for it, and does not silently
   run langgraph in its place. Loading no skill is
   correct here: the right answer is one sentence and the list, so unlike the other
-  starter prompts this eval does not require a catalyst-* skill to fire.
+  starter prompts this eval does not require a diagrid skill to fire.
 ---
 
 I'm new to Diagrid Catalyst. Show me a durable AI agent that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.
