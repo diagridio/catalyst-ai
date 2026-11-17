@@ -113,7 +113,7 @@ export const installData = {
               "id": "mcp-headers",
               "label": "~/.codex/config.toml",
               "lang": "text",
-              "text": "[mcp_servers.diagrid.http_headers]\nX-Diagrid-Plugin-Version = \"0.10.0\""
+              "text": "[mcp_servers.diagrid.http_headers]\nX-Diagrid-Plugin-Version = \"0.10.1\""
             }
           ]
         },
@@ -177,7 +177,7 @@ export const installData = {
               "id": "mcp-config",
               "label": "~/.copilot/mcp-config.json",
               "lang": "json",
-              "text": "{\n  \"mcpServers\": {\n    \"diagrid\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Diagrid-Plugin-Version\": \"0.10.0\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
+              "text": "{\n  \"mcpServers\": {\n    \"diagrid\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Diagrid-Plugin-Version\": \"0.10.1\" },\n      \"oauthClientId\": \"copilot-cli\",\n      \"tools\": [\"*\"]\n    }\n  }\n}"
             }
           ]
         },
@@ -228,7 +228,7 @@ export const installData = {
               "id": "mcp-config",
               "label": ".vscode/mcp.json",
               "lang": "json",
-              "text": "{\n  \"servers\": {\n    \"diagrid\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Diagrid-Plugin-Version\": \"0.10.0\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
+              "text": "{\n  \"servers\": {\n    \"diagrid\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.cloud.r1.diagrid.io/mcp\",\n      \"headers\": { \"X-Diagrid-Plugin-Version\": \"0.10.1\" },\n      \"oauth\": { \"clientId\": \"vscode\" }\n    }\n  }\n}"
             }
           ]
         },

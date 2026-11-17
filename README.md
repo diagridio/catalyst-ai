@@ -93,7 +93,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.10.0"
+X-Diagrid-Plugin-Version = "0.10.1"
 ```
 
 **GitHub Copilot CLI**
@@ -107,7 +107,7 @@ X-Diagrid-Plugin-Version = "0.10.0"
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.0" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.1" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -125,7 +125,7 @@ Then run `/mcp` inside Copilot and authenticate the server in the browser.
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.0" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.1" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -157,7 +157,8 @@ so clients with a registry-backed server gallery can find it there. The earlier 
 
 0.10.0 renamed the plugin from `catalyst-ai` to `diagrid`. Claude Code treats a renamed
 plugin as a new one, so `claude plugin update` does not move you across. The
-`catalyst-ai` entry stays in the marketplace, held at 0.9.0, and gets no new skills.
+`catalyst-ai` entry stays in the marketplace, held at its final release, 0.9.1. That release
+still works, gets no new skills, and shows these commands at the start of every session.
 
 ```bash
 claude plugin marketplace update diagrid
