@@ -177,6 +177,28 @@ def main() -> int:
         o = session_metrics.measure(odd)
         check("an empty skill preamble, a non-object tool input and null token counts are skipped",
               (o["skills"], o["tool_calls"], o["tokens_in"], o["tokens_out"]), ({}, 2, 4, 0))
+        # Values of the wrong type where a log has strings, objects or numbers.
+        shapes = root / "projects" / "-shapes" / "s4.jsonl"
+        shapes.parent.mkdir(parents=True)
+        shapes.write_text("\n".join(json.dumps(line) for line in [
+            ["a", "bare", "array"], "a bare string", 7,
+            {"type": "assistant", "version": ["2.1"], "timestamp": at(0), "message": ["not", "an", "object"]},
+            {"type": "user", "version": "2.1.325", "timestamp": at(1), "message": {"content": [{"type": "text", "text": ["x"]}]}},
+            {"type": "assistant", "version": {"v": 1}, "timestamp": at(2), "message": {
+                "id": ["m5"], "model": ["claude"], "usage": USAGE_1, "content": []}},
+            {"type": "assistant", "timestamp": at(3), "message": {"id": "m6", "model": "claude-opus-5-5", "usage": ["x"], "content": []}},
+            {"type": "assistant", "timestamp": at(4), "message": {
+                "id": "m7", "model": "claude-opus-5-5", "content": [
+                    {"type": "tool_use", "id": "t-a", "name": None, "input": {}},
+                    {"type": "tool_use", "id": "t-b", "name": ["Read"], "input": {}},
+                    {"type": "tool_use", "id": "t-c", "name": "Read", "input": {"file_path": ["x"]}},
+                ],
+                "usage": {"input_tokens": "5", "cache_read_input_tokens": [1], "output_tokens": {"n": 1}}}},
+        ]) + "\n")
+        w = session_metrics.measure(shapes)
+        check("non-object lines, non-string names, versions, models and ids, and non-number tokens are skipped",
+              (w["client"], w["model"], w["tool_calls"], w["tools"], w["model_requests"], w["tokens_in"], w["tokens_out"]),
+              ("claude-code 2.1.325", "claude-opus-5-5", 3, {"?": 2, "Read": 1}, 1, 5, 0))
         # Reads with no limit stop at the client's default line count.
         long_file = root / "long.md"
         long_file.write_text("".join(f"{i}\n" for i in range(1, 6)))  # 2 bytes a line
@@ -192,6 +214,8 @@ def main() -> int:
                    session_metrics.read_bytes(str(long_file), {"offset": "4", "limit": None})), (6, 4))
             check("a Read with a negative limit counts nothing",
                   session_metrics.read_bytes(str(long_file), {"limit": -1}), 0)
+            check("a Read whose offset or limit is Infinity falls back to the defaults",
+                  session_metrics.read_bytes(str(long_file), json.loads('{"offset": Infinity, "limit": Infinity}')), 6)
         check("client and model", (m["client"], m["model"]), ("claude-code 2.1.325", "claude-opus-5-5"))
         check("wall time from first to last line, subagent included; bad and naive timestamps "
               "do not stop the run", m["wall_seconds"], 10)

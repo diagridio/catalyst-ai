@@ -111,16 +111,27 @@ def read_lines(path: Path):
                 continue  # a session still being written can end mid-line
 
 
+def message_of(entry: dict) -> dict:
+    message = entry.get("message")
+    return message if isinstance(message, dict) else {}
+
+
+def text_or_none(value) -> str | None:
+    """A logged value that should be a string, or None when it is not one, so
+    an odd log shape is skipped rather than put in a set or joined to text."""
+    return value if isinstance(value, str) and value else None
+
+
 def blocks(entry: dict) -> list:
-    content = (entry.get("message") or {}).get("content")
+    content = message_of(entry).get("content")
     return [b for b in content if isinstance(b, dict)] if isinstance(content, list) else []
 
 
 def text_of(entry: dict) -> str:
-    content = (entry.get("message") or {}).get("content")
+    content = message_of(entry).get("content")
     if isinstance(content, str):
         return content
-    return "".join(b.get("text", "") for b in blocks(entry) if b.get("type") == "text")
+    return "".join(b["text"] for b in blocks(entry) if b.get("type") == "text" and isinstance(b.get("text"), str))
 
 
 def is_typed_prompt(entry: dict) -> bool:
@@ -179,7 +190,7 @@ def as_int(value, default: int) -> int:
         return default
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):  # OverflowError: JSON's Infinity
         return default
 
 
@@ -200,25 +211,28 @@ def measure(session: Path) -> dict:
     for path in files:
         main = path == session
         for entry in read_lines(path):
+            if not isinstance(entry, dict):
+                continue  # a bare array, string or number: not a log line
             kind = entry.get("type")
             if kind not in ("user", "assistant"):
                 continue
-            if entry.get("version"):
-                versions.add(entry["version"])
+            if version := text_or_none(entry.get("version")):
+                versions.add(version)
             if entry.get("timestamp") and (when := parse_time(entry["timestamp"])):
                 times.append(when)
 
             if kind == "assistant":
-                message = entry.get("message") or {}
-                synthetic = message.get("model") == "<synthetic>"  # written by the client, no request made
-                if message.get("model") and not synthetic:
-                    models.add(message["model"])
-                if message.get("id") and message.get("usage") and not synthetic:
-                    usage[message["id"]] = message["usage"]
+                message = message_of(entry)
+                model, msg_id = text_or_none(message.get("model")), text_or_none(message.get("id"))
+                synthetic = model == "<synthetic>"  # written by the client, no request made
+                if model and not synthetic:
+                    models.add(model)
+                if msg_id and isinstance(message.get("usage"), dict) and message["usage"] and not synthetic:
+                    usage[msg_id] = message["usage"]
                 for b in blocks(entry):
                     if b.get("type") != "tool_use":
                         continue
-                    name, args = b.get("name", "?"), b.get("input")
+                    name, args = text_or_none(b.get("name")) or "?", b.get("input")
                     args = args if isinstance(args, dict) else {}  # a malformed call can log any value
                     tools[name] += 1
                     if main and name == "AskUserQuestion":
@@ -227,8 +241,8 @@ def measure(session: Path) -> dict:
                     if call in seen_calls:
                         repeated += 1
                     seen_calls.add(call)
-                    if name == "Read" and args.get("file_path"):
-                        reads.append((str(args["file_path"]), args))  # attributed once every loaded skill is known
+                    if name == "Read" and (file_path := text_or_none(args.get("file_path"))):
+                        reads.append((file_path, args))  # attributed once every loaded skill is known
                 continue
 
             failed += sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and b.get("is_error"))
@@ -256,8 +270,8 @@ def measure(session: Path) -> dict:
         skills[name] += read_bytes(path, args)
 
     tokens_in = sum(
-        (u.get("input_tokens") or 0) + (u.get("cache_read_input_tokens") or 0)
-        + (u.get("cache_creation_input_tokens") or 0)
+        as_int(u.get("input_tokens"), 0) + as_int(u.get("cache_read_input_tokens"), 0)
+        + as_int(u.get("cache_creation_input_tokens"), 0)
         for u in usage.values()
     )
     catalyst = {n: c for n, c in tools.items() if CATALYST_TOOL.search(n)}
@@ -268,7 +282,7 @@ def measure(session: Path) -> dict:
         "model": ",".join(sorted(models)) or "-",
         "plugin": ",".join(sorted(plugin)) or "-",
         "tokens_in": tokens_in,
-        "tokens_out": sum((u.get("output_tokens") or 0) for u in usage.values()),
+        "tokens_out": sum(as_int(u.get("output_tokens"), 0) for u in usage.values()),
         "model_requests": len(usage),
         "tool_calls": sum(tools.values()),
         "catalyst_calls": sum(catalyst.values()),
