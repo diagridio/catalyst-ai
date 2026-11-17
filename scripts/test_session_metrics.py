@@ -164,6 +164,14 @@ def main() -> int:
         r = session_metrics.measure(read_only)
         check("plugin version from a Read under the plugin cache, with no skill loaded",
               (r["plugin"], r["skills"]), ("0.9.0", {"catalyst-operate": 0}))
+        # The same under the renamed plugin's cache directory.
+        renamed = root / "projects" / "-renamed" / "s5.jsonl"
+        renamed.parent.mkdir(parents=True)
+        cached = root / "cache" / "diagrid" / "diagrid" / "0.10.0" / "skills" / "diagrid-operate" / "SKILL.md"
+        renamed.write_text(json.dumps(assistant("m10", USAGE_1, 0, tool_use("Read", file_path=str(cached)))) + "\n")
+        r = session_metrics.measure(renamed)
+        check("plugin version and skill from the diagrid plugin's cache",
+              (r["plugin"], r["skills"]), ("0.10.0", {"diagrid-operate": 0}))
         # Lines a log should not hold, which must not stop the run.
         odd = root / "projects" / "-odd" / "s3.jsonl"
         odd.parent.mkdir(parents=True)

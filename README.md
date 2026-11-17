@@ -170,6 +170,16 @@ Then run `/mcp`, and if `plugin:diagrid:diagrid` shows it needs authentication, 
 and sign in. The commands are now `/diagrid:try-workflow` and `/diagrid:try-agent`, and the
 skills are `diagrid:diagrid-deploy`, `diagrid:diagrid-setup` and so on.
 
+In Codex, Copilot and the other clients that install with `npx skills add`, run your
+client's install command below again. It adds the `diagrid-*` skills but leaves the old
+`catalyst-*` folders in place, so the agent sees every skill twice until you delete them
+from the directory the installer wrote:
+
+```bash
+rm -rf .agents/skills/catalyst-*        # a per-project install
+rm -rf ~/.copilot/skills/catalyst-*     # a Copilot install with --global
+```
+
 ### Upgrading from 0.8.x
 
 0.9.0 renamed two things. A client set up for 0.8.x needs both of them changed.
