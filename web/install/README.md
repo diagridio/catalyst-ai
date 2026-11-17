@@ -1,6 +1,6 @@
 # @diagrid/catalyst-ai-install
 
-`<catalyst-ai-install>`: install steps for [Diagrid Catalyst](https://diagrid.io) AI, one tab
+`<catalyst-ai-install>`: install steps for [Diagrid](https://diagrid.io) AI, one tab
 per client (Claude Code, Codex, Copilot CLI, VS Code), with a copy button on every step.
 Vanilla custom element, Shadow DOM, no dependencies, no network calls.
 

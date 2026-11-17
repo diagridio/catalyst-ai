@@ -1,6 +1,6 @@
 ---
-name: catalyst-workflow-determinism
-description: Replay-safety rails for a Dapr Workflow orchestrator on Catalyst. Use when writing, changing or reviewing code inside a workflow function, or when a run diverges on replay — clocks, randomness, ids, iteration order, direct I/O, threads, global state.
+name: diagrid-workflow-determinism
+description: Replay-safety rails for a Dapr Workflow orchestrator on Diagrid. Use when writing, changing or reviewing code inside a workflow function, or when a run diverges on replay — clocks, randomness, ids, iteration order, direct I/O, threads, global state.
 ---
 
 # Workflow Determinism
@@ -131,7 +131,7 @@ escapes the scheduler, its ordering is not reproducible, and it is invisible to 
 so it re-runs on every replay while the engine has no record it ever ran.
 
 If a design fans out over pub/sub rather than over activities, note the shape of a
-Catalyst project: **`number_of_pubsubs_per_project` is 1 on every plan**, and no plan upgrade raises it. It is a platform default
+Diagrid project: **`number_of_pubsubs_per_project` is 1 on every plan**, and no plan upgrade raises it. It is a platform default
 rather than a free-tier restriction. These are plan values overlaid per organization,
 not constants in the code, so read the live quota rather than asserting the 1 — and do
 not promise a user it can be raised for them, which is a commercial question rather than
@@ -239,7 +239,7 @@ only mechanism that catches a determinism regression before deployment does.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Judge the action sequence, not the vocabulary.** A hazardous call that cannot reach a
   branch, a loop bound or an activity input is not the same finding as one that can.
 - **Never invent an SDK name.** If a context accessor is not verified above, read it from
@@ -253,4 +253,4 @@ only mechanism that catches a determinism regression before deployment does.
   Do not create a project while reviewing — the organization's `default` project already
   has a managed workflow store.
 - For hazards in the *activity* body — duplicate side effects under retry — use the
-  `catalyst-activity-idempotency` skill.
+  `diagrid-activity-idempotency` skill.

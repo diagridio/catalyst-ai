@@ -1,17 +1,17 @@
 ---
-name: catalyst-develop
-description: Run an app or agent locally against Diagrid Catalyst — get its connection with diagrid_get_connection, start it, trigger runs, and crash and restart it to watch a workflow resume. Use for local runs, a crash-and-recover demo, or a worker that never connects.
+name: diagrid-develop
+description: Run an app or agent locally against Diagrid — get its connection with diagrid_get_connection, start it, trigger runs, and crash and restart it to watch a workflow resume. Use for local runs, a crash-and-recover demo, or a worker that never connects.
 ---
 
 # The local development loop
 
 Goal: end this skill with the user's own process running on their machine, talking to a
-real Catalyst sidecar, and able to see what it did. A loop that requires a redeploy per
+real Diagrid sidecar, and able to see what it did. A loop that requires a redeploy per
 edit is not this loop; if you find yourself recreating resources to test a code change,
 something above is wrong.
 
-Everything here goes through the Catalyst MCP server, the `diagrid_*` tools. If they are
-missing or refuse with `NOT_AUTHENTICATED`, the `catalyst-setup` skill covers it.
+Everything here goes through the Diagrid MCP server, the `diagrid_*` tools. If they are
+missing or refuse with `NOT_AUTHENTICATED`, the `diagrid-setup` skill covers it.
 
 ## 1. The shape of the loop
 
@@ -47,11 +47,11 @@ own code, it's the `appId` on its registry record.
    the user, then apply. The project's managed `pubsub` and `kvstore` are already
    there. Apply a component only if the app needs one beyond them,
    and apply it before the app, then any subscriptions scoped to the app in a second
-   call (see `catalyst-deploy` for the full ordering), so they exist when its sidecar
-   boots. An agent needs none: apply its `Agent` resource and Catalyst provides its
-   state, pub/sub and registry (`catalyst-agent-scaffold`). A sample's local
-   `resources/` files are for running without Catalyst, so leave them out. An app with
-   no endpoint is the correct shape for a pure workflow worker, which dials Catalyst
+   call (see `diagrid-deploy` for the full ordering), so they exist when its sidecar
+   boots. An agent needs none: apply its `Agent` resource and Diagrid provides its
+   state, pub/sub and registry (`diagrid-agent-scaffold`). A sample's local
+   `resources/` files are for running without Diagrid, so leave them out. An app with
+   no endpoint is the correct shape for a pure workflow worker, which dials Diagrid
    outbound.
 3. Read it back and wait for `ready`. `updating` right after a local connection attaches
    is normal; give it time before calling it broken.
@@ -61,7 +61,7 @@ and stop.
 
 ## 3. Running the app locally
 
-The app runs as the user's own process with three values in its environment. Catalyst
+The app runs as the user's own process with three values in its environment. Diagrid
 hands them out through one tool.
 
 1. Make sure the App ID exists (section 2).
@@ -88,7 +88,7 @@ hands them out through one tool.
 
    Use the user's own run command in place of `uv run main.py`, and the app's own port
    or server flags if it has any (a web app started with `uv run uvicorn main:app
-   --port 5001` for example). A pure workflow worker dials Catalyst outbound and needs
+   --port 5001` for example). A pure workflow worker dials Diagrid outbound and needs
    no inbound port.
 4. **These are local-dev values, not production secrets.** A deployed app gets its own
    injected by the platform. Never paste `DAPR_API_TOKEN` into the chat, a pull request,
@@ -101,22 +101,22 @@ hands them out through one tool.
 Two things about the worker process itself:
 
 - **A worker needs only those values.** A process that registers workflows and activities
-  and polls for work items dials Catalyst outbound. It needs no tunnel and no inbound
+  and polls for work items dials Diagrid outbound. It needs no tunnel and no inbound
   port. Do not add an HTTP server just so that a port has something to answer: the worker
   then registers the workflow and every activity successfully and dies at bind because
   something else holds the port, and the startup log reads as healthy right up to the
   error. Do not give it an app port either: `--app-port` on a tunnel, or a
   health-checked app endpoint on its App ID, with nothing listening blocks every workflow
   start (section 7).
-- **An app that Catalyst must call into** (service invocation, pub/sub delivery, an agent
+- **An app that Diagrid must call into** (service invocation, pub/sub delivery, an agent
   endpoint, the MCP server behind an `MCPServer`) needs an app tunnel as well, and these
-  three values do not open one. The `catalyst-app-tunnels` skill covers it. Never use a
+  three values do not open one. The `diagrid-app-tunnels` skill covers it. Never use a
   public tunnel instead. `diagrid_list_app_tunnels` lists the tunnels open on the
-  project, so you can see whether Catalyst currently reaches a local process.
+  project, so you can see whether Diagrid currently reaches a local process.
 - **An app or agent that calls an MCP server** calls it through its own sidecar, at
   `$DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp/<mcpserver-name>` with its `DAPR_API_TOKEN`. It
   never calls the server's own URL, and never calls `dapr.internal.mcp.*` workflows
-  (`DaprMCPClient` in the Dapr SDK). `catalyst-agent-scaffold` section 9 has the details.
+  (`DaprMCPClient` in the Dapr SDK). `diagrid-agent-scaffold` section 9 has the details.
 
 If the process cannot connect, read the app back (`diagrid_get_app`) before changing
 code. Status and the per-identity messages under `status.appIds` say whether the platform
@@ -146,7 +146,7 @@ see which step the run is on or failed at. `diagrid_list_workflow_runs` finds ru
 you lost the id.
 
 Stopping a run is a separate matter and is deliberately not in this skill — it is
-irreversible and belongs with diagnosis rather than iteration (`catalyst-debug`).
+irreversible and belongs with diagnosis rather than iteration (`diagrid-debug`).
 
 ### Watch a run survive a crash
 
@@ -161,7 +161,7 @@ This is the quickest way to see what durability buys:
    crash ran once, and only the step the crash cut off ran again.
 
 That re-run is expected, because activities run at least once. Never say "nothing ran
-twice". An activity with a side effect must be safe to repeat (`catalyst-activity-idempotency`).
+twice". An activity with a side effect must be safe to repeat (`diagrid-activity-idempotency`).
 
 ## 5. Read the output while you develop
 
@@ -169,7 +169,7 @@ Three different sources, and picking the wrong one is why bugs look invisible.
 
 | Source | How | What it carries |
 | --- | --- | --- |
-| Your process | Its own terminal or log file, where you started it | Whatever your code prints. Catalyst never sees it |
+| Your process | Its own terminal or log file, where you started it | Whatever your code prints. Diagrid never sees it |
 | The run | `diagrid_get_workflow_run` | Status, the execution graph, step errors. `input`, `output` and `customStatus` are withheld at the default data-sharing level |
 | The sidecar's API log | `diagrid_get_logs`, at `full` data sharing only | One entry per Dapr API call the app made, with status, method and error |
 
@@ -196,8 +196,8 @@ What genuinely does require a platform change:
 | A new app | Nothing can reference an app that does not exist yet |
 | The app's health-check or protocol settings | An app's identity spec is not updated in place; read it, change it and apply it whole |
 
-A component pointing at a local address is not translated for you: Catalyst components
-are applied as written, so point state and pub/sub at the project's managed `kvstore`
+A component pointing at a local address is not translated for you: Diagrid applies
+components as written, so point state and pub/sub at the project's managed `kvstore`
 and `pubsub` rather than at a local broker.
 
 ## 7. When the worker does not come up
@@ -208,10 +208,10 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 | --- | --- | --- |
 | `diagrid_get_connection` missing or refused | Not available to this role or server | Say so and stop |
 | `diagrid_get_app` says the app does not exist | Wrong name or project | Check the name with `diagrid_list_apps` |
-| The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `diagrid_list_components` and then `catalyst-debug` |
+| The app is not `ready` | Still provisioning, or a component failed | Read `status.appIds` messages; `diagrid_list_components` and then `diagrid-debug` |
 | The worker starts but no run ever appears | The project has no managed workflow store, or the store was enabled after the app | Read the project with `diagrid_get_project`; the sidecar reads workflow configuration at boot, so the app may need re-creating after the store is enabled |
 | The worker is connected but a run fails | An application error | `diagrid_get_workflow_run` for the failing step |
-| Every workflow start fails with `failed to create workflow instance: context canceled` | The worker runs behind an app tunnel opened with `--app-port`, or its App ID has an app endpoint with the health check enabled, and nothing answers there. Catalyst starts no workflows or actors until the app's health check passes | Remove the app port: clear the endpoint on the App ID (read it, drop the endpoint, apply it whole), or run it without `--app-port` (`catalyst-app-tunnels`). Keep one only for a process that serves Catalyst's calls |
+| Every workflow start fails with `failed to create workflow instance: context canceled` | The worker runs behind an app tunnel opened with `--app-port`, or its App ID has an app endpoint with the health check enabled, and nothing answers there. Diagrid starts no workflows or actors until the app's health check passes | Remove the app port: clear the endpoint on the App ID (read it, drop the endpoint, apply it whole), or run it without `--app-port` (`diagrid-app-tunnels`). Keep one only for a process that serves Diagrid's calls |
 | Bind error on startup in a worker that never needed a port | An HTTP server was added unnecessarily | Remove it; see section 3 |
 | A component is not ready | A component, not your app | `diagrid_get_component`, then `status.appIdStatus[]` |
 | `component must be deleted to be updated ...` | You changed a component's type | Delete it and apply it again |
@@ -219,22 +219,22 @@ Route by what you actually saw. Guessing here wastes a whole iteration.
 
 Two quieter failure modes with no error to search for:
 
-- **A setting that does nothing.** Catalyst applies components as written and ignores
+- **A setting that does nothing.** Diagrid applies components as written and ignores
   Dapr settings that belong to a self-hosted sidecar. If a setting appears to have no
   effect, read the resource back before debugging your code.
 - **The app is ready and requests still do not arrive.** Check
-  `diagrid_list_app_tunnels`: with no tunnel open on that App ID, nothing in Catalyst can
-  reach the local process (`catalyst-app-tunnels`, which can also print requests as they
+  `diagrid_list_app_tunnels`: with no tunnel open on that App ID, nothing in Diagrid can
+  reach the local process (`diagrid-app-tunnels`, which can also print requests as they
   arrive). Then check `diagrid_get_metrics` for the app.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Name the organization before the first write.** Before the session's first
   `diagrid_apply`, `diagrid_delete_resource` or any other call that creates, changes
   or deletes something, call `diagrid_whoami` and tell the user which organization the
   change lands in. A user with more than one organization cannot otherwise tell where it
-  went. If it fails, follow `catalyst-setup` and write nothing.
+  went. If it fails, follow `diagrid-setup` and write nothing.
 - **Use `default`; only if it is absent, offer to create a project and wait for the user's
   agreement.** Never reuse a misconfigured project. Check the project name before the first
   call of a session.

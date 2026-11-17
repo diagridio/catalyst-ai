@@ -22,7 +22,7 @@ export interface InstallClient {
 
 export interface InstallCommand {
   id: string;
-  /** For example `/catalyst-ai:try-workflow`. */
+  /** For example `/diagrid:try-workflow`. */
   name: string;
   description: string;
   /** The command body, offered as a paste-in prompt where there is no slash command. */

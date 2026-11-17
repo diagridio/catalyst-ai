@@ -1,6 +1,6 @@
 ---
-name: catalyst-activity-idempotency
-description: Make Dapr Workflow activities on Catalyst safe to run twice. Use when writing, changing or reviewing an activity with a side effect — payment, email, write, third-party call — or when a retry duplicated work. Activities run at least once, never exactly once.
+name: diagrid-activity-idempotency
+description: Make Dapr Workflow activities on Diagrid safe to run twice. Use when writing, changing or reviewing an activity with a side effect — payment, email, write, third-party call — or when a retry duplicated work. Activities run at least once, never exactly once.
 ---
 
 # Activity Idempotency
@@ -63,7 +63,7 @@ Sources, in order of preference:
 1. **A natural key already in the input** — order id, invoice number, transaction
    reference. Best option: it is meaningful to the downstream system and survives a
    workflow rerun.
-2. **The activity context's task execution id.** In Catalyst, every retry attempt of one
+2. **The activity context's task execution id.** In Diagrid, every retry attempt of one
    activity invocation shares one stable `task_execution_id`; the retry backoff timer
    carries `origin__activity_retry_task_execution_id` pointing back to it. That
    stability is what makes it usable as a key.
@@ -197,9 +197,9 @@ that matter most.
 An idempotency key is small and belongs in the input. Put it there explicitly rather
 than reconstructing it in the body, so it is visible to a reviewer.
 
-## Catalyst notes
+## Diagrid notes
 
-- **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Catalyst
+- **One KV store per project.** `number_of_kvstores_per_project` is 1 on every Diagrid
   plan, and no plan upgrade raises it.
   These are plan values overlaid per organization, not constants in the code, so read
   the live quota rather than asserting the 1 — and do not promise a user it can be
@@ -231,7 +231,7 @@ than reconstructing it in the body, so it is visible to a reviewer.
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Assume at least once.** An activity that is correct only if it runs once is a bug,
   not a risk to monitor.
 - **A key generated inside the activity body is not an idempotency key.** Flag it every
@@ -248,5 +248,5 @@ than reconstructing it in the body, so it is visible to a reviewer.
   instance, or modify state to prove a point. Do not create a project while reviewing —
   the organization's `default` project already has a managed workflow store.
 - For hazards in the *orchestrator* body rather than the activity body, use the
-  `catalyst-workflow-determinism` skill. Non-determinism inside an activity is intended
+  `diagrid-workflow-determinism` skill. Non-determinism inside an activity is intended
   and is not a finding.

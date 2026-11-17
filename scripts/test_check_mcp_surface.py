@@ -43,7 +43,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("clean skill passes", {"skills/a/SKILL.md": "Call `diagrid_whoami`, then `diagrid_get_app`.\n"}, False, ""),
     (
         "a prefixed client name and the wildcard pass",
-        {"skills/a/SKILL.md": "`mcp__plugin_catalyst-ai_diagrid__diagrid_whoami` and `diagrid_*`\n"},
+        {"skills/a/SKILL.md": "`mcp__plugin_diagrid_diagrid__diagrid_whoami` and `diagrid_*`\n"},
         False,
         "",
     ),
@@ -87,21 +87,21 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     (
         "the tunnel skill may name the tunnel commands",
         {
-            "skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid version`, `diagrid login`, `diagrid whoami`,\n"
+            "skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid version`, `diagrid login`, `diagrid whoami`,\n"
             "`diagrid dev run --id x --app-port 8000` and `diagrid listen --id x`.\n",
             "evals/tunnel-mcp/graders/g.md": "diagrid dev run --id travel\n",
         },
         False,
         "",
     ),
-    ("the tunnel skill may name dev stop and dev scaffold", {"skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid dev stop --id x -p p`, then\n`diagrid dev scaffold -p p`.\n"}, False, ""),
-    ("the tunnel skill may not name other dev subcommands", {"skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid dev deploy x`.\n"}, True, "diagrid dev"),
-    ("the tunnel skill may not name a bare diagrid dev", {"skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid dev`.\n"}, True, "diagrid dev"),
-    ("the tunnel skill may not name other CLI commands", {"skills/catalyst-app-tunnels/SKILL.md": "Run `diagrid mcpserver create x`.\n"}, True, "diagrid mcpserver"),
+    ("the tunnel skill may name dev stop and dev scaffold", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev stop --id x -p p`, then\n`diagrid dev scaffold -p p`.\n"}, False, ""),
+    ("the tunnel skill may not name other dev subcommands", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev deploy x`.\n"}, True, "diagrid dev"),
+    ("the tunnel skill may not name a bare diagrid dev", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid dev`.\n"}, True, "diagrid dev"),
+    ("the tunnel skill may not name other CLI commands", {"skills/diagrid-app-tunnels/SKILL.md": "Run `diagrid mcpserver create x`.\n"}, True, "diagrid mcpserver"),
     ("a tunnel eval may not name other CLI commands", {"evals/tunnel-mcp/prompt.md": "diagrid project list\n"}, True, "diagrid project"),
-    ("another skill may not name the tunnel commands", {"skills/catalyst-develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
+    ("another skill may not name the tunnel commands", {"skills/diagrid-develop/SKILL.md": "Run `diagrid dev run`.\n"}, True, "diagrid dev"),
     ("an eval outside the tunnel prefix may not name them", {"evals/other/prompt.md": "diagrid listen --id x\n"}, True, "diagrid listen"),
-    ("the tunnel skill may still not name a local MCP server", {"skills/catalyst-app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
+    ("the tunnel skill may still not name a local MCP server", {"skills/diagrid-app-tunnels/SKILL.md": "Start the local MCP server.\n"}, True, "local MCP server"),
     ("local MCP server in the web demo", {"web/demo.html": "<p>Start the local MCP server.</p>\n"}, True, "local MCP server"),
     ("staging host in the web component", {"web/install/data.js": "x = 'https://mcp.cloud.staging.diagrid.dev/mcp'\n"}, True, "non-production"),
     ("unlisted host in the embed snippet", {"web/embed/diagrid-io.html": "<a href='https://api.r1.diagrid.io'>\n"}, True, "not an allowed host"),
@@ -111,7 +111,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     ("an unlisted diagrid host in a skill", {"skills/a/SKILL.md": "https://api.r1.diagrid.io/v1\n"}, True, "not an allowed host"),
     ("a bare unlisted diagrid host in an eval", {"evals/e/prompt.md": "call api.r1.diagrid.io\n"}, True, "not an allowed host"),
     ("allowlisted hosts pass", {"README.md": "https://catalyst.diagrid.io/x https://docs.diagrid.io https://diagrid.io mail a@diagrid.io\n"}, False, ""),
-    ("marketplace id and repo path pass", {"README.md": "claude plugin install catalyst-ai@diagrid    # ok\nclaude plugin marketplace update diagrid\nclaude plugin update x\nhttps://github.com/diagridio/catalyst-ai\n"}, False, ""),
+    ("marketplace id and repo path pass", {"README.md": "claude plugin install diagrid@diagrid    # ok\nclaude plugin marketplace update diagrid\nclaude plugin update x\nhttps://github.com/diagridio/catalyst-ai\n"}, False, ""),
     # The old names. The plugin is offered only the diagrid_* names, so each is an unknown tool.
     ("a retired name in a skill", {"skills/a/SKILL.md": "Call `catalyst_whoami`.\n"}, True, "old name"),
     ("a retired name in a command", {"commands/try.md": "Call `catalyst_get_app`.\n"}, True, "old name"),
@@ -125,7 +125,7 @@ CASES: list[tuple[str, dict[str, str], bool, str]] = [
     (
         "the server key in a setup is not a CLI invocation",
         {
-            "README.md": "pick `plugin:catalyst-ai:diagrid` and sign in.\n"
+            "README.md": "pick `plugin:diagrid:diagrid` and sign in.\n"
             "codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex\n"
             "codex mcp login diagrid\n",
             "web/install/install.json": '{"t": "codex mcp add diagrid --url x", "u": "codex mcp login diagrid"}\n',

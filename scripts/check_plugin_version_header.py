@@ -4,7 +4,7 @@
 The `diagrid` MCP server in `.claude-plugin/plugin.json` sends the header
 `X-Diagrid-Plugin-Version` so the server can tell a plugin install from a server
 someone added by hand, and see who is on an old version. The README and the
-catalyst-setup skill tell Codex, Copilot CLI and VS Code users to set the same
+diagrid-setup skill tell Codex, Copilot CLI and VS Code users to set the same
 header by hand.
 
 The value is a literal, because a plugin manifest cannot interpolate its own
@@ -17,7 +17,7 @@ Checked:
 
 * plugin.json  `mcpServers.diagrid.headers["X-Diagrid-Plugin-Version"]` equals
                `version`.
-* README.md and skills/catalyst-setup/SKILL.md
+* README.md and skills/diagrid-setup/SKILL.md
                every snippet that sets the header sets it to `version`, and there
                are at least one TOML (Codex) and two JSON (Copilot CLI and VS
                Code) in each file, so deleting a snippet cannot make the check pass.
@@ -45,7 +45,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = Path(".claude-plugin") / "plugin.json"
 README = Path("README.md")
-SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
+SETUP_SKILL = Path("skills") / "diagrid-setup" / "SKILL.md"
 HAND_SET_DOCS = (README, SETUP_SKILL)
 HEADER = "X-Diagrid-Plugin-Version"
 RETIRED_HEADER = "X-Catalyst-Plugin-Version"
@@ -141,7 +141,7 @@ def main(argv: list[str]) -> int:
             print(f"  {p}", file=sys.stderr)
         print(
             f"\nSet {HEADER} to the `version` in {MANIFEST}, in the manifest and in every\n"
-            "README and catalyst-setup snippet, then run `python3 scripts/build_install_data.py`.",
+            "README and diagrid-setup snippet, then run `python3 scripts/build_install_data.py`.",
             file=sys.stderr,
         )
         return 1

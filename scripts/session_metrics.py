@@ -31,7 +31,8 @@ What it counts, and the shape of the log that decides how:
 - Skill text, from the hidden message that carries a loaded skill (it starts
   with "Base directory for this skill:") plus `Read` calls on a skill's files.
   A Read counts only when its path is under a skill base directory one of those
-  messages named, or under the plugin cache (`catalyst-ai/<version>/skills/`),
+  messages named, or under the plugin cache (`diagrid/<version>/skills/`, or
+  `catalyst-ai/<version>/skills/` before 0.10.0),
   so a `skills/` folder in the working tree is not taken for a skill. A Read of
   `SKILL.md` for a skill already loaded is not counted again, and a file that no
   longer exists names its skill with 0 bytes. A Read counts only the lines it
@@ -61,9 +62,9 @@ from pathlib import Path
 
 SKILL_PREAMBLE = "Base directory for this skill:"
 CATALYST_TOOL = re.compile(r"(?:^|__)(?:catalyst|diagrid)_[a-z0-9_]+$")
-PLUGIN_VERSION = re.compile(r"/catalyst-ai/(\d+\.\d+\.\d+[^/]*)/skills/")
+PLUGIN_VERSION = re.compile(r"/(?:diagrid|catalyst-ai)/(\d+\.\d+\.\d+[^/]*)/skills/")
 READ_DEFAULT_LIMIT = 2000  # lines Claude Code's Read returns when it is given no limit
-PLUGIN_SKILL = re.compile(r"/catalyst-ai/\d+\.\d+\.\d+[^/]*/skills/([^/]+)/")
+PLUGIN_SKILL = re.compile(r"/(?:diagrid|catalyst-ai)/\d+\.\d+\.\d+[^/]*/skills/([^/]+)/")
 NOT_TYPED = (
     "<system-reminder>", "<task-notification>", "<local-command-", "<bash-stdout>", "<bash-stderr>",
     "[Request interrupted",

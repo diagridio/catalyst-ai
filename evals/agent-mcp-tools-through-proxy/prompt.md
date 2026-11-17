@@ -6,7 +6,7 @@ plugins: ["../.."]
 max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  Loads catalyst-agent-scaffold or catalyst-develop. Has the agent weather-assistant call
+  Loads diagrid-agent-scaffold or diagrid-develop. Has the agent weather-assistant call
   the MCPServer travel through its own sidecar, at
   $DAPR_HTTP_ENDPOINT/v1.0/diagrid/mcp/travel with its dapr-api-token, using an ordinary
   streamable HTTP MCP client. Grants get_local_time with diagrid_grant_access and

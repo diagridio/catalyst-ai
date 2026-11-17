@@ -128,8 +128,8 @@ activity, so "Charge card", "Send email" and "Create shipment" will occasionally
 execute twice for one logical step. Key each one on the instance id plus the activity
 name — both already in the IR — and never let two activities own the same write.
 
-Both are covered at length by the `catalyst-workflow-determinism` and
-`catalyst-activity-idempotency` skills in this collection. Here they are a per-box
+Both are covered at length by the `diagrid-workflow-determinism` and
+`diagrid-activity-idempotency` skills in this collection. Here they are a per-box
 checklist.
 
 One more, specific to generated code: **renaming or reordering activities breaks runs
@@ -151,7 +151,7 @@ Follow whatever the repository already does. Absent a convention:
   .workflow.ir.jsonl     the IR this was generated from
 ```
 
-No `statestore.yaml` and no local broker: on Catalyst the managed workflow store is
+No `statestore.yaml` and no local broker: on Diagrid the managed workflow store is
 already attached to the project.
 
 **Keep `.workflow.ir.jsonl`.** It is the only record of why the code has the shape it
@@ -169,7 +169,7 @@ has once the diagram has gone back to being a photo in someone's phone.
 
 Resolve the version against the registry before writing it into a manifest, and if you
 cannot, name the package without one. A coordinate that 404s sends the user hunting for
-a Catalyst problem that does not exist, and `Dapr.Workflow` has shipped a preview ahead
+a Diagrid problem that does not exist, and `Dapr.Workflow` has shipped a preview ahead
 of stable before, so newest is not the same as newest stable. There is no Diagrid
 workflow package on any registry, in any language — a workflow needs the Dapr SDK.
 

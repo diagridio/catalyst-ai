@@ -7,7 +7,7 @@ max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
   Reports the refusal by kind, quotes both organizations, and stops rather than
-  retrying — catalyst-setup section 4 says ORG_MISMATCH is not retryable and that
+  retrying — diagrid-setup section 4 says ORG_MISMATCH is not retryable and that
   both values go to the user. Does not answer the app-count question with a number,
   and does not ask the user to paste a credential.
 ---

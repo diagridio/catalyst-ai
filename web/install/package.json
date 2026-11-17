@@ -1,7 +1,7 @@
 {
   "name": "@diagrid/catalyst-ai-install",
   "version": "0.1.0",
-  "description": "A <catalyst-ai-install> web component that shows how to connect Claude Code, Codex, Copilot CLI or VS Code to Diagrid Catalyst, with a copy button on every step.",
+  "description": "A <catalyst-ai-install> web component that shows how to connect Claude Code, Codex, Copilot CLI or VS Code to Diagrid, with a copy button on every step.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./catalyst-ai-install.js",

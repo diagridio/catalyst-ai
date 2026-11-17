@@ -18,7 +18,7 @@ compile:
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.
   One exception: opening an app tunnel, so Catalyst can call into a process on
-  the user's machine, has no `diagrid_*` tool. The `catalyst-app-tunnels` skill
+  the user's machine, has no `diagrid_*` tool. The `diagrid-app-tunnels` skill
   and its evals may name the CLI commands that do that, and no others.
 * A local MCP server (`mcp serve`, `mcp install`) or a host outside the allowlist.
   The only server is the remote one at https://mcp.cloud.r1.diagrid.io/mcp, and
@@ -53,14 +53,14 @@ RETIRED_TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORE
 RETIRED_SERVER_KEY = re.compile(r"mcp__(?:plugin_catalyst-ai_)?catalyst__|plugin:catalyst-ai:catalyst\b")
 
 # `diagrid`, an optional closing backtick, whitespace (a line wrap counts) and a word,
-# not part of a path, scope, marketplace id or domain (`@diagrid/x`, `catalyst-ai@diagrid`,
+# not part of a path, scope, marketplace id or domain (`@diagrid/x`, `diagrid@diagrid`,
 # `diagridio/y`, `diagrid.io`, `marketplace update diagrid`). Prose says "Diagrid" with a capital. Matched over the
 # whole file, not per line, so a command split across a wrap is still found.
 # `diagrid` is also the MCP server's key, so the places a setup names that key are not
-# CLI invocations either: `plugin:catalyst-ai:diagrid`, `codex mcp add diagrid --url`,
+# CLI invocations either: `plugin:diagrid:diagrid`, `codex mcp add diagrid --url`,
 # `codex mcp login diagrid`, `copilot mcp add --transport http diagrid <url>`.
 NOT_A_CLI_INVOCATION = (
-    r"(?<![\w./@-])(?<!plugin:catalyst-ai:)(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
+    r"(?<![\w./@-])(?<!plugin:diagrid:)(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
 )
 CLI_INVOCATION = re.compile(NOT_A_CLI_INVOCATION + r"diagrid`?\s+[A-Za-z-]+")
 # Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
@@ -85,7 +85,7 @@ CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 # subcommands that installing, signing in and tunnelling need. `dev` passes only as
 # `dev run`, `dev stop` or `dev scaffold`. Every other subcommand still fails there, so
 # the skill cannot drift into doing with the CLI what a `diagrid_*` tool already does.
-TUNNEL_SKILL = Path("skills") / "catalyst-app-tunnels"
+TUNNEL_SKILL = Path("skills") / "diagrid-app-tunnels"
 TUNNEL_EVAL_PREFIX = "tunnel-"
 TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "listen"})
 TUNNEL_DEV_SUBCOMMAND = re.compile(r"`?\s+(?:run|stop|scaffold)(?![\w-])")

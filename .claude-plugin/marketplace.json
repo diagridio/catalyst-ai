@@ -1,15 +1,24 @@
 {
   "name": "diagrid",
-  "description": "Diagrid's plugin marketplace: skills and MCP tools for building and operating Dapr Workflows and Durable Agents, on Diagrid Catalyst and on open-source Dapr.",
+  "description": "Diagrid's plugin marketplace: skills and MCP tools for building and operating Dapr Workflows and Durable Agents, on Diagrid and on open-source Dapr.",
   "owner": {
     "name": "Diagrid",
     "url": "https://diagrid.io"
   },
   "plugins": [
     {
-      "name": "catalyst-ai",
+      "name": "diagrid",
       "source": "./",
-      "description": "Durable execution for AI agents and workflows: build and operate Diagrid Catalyst by prompting."
+      "description": "Durable execution for AI agents and workflows: build and operate them on Diagrid by prompting."
+    },
+    {
+      "name": "catalyst-ai",
+      "source": {
+        "source": "github",
+        "repo": "diagridio/catalyst-ai",
+        "sha": "2a1f34b074520485844db7d2c413fcd71a4629a9"
+      },
+      "description": "The previous name of the diagrid plugin, kept at its last release (0.9.0) for existing installs. Install diagrid@diagrid instead."
     },
     {
       "name": "dapr-skills",
@@ -18,7 +27,7 @@
         "repo": "diagrid-labs/dapr-skills",
         "sha": "da01a60ff24530145546dc41ae059b55e52511e8"
       },
-      "description": "Create, add, migrate and review Dapr applications that use Workflow, Pub/Sub, Dapr Agents or a Diagrid agent framework wrapper for durable agent applications. For Diagrid Catalyst use the catalyst-ai plugin."
+      "description": "Create, add, migrate and review Dapr applications that use Workflow, Pub/Sub, Dapr Agents or a Diagrid agent framework wrapper for durable agent applications. For Diagrid use the diagrid plugin."
     }
   ]
 }

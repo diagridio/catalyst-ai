@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the plugin-version header gate.
 
-Each case copies this repo's real plugin.json, README.md and catalyst-setup skill
+Each case copies this repo's real plugin.json, README.md and diagrid-setup skill
 into a throwaway directory, changes one thing, and asserts the gate's verdict. The controls (the
 repo as it is, and a bump done properly) must pass, or the rejections prove only
 that the gate rejects whatever it is shown.
@@ -21,7 +21,7 @@ from typing import Callable
 REPO = Path(__file__).resolve().parent.parent
 CHECKER = REPO / "scripts" / "check_plugin_version_header.py"
 MANIFEST = Path(".claude-plugin") / "plugin.json"
-SETUP_SKILL = Path("skills") / "catalyst-setup" / "SKILL.md"
+SETUP_SKILL = Path("skills") / "diagrid-setup" / "SKILL.md"
 HEADER = "X-Diagrid-Plugin-Version"
 RETIRED_HEADER = "X-Catalyst-Plugin-Version"
 CURRENT = json.loads((REPO / MANIFEST).read_text(encoding="utf-8"))["version"]

@@ -1,11 +1,11 @@
 ---
-name: catalyst-workflow-scaffold
-description: Add, create or generate a Dapr Workflow that runs on Diagrid Catalyst, not a local sidecar — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process.
+name: diagrid-workflow-scaffold
+description: Add, create or generate a Dapr Workflow that runs on Diagrid (formerly Catalyst), not a local sidecar — the orchestrator, its activities, and the project wiring. Use for a workflow, orchestration, saga, pipeline or long-running multi-step process.
 ---
 
-# Scaffold a Dapr Workflow on Catalyst
+# Scaffold a Dapr Workflow on Diagrid
 
-Goal: end this skill with a workflow registered, started once against Catalyst, and its
+Goal: end this skill with a workflow registered, started once against Diagrid, and its
 status read back. Code that compiles but was never started is not a scaffold — most of
 what goes wrong here goes wrong on the first real run.
 
@@ -51,7 +51,7 @@ Three coordinate traps, each of which has already bitten someone:
   `Diagrid.Agents.Workflow`, and no Diagrid workflow package on any registry.
 
 Never write a coordinate you have not watched resolve. A package id that 404s sends the
-user hunting for a Catalyst problem that does not exist, which is worse than no skill.
+user hunting for a Diagrid problem that does not exist, which is worse than no skill.
 
 ## 3. Use the project named `default`
 
@@ -100,21 +100,21 @@ Renaming, reordering or removing activities in a workflow that has instances in 
 replays old history against new code, which fails the run. Add a new workflow name
 instead and let the old instances drain. Workflow versioning is not solved for you.
 
-## 5. Run it against Catalyst
+## 5. Run it against Diagrid
 
 1. **Make sure the app exists.** `diagrid_get_app` for the project and the app name; if
    it is absent, `diagrid_apply` an `App` (read `diagrid_get_resource_schema` first, run
    with `dry_run`, show the user, then apply). A write role is needed: if
    `diagrid_apply` is not in the tool list, say so and stop.
-2. **Run the worker.** `catalyst-develop` section 3 is the one place that says how to
+2. **Run the worker.** `diagrid-develop` section 3 is the one place that says how to
    start the process with the connection values from `diagrid_get_connection` in its
    environment. Follow it
    rather than improvising.
 
-**A pure workflow worker needs no app port.** It dials Catalyst outbound and polls for work
+**A pure workflow worker needs no app port.** It dials Diagrid outbound and polls for work
 items, so there is no inbound endpoint to expose and nothing should be listening. An app
 with no registered endpoint is the correct shape for a worker. Give it one anyway (an app
-endpoint with its health check enabled, or `--app-port` on a tunnel) and Catalyst
+endpoint with its health check enabled, or `--app-port` on a tunnel) and Diagrid
 health-checks the app there, finds nothing, and starts no workflows: every start fails with
 `failed to create workflow instance: context canceled`.
 
@@ -122,7 +122,7 @@ Do not invent an HTTP server to satisfy a port you do not need. It is a common f
 failure and it fails confusingly — the worker registers the workflow and every activity
 successfully, then dies at bind because something else already holds the port, so the logs
 show a healthy startup followed by an error that has nothing to do with workflows. Give
-the app an endpoint only when Catalyst calls in: service invocation, pub/sub delivery, or
+the app an endpoint only when Diagrid calls in: service invocation, pub/sub delivery, or
 an agent endpoint.
 
 Apps, agents and MCP servers are each backed by an identity (an "App ID" in some APIs).
@@ -195,7 +195,7 @@ that 404s or lands on the wrong project is worse than no link.**
 
 ## Rules
 
-- **Use the Catalyst MCP tools for everything in Catalyst.**
+- **Use the Diagrid MCP tools for everything in Diagrid.**
 - **Use `default`; only if it is absent, offer to create a project and wait for the user's
   agreement.** Never reuse a misconfigured project.
 - **Do not name a package version you have not resolved.** Check the registry, or state

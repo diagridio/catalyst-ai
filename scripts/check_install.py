@@ -482,7 +482,7 @@ def check_links(dest: Path, expected: Sequence[str], mode: Mode, f: Findings) ->
     Link extraction comes from skill_links so this and lint_skills.py cannot
     drift apart — and so this gate inherits the rule that a code span which
     looks like a path is prose. Three such spans in
-    catalyst-workflow-from-diagram are correct as written.
+    diagrid-workflow-from-diagram are correct as written.
     """
     files = 0
     links = 0
