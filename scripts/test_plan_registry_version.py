@@ -15,7 +15,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from plan_registry_version import PUBLISHER_META, plan, published_commit, tag_for  # noqa: E402
+from plan_registry_version import (  # noqa: E402
+    PUBLISHER_META,
+    outputs,
+    plan,
+    published_commit,
+    tag_for,
+)
 
 LOCAL = {
     "$schema": "https://example.com/schema.json",
@@ -104,10 +110,43 @@ def main() -> int:
         if got_tag != want_tag:
             failures.append(f"{name}: expected {want_tag!r}, got {got_tag!r}")
 
+    # The workflow reads each of these keys from $GITHUB_OUTPUT. An empty `tag`
+    # would publish and then fail at `git tag -a ""`, leaving the version untagged.
+    output_cases = [
+        (
+            "a publish names the server, version and tag",
+            ("io.diagrid/mcp", "publish", "0.0.1", ""),
+            {
+                "name": "io.diagrid/mcp",
+                "action": "publish",
+                "version": "0.0.1",
+                "tag": "mcp-registry-io.diagrid-mcp-v0.0.1",
+                "commit": "",
+            },
+        ),
+        (
+            "a skip carries the published commit",
+            ("io.diagrid/mcp", "skip", "0.0.2", "sha-7"),
+            {
+                "name": "io.diagrid/mcp",
+                "action": "skip",
+                "version": "0.0.2",
+                "tag": "mcp-registry-io.diagrid-mcp-v0.0.2",
+                "commit": "sha-7",
+            },
+        ),
+    ]
+    for name, args, want_outputs in output_cases:
+        text = outputs(*args)
+        got_outputs = dict(line.split("=", 1) for line in text.splitlines())
+        if not text.endswith("\n") or got_outputs != want_outputs:
+            failures.append(f"{name}: expected {want_outputs!r}, got {text!r}")
+
     if failures:
         print("FAILED:\n" + "\n".join(f"  {f}" for f in failures), file=sys.stderr)
         return 1
-    print(f"{len(CASES) + len(commit_cases) + len(tag_cases)} cases passed")
+    total = len(CASES) + len(commit_cases) + len(tag_cases) + len(output_cases)
+    print(f"{total} cases passed")
     return 0
 
 

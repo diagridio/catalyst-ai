@@ -86,6 +86,16 @@ def tag_for(name: str, version: str) -> str:
     return f"mcp-registry-{name.replace('/', '-')}-v{version}"
 
 
+def outputs(name: str, action: str, version: str, commit: str) -> str:
+    """The `key=value` lines written to $GITHUB_OUTPUT.
+
+    The workflow reads every one of these keys. A missing `tag` would let a
+    publish go through and then fail at the tag step, leaving it untagged.
+    """
+    tag = tag_for(name, version)
+    return f"name={name}\naction={action}\nversion={version}\ntag={tag}\ncommit={commit}\n"
+
+
 def comparable(server: dict) -> dict:
     return {k: v for k, v in server.items() if k not in PER_PUBLISH_FIELDS}
 
@@ -171,8 +181,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     commit = published_commit(entries, version) if action == "skip" else ""
-    tag = tag_for(name, version)
-    result = f"name={name}\naction={action}\nversion={version}\ntag={tag}\ncommit={commit}\n"
+    result = outputs(name, action, version, commit)
     print(result, end="")
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
