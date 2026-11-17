@@ -145,9 +145,10 @@ those connectors but has not been tried separately.
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
-The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
-([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
-so clients with a registry-backed server gallery can find it there.
+The server is also listed in the official MCP Registry as `io.diagrid/mcp`
+([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/mcp)),
+so clients with a registry-backed server gallery can find it there. The earlier entry,
+`io.diagrid/catalyst`, points at the same URL and is superseded by `io.diagrid/mcp`.
 
 ### Upgrading from 0.8.x
 
@@ -491,6 +492,12 @@ otherwise, and nothing tells them. Every bump also changes the `X-Diagrid-Plugin
 header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.json` and
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
 in the same three setups in `skills/catalyst-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
+
+To measure a run of the plugin, finish the Claude Code session and run
+`python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log
+and prints a one-row Markdown table: tokens, model requests, tool calls, user turns and the skills loaded.
+It prints counts and names only, never what was typed or a tool's arguments. It is not a gate;
+`python3 scripts/test_session_metrics.py` tests it.
 
 ## License
 
