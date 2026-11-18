@@ -521,11 +521,20 @@ header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
 in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both).
 
-To measure a run of the plugin, finish the Claude Code session and run
-`python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log
-and prints a one-row Markdown table: tokens, model requests, tool calls, user turns and the skills loaded.
-It prints counts and names only, never what was typed or a tool's arguments. It is not a gate;
-`python3 scripts/test_session_metrics.py` tests it.
+To measure a run of the plugin, finish the session and run this from the same directory:
+
+```bash
+python3 scripts/session_metrics.py --latest                   # Claude Code
+python3 scripts/session_metrics.py --client codex --latest    # Codex
+python3 scripts/session_metrics.py --client copilot --latest  # GitHub Copilot CLI
+```
+
+It reads the client's session log and prints a one-row Markdown table with the same columns for
+each client: tokens, model requests, tool calls, user turns and the skills loaded. A cell the log
+cannot fill shows `-`, for example Copilot's tokens when the session was killed before it could
+write its totals. It prints counts and names only, never what was typed or a tool's arguments.
+The Codex and Copilot readers are built from those clients' source and docs and have not yet been
+checked against a real session. It is not a gate; `python3 scripts/test_session_metrics.py` tests it.
 
 ## License
 
