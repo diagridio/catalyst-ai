@@ -1,6 +1,7 @@
 # diagrid-ai
 
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.diagrid%2Fmcp-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/mcp)
+[![npm](https://img.shields.io/npm/v/@diagrid/catalyst-ai-install)](https://www.npmjs.com/package/@diagrid/catalyst-ai-install)
 [![lint](https://github.com/diagridio/diagrid-ai/actions/workflows/lint.yaml/badge.svg)](https://github.com/diagridio/diagrid-ai/actions/workflows/lint.yaml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
@@ -112,15 +113,16 @@ keeps updating.
 
 ### GitHub Copilot CLI
 
-1. **Skills.**
+1. **Skills.** From your repository's root:
 
    ```bash
-   npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes
+   npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --yes
    ```
 
-   `--global` writes all 12 skills to `~/.copilot/skills/`. Run `copilot skill list` and
-   expect all 12. If it shows none, run the same command without `--global` from your
-   repository's root; see [Copilot sees no skills](docs/troubleshooting.md#copilot-sees-no-skills).
+   This writes all 12 skills to `.agents/skills/`, one of Copilot's project skills
+   directories. Run `/skills list` inside Copilot and expect all 12. Don't add `--global`:
+   it writes `~/.agents/skills/`, which Copilot does not read; see
+   [Copilot sees no skills](docs/troubleshooting.md#copilot-sees-no-skills).
 
 2. **MCP.** Add the server to `~/.copilot/mcp-config.json`. `copilot mcp add` has no
    client-ID flag, so set `oauthClientId` here:
@@ -215,7 +217,7 @@ so clients with a registry-backed server gallery can find it there. The earlier 
 | --- | --- | --- | --- |
 | Claude Code | ✅ 12/12 | ✅ | ✅ the right skill fires unprompted |
 | Codex | ✅ 12/12 | ✅ in the model-visible prompt | not yet verified |
-| GitHub Copilot CLI | ✅ 12/12 | ✅ per-project install; `--global` not yet verified | not yet verified |
+| GitHub Copilot CLI | ✅ 12/12 | ✅ per-project install; `--global` is not read | not yet verified |
 | VS Code (Copilot Chat) | ✅ 12/12 | not yet verified | not yet verified |
 | claude.ai | MCP only | MCP only | ✅ answered who was signed in |
 

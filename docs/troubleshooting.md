@@ -58,9 +58,10 @@ reports is its own, set in its repository, not this one's.
 
 ## Copilot sees no skills
 
-With `--global`, the skills go to `~/.copilot/skills/`. That the installer writes this
-directory is verified; that Copilot loads skills from it is not yet. If
-`copilot skill list` shows none, install per project instead, from the repository root:
+With `--global`, the installer writes the skills to `~/.agents/skills/`, not
+`~/.copilot/skills/`. Copilot CLI reads personal skills only from `~/.copilot/skills/` and
+`~/.claude/skills/`, so a global install leaves it with none. If `/skills list` inside
+Copilot shows none, install per project instead, from the repository root:
 
 ```bash
 npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --yes
