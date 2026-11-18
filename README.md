@@ -215,15 +215,16 @@ so clients with a registry-backed server gallery can find it there. The earlier 
 
 | client | skills installed | skills loaded by the client | a Diagrid question answered |
 | --- | --- | --- | --- |
-| Claude Code | ✅ 12/12 | ✅ | ✅ the right skill fires unprompted |
-| Codex | ✅ 12/12 | ✅ in the model-visible prompt | not yet verified |
-| GitHub Copilot CLI | ✅ 12/12 | ✅ per-project install; `--global` is not read | not yet verified |
+| Claude Code | ✅ 12/12 | ✅ with 10 skills; not yet re-checked with 12 | ✅ the right skill fires unprompted |
+| Codex | ✅ 12/12 | ✅ in the model-visible prompt, with 10 skills; not yet re-checked with 12 | not yet verified |
+| GitHub Copilot CLI | ✅ 12/12 | ✅ per-project install, with 10 skills; not yet re-checked with 12; `--global` is not read | not yet verified |
 | VS Code (Copilot Chat) | ✅ 12/12 | not yet verified | not yet verified |
 | claude.ai | MCP only | MCP only | ✅ answered who was signed in |
 
 CI runs the real installer for Claude Code, Codex and Copilot on every pull request and
-checks that every skill in `skills/` lands. Loading in each client was last checked by
-hand before `diagrid-app-tunnels` and `diagrid-agent-harness` were added. If you get Codex or Copilot to answer a
+checks that every skill in `skills/` lands. Loading was checked by hand in each client
+with 10 skills, before `diagrid-app-tunnels` and `diagrid-agent-harness` were added, and
+has not yet been re-checked with all 12. If you get Codex or Copilot to answer a
 Diagrid question, please [report it](#feedback) with the wording you used and which
 skill fired.
 
