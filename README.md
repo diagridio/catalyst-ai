@@ -255,7 +255,8 @@ from the directory the installer wrote:
 
 ```bash
 rm -rf .agents/skills/catalyst-*        # a per-project install
-rm -rf ~/.copilot/skills/catalyst-*     # a Copilot install with --global
+rm -rf ~/.agents/skills/catalyst-*      # a --global install with a current `skills` release
+rm -rf ~/.copilot/skills/catalyst-*     # a Copilot --global install with an older `skills` release
 ```
 
 ### Upgrading from 0.8.x
