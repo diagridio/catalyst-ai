@@ -20,10 +20,14 @@ Versions are plain X.Y.Z. A prerelease sorts before its release and would never
 become latest, so the registry's own entries that are not plain are ignored when
 finding the highest, but still count as taken.
 
+The git tag that records a version names the server as well as the version, because
+the version line belongs to one registry name: a new name starts again at 0.0.1, and
+`mcp-registry-v0.0.1` already records `io.diagrid/catalyst`'s first publish.
+
 Run: python3 scripts/plan_registry_version.py --bump patch --run-id <id>
-Writes `action` (publish|skip), `version` and, on a skip, `commit` (the commit the
-version was published from, so the tag lands on it, or empty if the entry does not
-say) to $GITHUB_OUTPUT when it is set.
+Writes `name` (from server.json), `action` (publish|skip), `version`, `tag` and, on a
+skip, `commit` (the commit the version was published from, so the tag lands on it, or
+empty if the entry does not say) to $GITHUB_OUTPUT when it is set.
 """
 
 from __future__ import annotations
@@ -71,6 +75,25 @@ def bumped(version: Version, bump: str) -> Version:
     if bump == "minor":
         return (major, minor + 1, 0)
     return (major, minor, patch + 1)
+
+
+def tag_for(name: str, version: str) -> str:
+    """The git tag recording `version` of the registry entry `name`.
+
+    `io.diagrid/mcp` 0.0.1 is `mcp-registry-io.diagrid-mcp-v0.0.1`. The bare
+    `mcp-registry-v<version>` tags predate this and record `io.diagrid/catalyst`.
+    """
+    return f"mcp-registry-{name.replace('/', '-')}-v{version}"
+
+
+def outputs(name: str, action: str, version: str, commit: str) -> str:
+    """The `key=value` lines written to $GITHUB_OUTPUT.
+
+    The workflow reads every one of these keys. A missing `tag` would let a
+    publish go through and then fail at the tag step, leaving it untagged.
+    """
+    tag = tag_for(name, version)
+    return f"name={name}\naction={action}\nversion={version}\ntag={tag}\ncommit={commit}\n"
 
 
 def comparable(server: dict) -> dict:
@@ -150,14 +173,15 @@ def main(argv: list[str]) -> int:
 
     local = json.loads(SERVER_JSON.read_text(encoding="utf-8"))
     try:
-        entries = fetch_entries(local["name"])
+        name = local["name"]
+        entries = fetch_entries(name)
         action, version = plan(entries, local, args.bump, args.run_id)
     except (OSError, ValueError, KeyError) as exc:
         print(f"cannot plan the registry version: {exc}", file=sys.stderr)
         return 1
 
     commit = published_commit(entries, version) if action == "skip" else ""
-    result = f"action={action}\nversion={version}\ncommit={commit}\n"
+    result = outputs(name, action, version, commit)
     print(result, end="")
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

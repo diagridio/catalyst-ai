@@ -1,10 +1,10 @@
 ---
-description: Try Catalyst in one step. A durable workflow crashes mid-run and resumes where it stopped, driven through the Catalyst MCP tools.
+description: Try Diagrid in one step. A durable workflow crashes mid-run and resumes where it stopped, driven through the Diagrid MCP tools.
 ---
 
-I'm new to Diagrid Catalyst. Show me a durable workflow that survives a crash, using the Catalyst MCP tools for everything in Catalyst, and your shell for git and running the app.
+I'm new to Diagrid. Show me a durable workflow that survives a crash, using the Diagrid MCP tools for everything in Diagrid, and your shell for git and running the app.
 `<project>` in this prompt is the name, not the numeric ID, of the project settled in step 2: `default` unless step 2 settles another.
-Whenever a run starts, whenever you wait for me, and at the end, give me that run's console link as a markdown link, never in backticks or a code block, so I can click it: [Run <instance-id> in Catalyst](https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>). Put the plain URL on the line after it as well, also outside backticks, in case my terminal does not render links.
+Whenever a run starts, whenever you wait for me, and at the end, give me that run's console link as a markdown link, never in backticks or a code block, so I can click it: [Run <instance-id> in Diagrid](https://catalyst.diagrid.io/workflows/<app-id>/<instance-id>?project=<project>). Put the plain URL on the line after it as well, also outside backticks, in case my terminal does not render links.
 1. Call `diagrid_whoami` and tell me which org I'm signed in to. If that fails, help me sign in.
 2. Check with `diagrid_list_projects` that project `default` exists, and use it if it does. If it does not, never create a project: if I have other projects, list them and ask me which to use; if I have none, say so in one sentence, give me [the project list](https://catalyst.diagrid.io/admin/projects) to create one in, and wait for me to tell you its name.
 3. Clone https://github.com/diagridio/catalyst-quickstarts, take the durable workflow sample in my language (Python if unsure), and make sure App ID `durable-workflow` exists in project `<project>`.

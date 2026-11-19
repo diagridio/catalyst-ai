@@ -9,7 +9,7 @@ whose extractor stops matching reports no findings, which reads exactly like a
 clean tree.
 
 The rule is narrow on purpose: only `](...)`. An inline code span that looks
-like a path is prose, not a link. `skills/catalyst-workflow-from-diagram/
+like a path is prose, not a link. `skills/diagrid-workflow-from-diagram/
 reference/bpmn-to-ir.md` names `prompts/ir-schema.md`, `prompts/bpmn-to-ir.md`
 and `REFERENCE.md` in a sentence crediting the upstream dapr-skills repo; none
 of those files are in this repo and none of them should be. A hand-rolled

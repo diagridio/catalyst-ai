@@ -1,12 +1,12 @@
 ---
 name: routing-agent-not-workflow
-description: An AI-assistant-with-memory request fires catalyst-agent-scaffold and must not fire catalyst-workflow-scaffold. The other half of the sharpest trigger pair.
+description: An AI-assistant-with-memory request fires diagrid-agent-scaffold and must not fire diagrid-workflow-scaffold. The other half of the sharpest trigger pair.
 tags: [routing]
 plugins: ["../.."]
 max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  catalyst-agent-scaffold fires. catalyst-workflow-scaffold does not. The prompt
+  diagrid-agent-scaffold fires. diagrid-workflow-scaffold does not. The prompt
   avoids the words "agent", "workflow", "orchestration", "pipeline" and "saga" so
   neither skill can win on a keyword echo.
 ---

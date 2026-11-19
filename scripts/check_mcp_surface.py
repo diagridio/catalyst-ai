@@ -18,7 +18,7 @@ compile:
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.
   One exception: opening an app tunnel, so Catalyst can call into a process on
-  the user's machine, has no `diagrid_*` tool. The `catalyst-app-tunnels` skill
+  the user's machine, has no `diagrid_*` tool. The `diagrid-app-tunnels` skill
   and its evals may name the CLI commands that do that, and no others.
 * A local MCP server (`mcp serve`, `mcp install`) or a host outside the allowlist.
   The only server is the remote one at https://mcp.cloud.r1.diagrid.io/mcp, and
@@ -53,29 +53,16 @@ RETIRED_TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z0-9_]+", re.IGNORE
 RETIRED_SERVER_KEY = re.compile(r"mcp__(?:plugin_catalyst-ai_)?catalyst__|plugin:catalyst-ai:catalyst\b")
 
 # `diagrid`, an optional closing backtick, whitespace (a line wrap counts) and a word,
-# not part of a path, scope, marketplace id or domain (`@diagrid/x`, `catalyst-ai@diagrid`,
+# not part of a path, scope, marketplace id or domain (`@diagrid/x`, `diagrid@diagrid`,
 # `diagridio/y`, `diagrid.io`, `marketplace update diagrid`). Prose says "Diagrid" with a capital. Matched over the
 # whole file, not per line, so a command split across a wrap is still found.
 # `diagrid` is also the MCP server's key, so the places a setup names that key are not
-# CLI invocations either: `plugin:catalyst-ai:diagrid`, `codex mcp add diagrid --url`,
+# CLI invocations either: `plugin:diagrid:diagrid`, `codex mcp add diagrid --url`,
 # `codex mcp login diagrid`, `copilot mcp add --transport http diagrid <url>`.
 NOT_A_CLI_INVOCATION = (
-    r"(?<![\w./@-])(?<!plugin:catalyst-ai:)(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
+    r"(?<![\w./@-])(?<!plugin:diagrid:)(?<!marketplace update )(?<!mcp add )(?<!mcp login )(?<!--transport http )"
 )
 CLI_INVOCATION = re.compile(NOT_A_CLI_INVOCATION + r"diagrid`?\s+[A-Za-z-]+")
-# Code under web/ (.js, .mjs, .ts, .html) is full of comments and copy that say "diagrid"
-# followed by an ordinary word (`// diagrid site embed`). There only a real CLI subcommand
-# after `diagrid` counts, so prose passes and `'diagrid login'` fails. Markdown and the
-# other text files keep the strict CLI_INVOCATION above.
-CLI_SUBCOMMANDS = (
-    "login", "dev", "mcp", "project", "appid", "app", "agent", "workflow", "call", "listen",
-    "apply", "component", "subscription", "web", "diagnose", "version", "update", "org",
-    "region", "tokenbudget", "audit",
-)
-CLI_INVOCATION_CODE = re.compile(
-    NOT_A_CLI_INVOCATION + r"diagrid`?\s+(?:" + "|".join(CLI_SUBCOMMANDS) + r")(?![\w-])"
-)
-WEB_CODE_SUFFIXES = frozenset({".js", ".mjs", ".ts", ".html"})
 CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 
 # The one carve-out from the CLI rule. No `diagrid_*` tool opens an app tunnel, so
@@ -85,7 +72,7 @@ CLI_PROSE = re.compile(r"\bdiagrid CLI\b")
 # subcommands that installing, signing in and tunnelling need. `dev` passes only as
 # `dev run`, `dev stop` or `dev scaffold`. Every other subcommand still fails there, so
 # the skill cannot drift into doing with the CLI what a `diagrid_*` tool already does.
-TUNNEL_SKILL = Path("skills") / "catalyst-app-tunnels"
+TUNNEL_SKILL = Path("skills") / "diagrid-app-tunnels"
 TUNNEL_EVAL_PREFIX = "tunnel-"
 TUNNEL_SUBCOMMANDS = frozenset({"version", "login", "whoami", "listen"})
 TUNNEL_DEV_SUBCOMMAND = re.compile(r"`?\s+(?:run|stop|scaffold)(?![\w-])")
@@ -135,17 +122,17 @@ class Finding:
         return f"{self.path}:{self.line}: {self.message}"
 
 
-WEB_SUFFIXES = {".md", ".json", ".txt", ".yaml", ".yml", ".js", ".mjs", ".ts", ".html", ".css"}
+TEXT_SUFFIXES = frozenset({".md", ".json", ".txt", ".yaml", ".yml"})
 
 
-def _text_files(root: Path, *parts: str, suffixes: frozenset[str] | set[str] = frozenset({".md", ".json", ".txt", ".yaml", ".yml"})) -> list[Path]:
+def _text_files(root: Path, *parts: str) -> list[Path]:
     base = root.joinpath(*parts)
     if base.is_file():
         return [base]
     if not base.is_dir():
         return []
     return sorted(
-        p for p in base.rglob("*") if p.is_file() and p.suffix in suffixes and "node_modules" not in p.parts
+        p for p in base.rglob("*") if p.is_file() and p.suffix in TEXT_SUFFIXES and "node_modules" not in p.parts
     )
 
 
@@ -199,14 +186,11 @@ def check(root: Path) -> list[Finding]:
         findings.append(Finding(str(CONTRACT), 0, "missing or empty, so tool names cannot be checked"))
         tools = set()
 
-    # web/ holds the install component (web/install/) and its demo and embed snippet. It
-    # ships to npm and to diagrid.io, so it is held to the same surface, in code too.
     tool_files = (
         _text_files(root, "skills")
         + _text_files(root, "commands")
         + _text_files(root, "evals")
         + _text_files(root, "README.md")
-        + _text_files(root, "web", suffixes=WEB_SUFFIXES)
     )
     for path in tool_files:
         text = path.read_text(encoding="utf-8")
@@ -246,9 +230,8 @@ def check(root: Path) -> list[Finding]:
 
     for path in tool_files:
         rel = path.relative_to(root)
-        is_web_code = path.suffix in WEB_CODE_SUFFIXES and "web" in rel.parts[:1]
         findings += _scan(
-            path, root, CLI_INVOCATION_CODE if is_web_code else CLI_INVOCATION,
+            path, root, CLI_INVOCATION,
             "`{match}` is a CLI invocation. Skills drive Catalyst only through `diagrid_*` tools; "
             "say the capability is not available over MCP yet instead.",
             allowed=tunnel_subcommand if is_tunnel_material(rel) else (lambda match: False),

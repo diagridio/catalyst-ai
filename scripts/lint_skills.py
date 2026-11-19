@@ -76,6 +76,15 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
+    "catalyst-ai:": (
+        "the old plugin name. The plugin is `diagrid`, so its commands are "
+        "`/diagrid:try-agent` and `/diagrid:try-workflow` and its skills are "
+        "`diagrid:<skill>`. A `/catalyst-ai:` command does not exist in the new plugin."
+    ),
+    "plugin_catalyst-ai_": (
+        "the old plugin's prefix on Claude Code tool names. The plugin is `diagrid`, "
+        "so the tools are `mcp__plugin_diagrid_diagrid__diagrid_*`."
+    ),
     "managed-agent": (
         "a hidden command for a feature that is not released to customers. Naming "
         "it, even to warn against it, only advertises it. The agent path is the "
@@ -93,8 +102,10 @@ BANNED_SUBSTRINGS: dict[str, str] = {
 MAX_DESCRIPTION_SIMILARITY = 0.20
 
 # Similarity is measured on distinctive words only. Stopwords and the product
-# name are shared by construction — every description here says "Catalyst" — so
-# counting them would flag every pair equally and rank nothing.
+# name are shared by construction — every description here says "Diagrid", and
+# the entry-point skills add "(formerly Catalyst)" so a user who still says
+# "Catalyst" is routed — so counting them would flag every pair equally and rank
+# nothing. "formerly" belongs to that rename note, not to any one skill.
 _STOPWORDS = frozenset("""
 a an and are as at be but by can for from has have how if in into is it its make making no not of on or
 that the their them then there these this to use used uses using want wants when where which who why with
@@ -102,7 +113,7 @@ without you your they what while does do so one two both each any all more most 
 rather
 """.split())
 
-_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "dapr"})
+_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "formerly", "dapr"})
 
 
 def distinctive_words(description: str) -> frozenset[str]:
@@ -147,8 +158,8 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
 # neighbouring "Link to the console" sections in these same two skills have
 # already drifted in wording and section number, which is what this guards.
 SCOPE_BOUNDED_SKILLS: dict[str, str] = {
-    "catalyst-operate": "an unqualified inspection question",
-    "catalyst-debug": "a question with no symptom in it",
+    "diagrid-operate": "an unqualified inspection question",
+    "diagrid-debug": "a question with no symptom in it",
 }
 
 # Substrings that together mean the rule is present and complete: bound the

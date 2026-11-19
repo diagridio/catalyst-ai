@@ -6,7 +6,7 @@ plugins: ["../.."]
 max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  Loads catalyst-app-tunnels. Creates an MCPServer named travel whose URL path is /mcp,
+  Loads diagrid-app-tunnels. Creates an MCPServer named travel whose URL path is /mcp,
   waits for its identity to be ready, opens a tunnel on that same identity with
   `diagrid dev run --project default --id travel --app-port 8000`, and grants the agent
   weather-assistant access to the named tools with diagrid_grant_access, leaving
