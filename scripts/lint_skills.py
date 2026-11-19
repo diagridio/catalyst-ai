@@ -213,8 +213,8 @@ BLOCKED_CALL_RULE = (
 # Exact, not a prefix match: a free-form tail could re-grant what the rule
 # withholds ("A standing allow for diagrid_get_connection is fine.").
 BLOCKED_CALL_RULE_SUFFIXES: dict[str, str] = {
-    "catalyst-app-tunnels": "The tunnel commands above are the only CLI use, not a workaround.",
-    "catalyst-debug": "Client approval does not replace asking the user for consent before a change.",
+    "diagrid-app-tunnels": "The tunnel commands above are the only CLI use, not a workaround.",
+    "diagrid-debug":"Client approval does not replace asking the user for consent before a change.",
 }
 
 _BLOCKED_CALL_START = "- **If the client blocks a `diagrid_*` call, stop.**"

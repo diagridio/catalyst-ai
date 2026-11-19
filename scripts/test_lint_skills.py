@@ -279,8 +279,8 @@ def main() -> int:
 
     cases.append(case(
         "a blocked-call rule extended with the skill's own listed suffix",
-        lambda s: write(s, "catalyst-app-tunnels", RULED.format(
-            name="catalyst-app-tunnels",
+        lambda s: write(s, "diagrid-app-tunnels", RULED.format(
+            name="diagrid-app-tunnels",
             rule=RULE + "\n  The tunnel commands above are the only CLI use, not a workaround.",
         )),
         expect="pass",
