@@ -6,7 +6,7 @@
     "name": "Diagrid",
     "url": "https://diagrid.io"
   },
-  "homepage": "https://github.com/diagridio/catalyst-ai",
+  "homepage": "https://github.com/diagridio/diagrid-ai",
   "license": "Apache-2.0",
   "keywords": [
     "durable-execution",

@@ -1,4 +1,4 @@
-# catalyst-ai
+# diagrid-ai
 
 Build and operate apps on [Diagrid](https://diagrid.io) (formerly Diagrid Catalyst) by
 prompting — Dapr Workflows, Durable Agents, and the running system.
@@ -21,12 +21,15 @@ question here, for reasons that are
 ### Claude Code
 
 ```bash
-claude plugin marketplace add diagridio/catalyst-ai
+claude plugin marketplace add diagridio/diagrid-ai
 claude plugin install diagrid@diagrid
 ```
 
 If you installed `catalyst-ai@diagrid` before, that is this plugin under its old name.
 See [Moving from catalyst-ai](#moving-from-catalyst-ai).
+
+This repo used to be `diagridio/catalyst-ai`. GitHub redirects the old name, so a
+marketplace you added from it keeps updating, and you don't need to add it again.
 
 Then check it landed — **both commands, not just the second**:
 
@@ -206,7 +209,7 @@ To check, ask *"Who am I in Diagrid?"* The answer should come from `diagrid_whoa
 ### GitHub Copilot CLI
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes
 ```
 
 Use **repeated `--agent` flags** if you pass more than one. The comma form
@@ -243,7 +246,7 @@ These read the shared `.agents/skills/` project directory, not `~/.copilot/skill
 install per project, from your repository's root:
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --yes
 ```
 
 Without `--global`, the `github-copilot` target writes that shared directory.
@@ -257,7 +260,7 @@ run the per-project command above from your workspace root, which writes `.agent
 ### Codex
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent codex --skill '*' --yes
 ```
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
@@ -488,13 +491,7 @@ python3 scripts/test_check_plugin_version_header.py
 python3 scripts/check_server_json.py      # server.json: registry name, and the same URL as the plugin
 python3 scripts/test_check_server_json.py
 python3 scripts/test_plan_registry_version.py   # the MCP Registry version planner
-python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
-(cd web/install && npm test)
 ```
-
-`web/install/` is the npm package `@diagrid/catalyst-ai-install`, a `<catalyst-ai-install>` web
-component for docs and the website. Its data is generated: after changing `commands/` or the
-install steps here, run `python3 scripts/build_install_data.py` and commit the result.
 
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
@@ -523,7 +520,7 @@ If you add a skill, or change any skill's content, bump `version` in
 otherwise, and nothing tells them. Every bump also changes the `X-Diagrid-Plugin-Version`
 header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.json` and
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
-in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
+in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both).
 
 To measure a run of the plugin, finish the Claude Code session and run
 `python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log

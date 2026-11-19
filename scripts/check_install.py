@@ -124,7 +124,7 @@ UNVERIFIABLE = [
     "Global installs (`npx skills add -g`), which write into the user's home "
     "directory. Everything here happens inside a throwaway directory on "
     "purpose; a CI gate should not be editing ~/.claude.",
-    "Installing from `diagridio/catalyst-ai` over the network. The source is "
+    "Installing from `diagridio/diagrid-ai` over the network. The source is "
     "the local checkout, so the gate needs no GitHub auth and tests the working "
     "tree rather than what is already on main. The one thing that buys nothing "
     "is coverage of the remote-fetch path itself.",
