@@ -1,12 +1,12 @@
 ---
 name: routing-harness-not-scaffold
-description: A hand-written model loop that must survive restarts fires catalyst-agent-harness and must not fire catalyst-agent-scaffold, whose route is a framework adapter. The pair that decides whether a custom loop gets taken over or replaced.
+description: A hand-written model loop that must survive restarts fires diagrid-agent-harness and must not fire diagrid-agent-scaffold, whose route is a framework adapter. The pair that decides whether a custom loop gets taken over or replaced.
 tags: [routing]
 plugins: ["../.."]
 max_turns: 12
 allowed_tools: [Read, Glob, Grep, Skill]
 expected_outcome: >
-  catalyst-agent-harness fires and catalyst-agent-scaffold does not. The answer keeps the
+  diagrid-agent-harness fires and diagrid-agent-scaffold does not. The answer keeps the
   user's own loop and gives every model call and every function call its own durable
   step. The prompt avoids "agent", "workflow", "activity", "tool", "harness" and
   "durable" so neither skill can win on a keyword echo.

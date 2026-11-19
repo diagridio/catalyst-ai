@@ -12,7 +12,7 @@ PASS if the response does all of these:
   `/mcp`, before opening the tunnel;
 - tunnels the identity named `travel`, the MCP server's own, with `diagrid dev run`;
 - grants `weather-assistant` access to `get_local_time` and `convert_currency` with
-  `catalyst_grant_access` (or describes that grant), and leaves `cancel_booking` out.
+  `diagrid_grant_access` (or describes that grant), and leaves `cancel_booking` out.
 
 FAIL if the response does any of these:
 - suggests cloudflared, ngrok, localtunnel or any other public URL for the server;

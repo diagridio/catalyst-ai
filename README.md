@@ -1,19 +1,19 @@
-# catalyst-ai
+# diagrid-ai
 
-Build and operate [Diagrid Catalyst](https://diagrid.io) by prompting — Dapr Workflows,
-Durable Agents, and the running system.
+Build and operate apps on [Diagrid](https://diagrid.io) (formerly Diagrid Catalyst) by
+prompting — Dapr Workflows, Durable Agents, and the running system.
 
 **Verified end to end in Claude Code** — installs in under 5 seconds, every skill
-registers, and a real Catalyst question fires the right skill and gets a grounded answer.
+registers, and a real Diagrid question fires the right skill and gets a grounded answer.
 In **Codex** and **GitHub Copilot** the install and every skill are verified, and Codex
-is confirmed to put them in front of the model; neither has yet answered a Catalyst
+is confirmed to put them in front of the model; neither has yet answered a Diagrid
 question here, for reasons that are
 [nothing to do with the skills](#what-is-and-is-not-verified-per-client).
 
-> **Early release.** The skills drive Catalyst through the remote Catalyst MCP server:
+> **Early release.** The skills drive Diagrid through the remote Diagrid MCP server:
 > you add the server and sign in once. The one exception is an app tunnel, which lets
-> Catalyst call into a process on your machine. No MCP tool opens one, so
-> `catalyst-app-tunnels` installs the Diagrid CLI and uses it for that alone. Read [What works today](#what-works-today) for what is and is not available
+> Diagrid call into a process on your machine. No MCP tool opens one, so
+> `diagrid-app-tunnels` installs the Diagrid CLI and uses it for that alone. Read [What works today](#what-works-today) for what is and is not available
 > over MCP yet.
 
 ## Install
@@ -21,15 +21,21 @@ question here, for reasons that are
 ### Claude Code
 
 ```bash
-claude plugin marketplace add diagridio/catalyst-ai
-claude plugin install catalyst-ai@diagrid
+claude plugin marketplace add diagridio/diagrid-ai
+claude plugin install diagrid@diagrid
 ```
+
+If you installed `catalyst-ai@diagrid` before, that is this plugin under its old name.
+See [Moving from catalyst-ai](#moving-from-catalyst-ai).
+
+This repo used to be `diagridio/catalyst-ai`. GitHub redirects the old name, so a
+marketplace you added from it keeps updating, and you don't need to add it again.
 
 Then check it landed — **both commands, not just the second**:
 
 ```bash
-claude plugin list                           # expect Version: 0.7.0 or later
-claude plugin details catalyst-ai@diagrid    # expect 12 skills
+claude plugin list                           # expect Version: 0.10.0 or later
+claude plugin details diagrid@diagrid    # expect 12 skills
 ```
 
 `list` reports the version you actually have. `details` reports the version the
@@ -38,27 +44,28 @@ own it can show you 12 skills while your session loads 11. If either looks wrong
 [If your install is behind](#if-your-install-is-behind).
 
 The same marketplace also lists `dapr-skills`, for Dapr applications that run outside
-Catalyst — see [Also in this marketplace](#also-in-this-marketplace-dapr-skills).
+Diagrid — see [Also in this marketplace](#also-in-this-marketplace-dapr-skills).
 
-#### Then sign in to the Catalyst MCP server
+#### Then sign in to the Diagrid MCP server
 
-The plugin also registers the Catalyst MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
+The plugin also registers the Diagrid MCP server, `https://mcp.cloud.r1.diagrid.io/mcp`.
 It stays empty until you sign in once. In Claude Code, run `/mcp`, pick
-`plugin:catalyst-ai:catalyst` and complete the browser sign-in. There is no API key.
+`plugin:diagrid:diagrid` and complete the browser sign-in. There is no API key.
+If you are upgrading from 0.8.x, see [Upgrading from 0.8.x](#upgrading-from-08x).
 
 If you already added the server yourself with `claude mcp add`, remove that entry
 (`claude mcp remove catalyst --scope user`) once the plugin is installed. Otherwise you
-have two copies of every Catalyst tool.
+have two copies of every Diagrid tool.
 
 The plugin requests the scopes `catalyst:read catalyst:write offline_access`. Without
 `offline_access` there is no refresh token, so you sign in again each time the session
-expires. Write tools, such as `catalyst_apply`, are left out of the tool list entirely
+expires. Write tools, such as `diagrid_apply`, are left out of the tool list entirely
 when your role is read-only or the sign-in did not grant write scope. If they are
 missing, sign in again and approve write access; if they are still missing, your role is
 read-only.
 
-Check it worked by asking: *"Who am I in Catalyst?"* The answer comes from
-`catalyst_whoami`.
+Check it worked by asking: *"Who am I in Diagrid?"* The answer comes from
+`diagrid_whoami`.
 
 ### Connect other clients to the remote MCP server
 
@@ -69,26 +76,27 @@ Each client below uses its registered client ID instead: `codex`, `copilot-cli`,
 `claude-code`, or `claude-web` for claude.ai. VS Code and the Copilot CLI can also sign in
 without one, because the server reads the client metadata they publish.
 
-Each snippet below also sets an `X-Catalyst-Plugin-Version` header to the plugin version,
+Each snippet below also sets an `X-Diagrid-Plugin-Version` header to the plugin version,
 which lets the server see which version of these instructions a client was set up from.
 It goes only on the MCP requests the client already makes. When you update the skills,
-update the header to match.
+update the header to match. If you set up a client for 0.8.x, the header's name changed
+as well. See [Upgrading from 0.8.x](#upgrading-from-08x).
 
 Install the skills for the client first (below), then:
 
 **Codex**
 
 ```bash
-codex mcp add catalyst --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex
-codex mcp login catalyst
+codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex
+codex mcp login diagrid
 ```
 
 `codex mcp add` has no header flag, so add this to `~/.codex/config.toml` under the
 server it just wrote:
 
 ```toml
-[mcp_servers.catalyst.http_headers]
-X-Catalyst-Plugin-Version = "0.8.2"
+[mcp_servers.diagrid.http_headers]
+X-Diagrid-Plugin-Version = "0.10.3"
 ```
 
 **GitHub Copilot CLI**
@@ -99,10 +107,10 @@ X-Catalyst-Plugin-Version = "0.8.2"
 ```json
 {
   "mcpServers": {
-    "catalyst": {
+    "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.8.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -110,17 +118,17 @@ X-Catalyst-Plugin-Version = "0.8.2"
 }
 ```
 
-Then run `/mcp` inside Copilot and authenticate the `catalyst` server in the browser.
+Then run `/mcp` inside Copilot and authenticate the server in the browser.
 
 **VS Code** (Copilot Chat), in `.vscode/mcp.json` or your user MCP configuration:
 
 ```json
 {
   "servers": {
-    "catalyst": {
+    "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Catalyst-Plugin-Version": "0.8.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -135,22 +143,73 @@ connector**, enter the URL above, and under **Advanced settings** set the OAuth 
 to `claude-web`. Then **Connect** and sign in. Claude Desktop uses the connectors of the
 same account. Without the client ID, the connector tries to register itself and the
 sign-in fails. Custom connectors cannot set request headers, so this one sends no
-`X-Catalyst-Plugin-Version`. This route gives you the MCP tools only; the skills need
+`X-Diagrid-Plugin-Version`. This route gives you the MCP tools only; the skills need
 a client from [Install](#install). Verified on claude.ai on 2026-10-29: the connector
-signed in and the chat could say who was signed in to Catalyst. Claude Desktop shares
+signed in and the chat could say who was signed in to Diagrid. Claude Desktop shares
 those connectors but has not been tried separately.
 
 **Anything else** (Gemini CLI, Zed, Antigravity and so on): add the URL as a remote
 (streamable HTTP) MCP server in that client's own MCP setup and use its MCP sign-in.
 
-The server is also listed in the official MCP Registry as `io.diagrid/catalyst`
-([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/catalyst)),
-so clients with a registry-backed server gallery can find it there.
+The server is also listed in the official MCP Registry as `io.diagrid/mcp`
+([search the registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.diagrid/mcp)),
+so clients with a registry-backed server gallery can find it there. The earlier entry,
+`io.diagrid/catalyst`, points at the same URL and is superseded by `io.diagrid/mcp`.
+
+### Moving from catalyst-ai
+
+0.10.0 renamed the plugin from `catalyst-ai` to `diagrid`. Claude Code treats a renamed
+plugin as a new one, so `claude plugin update` does not move you across. The
+`catalyst-ai` entry stays in the marketplace, held at its final release, 0.9.1. That release
+still works, gets no new skills, and at the start of every session shows these steps
+as one command, with a reminder to sign in again through `/mcp`.
+
+```bash
+claude plugin marketplace update diagrid
+claude plugin install diagrid@diagrid
+claude plugin uninstall catalyst-ai@diagrid
+```
+
+Uninstall the old plugin. With both installed, every skill and every tool shows up twice.
+Then run `/mcp`, and if `plugin:diagrid:diagrid` shows it needs authentication, pick it
+and sign in. The commands are now `/diagrid:try-workflow` and `/diagrid:try-agent`, and the
+skills are `diagrid:diagrid-deploy`, `diagrid:diagrid-setup` and so on.
+
+In Codex, Copilot and the other clients that install with `npx skills add`, run your
+client's install command below again. It adds the `diagrid-*` skills but leaves the old
+`catalyst-*` folders in place, so the agent sees every skill twice until you delete them
+from the directory the installer wrote:
+
+```bash
+rm -rf .agents/skills/catalyst-*        # a per-project install
+rm -rf ~/.copilot/skills/catalyst-*     # a Copilot install with --global
+```
+
+### Upgrading from 0.8.x
+
+0.9.0 renamed two things. A client set up for 0.8.x needs both of them changed.
+
+- **The header.** The server chooses tool names by the header a request sends. A request
+  that still sends the old `X-Catalyst-Plugin-Version` header gets the old `catalyst_*`
+  tool names. The 0.9.0 skills call only `diagrid_*` tools, so every call they make fails
+  as an unknown tool. Updating the version number on the old header does not fix this.
+  Replace the header itself with `X-Diagrid-Plugin-Version`, set to the current version:
+  - Codex: in `~/.codex/config.toml`, find the `http_headers` table under your Catalyst
+    server and change the key to `X-Diagrid-Plugin-Version`.
+  - Copilot CLI (`~/.copilot/mcp-config.json`) and VS Code (`mcp.json`): change the key
+    in that server's `headers`.
+
+  You can also remove the old entry and add the server again from the snippets above.
+- **The server name in Claude Code.** 0.9.0 registered the server as
+  `plugin:catalyst-ai:diagrid`, and 0.10.0 renamed the plugin itself. Follow
+  [Moving from catalyst-ai](#moving-from-catalyst-ai).
+
+To check, ask *"Who am I in Diagrid?"* The answer should come from `diagrid_whoami`.
 
 ### GitHub Copilot CLI
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --global --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --global --yes
 ```
 
 Use **repeated `--agent` flags** if you pass more than one. The comma form
@@ -187,7 +246,7 @@ These read the shared `.agents/skills/` project directory, not `~/.copilot/skill
 install per project, from your repository's root:
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent github-copilot --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent github-copilot --skill '*' --yes
 ```
 
 Without `--global`, the `github-copilot` target writes that shared directory.
@@ -201,7 +260,7 @@ run the per-project command above from your workspace root, which writes `.agent
 ### Codex
 
 ```bash
-npx -y skills add diagridio/catalyst-ai --agent codex --skill '*' --yes
+npx -y skills add diagridio/diagrid-ai --agent codex --skill '*' --yes
 ```
 
 `.agents/skills/` is Codex's project skills directory too — the installer maps `codex`
@@ -219,10 +278,10 @@ shouldn't have to name a skill — though nobody has yet confirmed that from a r
 | Codex 0.149.0 | ✅ 2.0 s | ✅ 10/10, in the model-visible prompt | not yet verified |
 | GitHub Copilot 1.0.80 | ✅ 2.0 s (per-project install; `--global` not yet re-measured) | ✅ 10/10 | not yet verified |
 
-These were measured with the first ten skills. `catalyst-app-tunnels` and
-`catalyst-agent-harness` have not been re-measured on these clients yet.
+These were measured with the first ten skills. `diagrid-app-tunnels` and
+`diagrid-agent-harness` have not been re-measured on these clients yet.
 
-If you can get Codex or Copilot to answer a Catalyst question, **that is the single most
+If you can get Codex or Copilot to answer a Diagrid question, **that is the single most
 useful thing you can report** — with the wording you used and which skill fired. A skill
 that never fires looks identical to a session where nothing relevant came up, which is why
 this needs a human rather than an installer's exit code.
@@ -240,7 +299,7 @@ claude plugin install dapr-skills@diagrid
 ```
 
 They are built to sit side by side. Each `dapr-skills` skill that overlaps with one here
-says so in its description and points at this plugin for anything that runs on Catalyst,
+says so in its description and points at this plugin for anything that runs on Diagrid,
 which is meant to keep the two from both firing on the same question. Nothing in CI checks
 that across repos yet, so if both plugins answer one request, please report it. The
 `dapr-skills` source is pinned to a commit in
@@ -249,15 +308,15 @@ change here.
 
 ## Then just ask
 
-New to Catalyst? In Claude Code, type one of these to see a crash-and-recover run end to
+New to Diagrid? In Claude Code, type one of these to see a crash-and-recover run end to
 end. Each is a single line, so there's nothing to paste:
 
-- `/catalyst-ai:try-workflow`: a durable workflow crashes mid-run and resumes where it
+- `/diagrid:try-workflow`: a durable workflow crashes mid-run and resumes where it
   stopped.
-- `/catalyst-ai:try-agent`: the same for a durable AI agent. It defaults to LangGraph,
+- `/diagrid:try-agent`: the same for a durable AI agent. It defaults to LangGraph,
   which needs no API key. Name a framework from
   [catalyst-quickstarts](https://github.com/diagridio/catalyst-quickstarts/tree/main/agents)
-  to get that one instead: `/catalyst-ai:try-agent crewai`.
+  to get that one instead: `/diagrid:try-agent crewai`.
 
 In other clients, paste the matching prompt from [`commands/`](commands/). It's the same
 text. The agent prompt opens with "Use the agent framework I named in my message", so add
@@ -265,7 +324,7 @@ that name to what you paste — `Use crewai.` on the end does it.
 
 After that, you don't learn commands. Try:
 
-> Set up Diagrid Catalyst, then show me what's in my project.
+> Set up Diagrid, then show me what's in my project.
 
 or
 
@@ -283,18 +342,18 @@ find yourself having to, that's a bug worth reporting (see [Feedback](#feedback)
 
 | skill | what it's for |
 | --- | --- |
-| `catalyst-setup` | Connect this session to Catalyst and confirm it works |
-| `catalyst-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
-| `catalyst-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
-| `catalyst-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Catalyst agent |
-| `catalyst-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
-| `catalyst-develop` | The edit → rerun → observe loop against live Catalyst infrastructure |
-| `catalyst-app-tunnels` | Let Catalyst call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
-| `catalyst-deploy` | Move an application from your laptop into Catalyst |
-| `catalyst-operate` | Inspect a running project, read-only |
-| `catalyst-debug` | Diagnose why something isn't working |
-| `catalyst-workflow-determinism` | Replay-safety rails for an orchestrator body |
-| `catalyst-activity-idempotency` | Make activities safe to run twice |
+| `diagrid-setup` | Connect this session to Diagrid and confirm it works |
+| `diagrid-workflow-scaffold` | Add a Dapr Workflow — orchestrator, activities, project wiring |
+| `diagrid-workflow-from-diagram` | Turn a flowchart, sequence diagram, BPMN file or whiteboard photo into a workflow |
+| `diagrid-agent-scaffold` | Stand up a Durable Agent as your own app, fronted by a Diagrid agent |
+| `diagrid-agent-harness` | Make your own agent loop durable — every model call and tool call its own activity |
+| `diagrid-develop` | The edit → rerun → observe loop against live Diagrid infrastructure |
+| `diagrid-app-tunnels` | Let Diagrid call into a process on your machine: app to app invocation, pub/sub delivery, an agent calling an MCP server you run locally |
+| `diagrid-deploy` | Move an application from your laptop into Diagrid |
+| `diagrid-operate` | Inspect a running project, read-only |
+| `diagrid-debug` | Diagnose why something isn't working |
+| `diagrid-workflow-determinism` | Replay-safety rails for an orchestrator body |
+| `diagrid-activity-idempotency` | Make activities safe to run twice |
 
 Language and framework are **detected, not asked**. There is no `catalyst-workflow-python`
 skill — the workflow skill reads your repo and works out that it's a Python project.
@@ -314,12 +373,12 @@ Being explicit, because the gap matters and you'll notice it:
 | Authoring — workflows, agents | ✅ works now |
 | Operating — inspect, debug, read runs | ✅ works now, through the MCP server |
 | Determinism and idempotency review | ✅ works now |
-| Creating, changing, deleting and deploying resources | ✅ `catalyst_apply` and `catalyst_delete_resource`, for a role that can write |
+| Creating, changing, deleting and deploying resources | ✅ `diagrid_apply` and `diagrid_delete_resource`, for a role that can write |
 | Workflow-run actions and access control | ✅ for a role that can write |
-| Running your app, agent or MCP server locally, calling out to Catalyst | ✅ works now, through `catalyst_get_connection` |
-| Letting Catalyst call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`catalyst-app-tunnels`) |
-| An agent calling an MCP server on your machine through Catalyst's workflow path (`dapr.internal.mcp.*` child workflows) | ⛔ the workflow path does not reach a tunneled MCP server yet; the skill points agents at Catalyst's HTTP MCP endpoint, which works |
-| Logs | ⚠️ `catalyst_get_logs` only if your organization lets AI tools read logs (Diagrid sets this; the default is off), and only the sidecar's API calls |
+| Running your app, agent or MCP server locally, calling out to Diagrid | ✅ works now, through `diagrid_get_connection` |
+| Letting Diagrid call into a process on your machine — an invocation target, a subscriber, an agent endpoint, the MCP server behind an `MCPServer` — and printing inbound requests | ✅ through an app tunnel, the one step that uses the Diagrid CLI (`diagrid-app-tunnels`) |
+| An agent calling an MCP server on your machine through Diagrid's workflow path (`dapr.internal.mcp.*` child workflows) | ⛔ the workflow path does not reach a tunneled MCP server yet; the skill points agents at Diagrid's HTTP MCP endpoint, which works |
+| Logs | ⚠️ `diagrid_get_logs` only if your organization lets AI tools read logs (Diagrid sets this; the default is off), and only the sidecar's API calls |
 | Invoking an app, publishing, reading or writing state, cluster diagnostics | ⛔ not available over MCP yet |
 
 If something is not available over MCP yet, the skills say so in one line rather than
@@ -334,7 +393,7 @@ hours, and they all fail *silently* or with an unhelpful error.
 - **Don't create a project.** Your org already has a `default` project, provisioned at
   signup, with managed pub/sub, KV, workflow store and agent infrastructure. A `Project`
   manifest in a batch creates the project it names, and projects count against a
-  per-region limit you can read with `catalyst_get_usage`.
+  per-region limit you can read with `diagrid_get_usage`.
 - **One pub/sub and one KV store per project, on every plan**, free and paid alike, so
   no plan upgrade buys a second one. A
   multi-agent topology shares one pub/sub across topics. These are plan values overlaid
@@ -351,14 +410,14 @@ hours, and they all fail *silently* or with an unhelpful error.
   from the same allowance — so splitting a topology across projects buys nothing.
 - **Hidden is not empty.** By default, your organization lets AI tools see a run's names,
   statuses, timings and errors, but not its `input`, `output` or `customStatus`. The skills
-  say so, and never call a hidden output empty. You can see the full run in the Catalyst
+  say so, and never call a hidden output empty. You can see the full run in the Diagrid
   console. To let AI tools read this data, an organization admin can ask Diagrid to change
   the setting.
 - **Connection values are for local dev only.** A deployed app gets its own from the
   platform. They go inline on the launch command, into a gitignored `.env` in the app's
   folder, or through your tool's environment option, and never into chat, a pull request
   or a commit.
-- **The skills use the Catalyst MCP tools for everything in Catalyst**, except opening an
+- **The skills use the Diagrid MCP tools for everything in Diagrid**, except opening an
   app tunnel. Never a public tunnel (cloudflared, ngrok) for that: it bypasses the App
   ID's identity and access policy.
 
@@ -374,8 +433,8 @@ installed" and changes nothing:
 
 ```bash
 claude plugin marketplace update diagrid
-claude plugin update catalyst-ai@diagrid     # the command that actually upgrades
-claude plugin list                           # expect Version: 0.7.0 or later
+claude plugin update diagrid@diagrid     # the command that actually upgrades
+claude plugin list                           # expect Version: 0.10.0 or later
 ```
 
 **Your version is right but skills are missing.** Claude Code caches a plugin under its
@@ -385,9 +444,9 @@ directory served 4 skills of 10, while both `marketplace update` and `plugin ins
 reported success and repaired nothing. Deleting the directory is the only fix:
 
 ```bash
-rm -rf ~/.claude/plugins/cache/diagrid/catalyst-ai
-claude plugin install catalyst-ai@diagrid
-claude plugin details catalyst-ai@diagrid    # expect 12 skills
+rm -rf ~/.claude/plugins/cache/diagrid/diagrid
+claude plugin install diagrid@diagrid
+claude plugin details diagrid@diagrid    # expect 12 skills
 ```
 
 CI now fails any change to plugin content that doesn't bump the version, so the second one
@@ -406,8 +465,8 @@ diagnosis.
 
 Also worth reporting, in rough order of value:
 
-1. A tool a skill named that **didn't exist or didn't work**. Every `catalyst_*` name is
-   checked in CI against `contracts/catalyst-mcp-tools.txt`, so a mismatch means the
+1. A tool a skill named that **didn't exist or didn't work**. Every `diagrid_*` name is
+   checked in CI against `contracts/diagrid-mcp-tools.txt`, so a mismatch means the
    server changed or the check has a hole. Both are worth catching.
 2. A skill that fired when a **different** one should have.
 3. Anything a skill told you that turned out to be wrong.
@@ -433,13 +492,7 @@ python3 scripts/test_check_plugin_version_header.py
 python3 scripts/check_server_json.py      # server.json: registry name, and the same URL as the plugin
 python3 scripts/test_check_server_json.py
 python3 scripts/test_plan_registry_version.py   # the MCP Registry version planner
-python3 scripts/build_install_data.py --check   # web/install/ data matches commands/ and this README
-(cd web/install && npm test)
 ```
-
-`web/install/` is the npm package `@diagrid/catalyst-ai-install`, a `<catalyst-ai-install>` web
-component for docs and the website. Its data is generated: after changing `commands/` or the
-install steps here, run `python3 scripts/build_install_data.py` and commit the result.
 
 `lint_skills.py` enforces what a client actually needs: `name` matching its directory, a
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
@@ -448,24 +501,33 @@ two descriptions** so skills don't compete for the same trigger. It also bans a 
 substrings that each shipped somewhere and broke.
 
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
-surface. Every `catalyst_*` name must appear in `contracts/catalyst-mcp-tools.txt`, which
+surface. Every `diagrid_*` name must appear in `contracts/diagrid-mcp-tools.txt`, which
 is a copy of what the server's `tools/list` returns; update it when the server's tool list
-changes. The gate also fails on any invocation of the Diagrid CLI, except the tunnel
-commands (install check, sign-in and the two tunnel commands) inside
-`skills/catalyst-app-tunnels/` and `evals/tunnel-*/`, on anything
+changes. An old `catalyst_*` tool name, or the old server key `catalyst`, fails it.
+`contracts/catalyst-mcp-tools.txt` keeps the same list under the old names, because
+plugins up to 0.8.x still call them and the server's CI checks it still serves them; leave
+it as it is until those names are retired. The gate also fails on any invocation of the
+Diagrid CLI, except the tunnel commands (install check, sign-in and the two tunnel commands) inside
+`skills/diagrid-app-tunnels/` and `evals/tunnel-*/`, on anything
 that points at a server other than the remote one, and on any host under Diagrid's
 domains that is not on its allowlist (the MCP server, the console, the docs and downloads
 hosts, and the main site).
-Tool names are matched case-insensitively. The skills drive Catalyst only through the
+Tool names are matched case-insensitively. The skills drive Diagrid only through the
 remote MCP server, so where a capability has no tool, the skill says it is not available
 over MCP yet instead of reaching for something else.
 
 If you add a skill, or change any skill's content, bump `version` in
 `.claude-plugin/plugin.json`. Everyone who already installed keeps the old content
-otherwise, and nothing tells them. Every bump also changes the `X-Catalyst-Plugin-Version`
-header: set it to the new version under `mcpServers.catalyst.headers` in `plugin.json` and
+otherwise, and nothing tells them. Every bump also changes the `X-Diagrid-Plugin-Version`
+header: set it to the new version under `mcpServers.diagrid.headers` in `plugin.json` and
 in the three snippets under the install steps here (Codex, Copilot CLI and VS Code) and
-in the same three setups in `skills/catalyst-setup/SKILL.md` (`check_plugin_version_header.py` checks both). Then run `python3 scripts/build_install_data.py` and commit the result.
+in the same three setups in `skills/diagrid-setup/SKILL.md` (`check_plugin_version_header.py` checks both).
+
+To measure a run of the plugin, finish the Claude Code session and run
+`python3 scripts/session_metrics.py --latest` from the same directory. It reads the session log
+and prints a one-row Markdown table: tokens, model requests, tool calls, user turns and the skills loaded.
+It prints counts and names only, never what was typed or a tool's arguments. It is not a gate;
+`python3 scripts/test_session_metrics.py` tests it.
 
 ## License
 

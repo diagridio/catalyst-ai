@@ -30,7 +30,7 @@ from skill_links import link_path, local_link_targets
 
 REPO = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO / "skills"
-TOOL_CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
+TOOL_CONTRACT = REPO / "contracts" / "diagrid-mcp-tools.txt"
 
 # Codex caps the skill list at roughly 8000 characters and, when it overflows,
 # SHORTENS DESCRIPTIONS FIRST — and a shortened description is exactly what
@@ -76,6 +76,15 @@ BANNED_SUBSTRINGS: dict[str, str] = {
         "`go get` on it fails today. Go's workflow API is "
         "`github.com/dapr/durabletask-go/workflow`."
     ),
+    "catalyst-ai:": (
+        "the old plugin name. The plugin is `diagrid`, so its commands are "
+        "`/diagrid:try-agent` and `/diagrid:try-workflow` and its skills are "
+        "`diagrid:<skill>`. A `/catalyst-ai:` command does not exist in the new plugin."
+    ),
+    "plugin_catalyst-ai_": (
+        "the old plugin's prefix on Claude Code tool names. The plugin is `diagrid`, "
+        "so the tools are `mcp__plugin_diagrid_diagrid__diagrid_*`."
+    ),
     "managed-agent": (
         "a hidden command for a feature that is not released to customers. Naming "
         "it, even to warn against it, only advertises it. The agent path is the "
@@ -93,8 +102,10 @@ BANNED_SUBSTRINGS: dict[str, str] = {
 MAX_DESCRIPTION_SIMILARITY = 0.20
 
 # Similarity is measured on distinctive words only. Stopwords and the product
-# name are shared by construction — every description here says "Catalyst" — so
-# counting them would flag every pair equally and rank nothing.
+# name are shared by construction — every description here says "Diagrid", and
+# the entry-point skills add "(formerly Catalyst)" so a user who still says
+# "Catalyst" is routed — so counting them would flag every pair equally and rank
+# nothing. "formerly" belongs to that rename note, not to any one skill.
 _STOPWORDS = frozenset("""
 a an and are as at be but by can for from has have how if in into is it its make making no not of on or
 that the their them then there these this to use used uses using want wants when where which who why with
@@ -102,7 +113,7 @@ without you your they what while does do so one two both each any all more most 
 rather
 """.split())
 
-_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "dapr"})
+_PRODUCT_WORDS = frozenset({"diagrid", "catalyst", "formerly", "dapr"})
 
 
 def distinctive_words(description: str) -> frozenset[str]:
@@ -147,8 +158,8 @@ def check_description_collisions(descriptions: dict[str, str], f: Findings) -> N
 # neighbouring "Link to the console" sections in these same two skills have
 # already drifted in wording and section number, which is what this guards.
 SCOPE_BOUNDED_SKILLS: dict[str, str] = {
-    "catalyst-operate": "an unqualified inspection question",
-    "catalyst-debug": "a question with no symptom in it",
+    "diagrid-operate": "an unqualified inspection question",
+    "diagrid-debug": "a question with no symptom in it",
 }
 
 # Substrings that together mean the rule is present and complete: bound the
@@ -342,11 +353,12 @@ def check_isolation(skill_dirs: list[Path], f: Findings) -> None:
                         )
 
 
-# A tool reference is `catalyst_` plus lowercase words. The lookbehind keeps
-# `number_of_catalyst_subscriptions` — a quota field, not a tool — from matching,
-# and requiring at least one trailing character keeps the `catalyst_*` wildcard
-# the skills use to describe the whole family from matching either.
-TOOL_REFERENCE = re.compile(r"(?<![a-z_])catalyst_[a-z]+[a-z_]*")
+# A tool reference is `diagrid_` plus lowercase words. The lookbehind keeps a field
+# such as `number_of_diagrid_things` from matching, and requiring at least one
+# trailing character keeps the `diagrid_*` wildcard the skills use to describe the
+# whole family from matching either. The old `catalyst_*` names are rejected by
+# check_mcp_surface.py, which covers skills/ as well.
+TOOL_REFERENCE = re.compile(r"(?<![a-z_])diagrid_[a-z]+[a-z_]*")
 
 
 def check_tool_names(skill_dirs: list[Path], f: Findings) -> None:

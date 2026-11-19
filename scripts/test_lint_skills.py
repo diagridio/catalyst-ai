@@ -18,7 +18,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO / "scripts"
-CONTRACT = REPO / "contracts" / "catalyst-mcp-tools.txt"
+CONTRACT = REPO / "contracts" / "diagrid-mcp-tools.txt"
 
 # Every module the linter needs at the fixture root. `skill_links` is imported
 # rather than inlined so that this gate and scripts/check_install.py cannot
@@ -124,12 +124,12 @@ def main() -> int:
     # tool", and carries on with whatever it can improvise. Nothing crashes.
     cases.append(case(
         "a skill naming a tool outside the curated surface",
-        lambda s: write(s, "bad-tool", GOOD.format(name="bad-tool") + "\nRun `catalyst_delete_everything` first.\n"),
+        lambda s: write(s, "bad-tool", GOOD.format(name="bad-tool") + "\nRun `diagrid_delete_everything` first.\n"),
     ))
 
     cases.append(case(
         "a skill naming a real curated tool",
-        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `catalyst_list_projects` first.\n"),
+        lambda s: write(s, "good-tool", GOOD.format(name="good-tool") + "\nRun `diagrid_list_projects` first.\n"),
         expect="pass",
     ))
 
@@ -158,6 +158,16 @@ def main() -> int:
         lambda s: write(s, "bad-pkg", "---\nname: bad-pkg\ndescription: Fine.\n---\n\nAdd `Diagrid.Agents.Workflow`.\n"),
     ))
 
+
+    cases.append(case(
+        "a command under the old plugin name",
+        lambda s: write(s, "old-cmd", "---\nname: old-cmd\ndescription: Fine.\n---\n\nRun `/catalyst-ai:try-agent`.\n"),
+    ))
+
+    cases.append(case(
+        "a tool under the old plugin prefix",
+        lambda s: write(s, "old-prefix", "---\nname: old-prefix\ndescription: Fine.\n---\n\nCall `mcp__plugin_catalyst-ai_diagrid__diagrid_whoami`.\n"),
+    ))
 
     cases.append(case(
         "no description at all",
@@ -212,10 +222,10 @@ def main() -> int:
     # The scope rule, which lives in two skills' prose because this repo has no
     # shared-fragment mechanism. The defect being guarded is real and measured:
     # before the rule existed, "is anything broken in my project?" made
-    # catalyst-operate read every project in a ten-project organization, well
+    # diagrid-operate read every project in a ten-project organization, well
     # over half its calls landing on projects nobody asked about. The rule then
-    # went into catalyst-operate only — and the very next measured run routed to
-    # catalyst-debug instead, which did not have it. Same question, same defect,
+    # went into diagrid-operate only — and the very next measured run routed to
+    # diagrid-debug instead, which did not have it. Same question, same defect,
     # different front door. That is what this case exists to stop recurring.
     SCOPED = ("---\nname: {n}\ndescription: {d}\n---\n\n"
               "Resolve the current project, name it, and stay inside it.\n\n"
@@ -226,10 +236,10 @@ def main() -> int:
                "Covers a failed run, an unready app, a silent agent.")
 
     def scope_rule_dropped(s: Path) -> None:
-        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
-        # catalyst-debug keeps its body but loses the bounding rule entirely.
-        write(s, "catalyst-debug",
-              f"---\nname: catalyst-debug\ndescription: {DEBUG_D}\n---\n\n"
+        write(s, "diagrid-operate", SCOPED.format(n="diagrid-operate", d=OPERATE_D))
+        # diagrid-debug keeps its body but loses the bounding rule entirely.
+        write(s, "diagrid-debug",
+              f"---\nname: diagrid-debug\ndescription: {DEBUG_D}\n---\n\n"
               "Route by symptom, then read the project.\n")
 
     cases.append(case("a scope-bounded skill that lost the one-project rule", scope_rule_dropped))
@@ -237,8 +247,8 @@ def main() -> int:
     # Control for that rule: both skills carrying it must pass, or the gate would
     # fail the very state it is meant to protect.
     def scope_rule_present(s: Path) -> None:
-        write(s, "catalyst-operate", SCOPED.format(n="catalyst-operate", d=OPERATE_D))
-        write(s, "catalyst-debug", SCOPED.format(n="catalyst-debug", d=DEBUG_D))
+        write(s, "diagrid-operate", SCOPED.format(n="diagrid-operate", d=OPERATE_D))
+        write(s, "diagrid-debug", SCOPED.format(n="diagrid-debug", d=DEBUG_D))
 
     cases.append(case(
         "both scope-bounded skills carrying the rule",

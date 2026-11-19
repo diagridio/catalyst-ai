@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.diagrid/catalyst",
-  "title": "Diagrid Catalyst",
-  "description": "Build and operate Dapr Workflows and Durable Agents on Diagrid Catalyst. Sign-in required.",
+  "name": "io.diagrid/mcp",
+  "title": "Diagrid MCP Server",
+  "description": "Build and operate Dapr Workflows and Durable Agents on Diagrid. Sign-in required.",
   "version": "0.0.0",
-  "websiteUrl": "https://www.diagrid.io/catalyst",
+  "websiteUrl": "https://diagrid.io",
   "repository": {
-    "url": "https://github.com/diagridio/catalyst-ai",
+    "url": "https://github.com/diagridio/diagrid-ai",
     "source": "github",
     "id": "1342598007"
   },

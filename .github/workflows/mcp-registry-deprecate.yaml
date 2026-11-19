@@ -1,0 +1,120 @@
+name: Deprecate io.diagrid/catalyst in the MCP Registry
+
+# Marks every version of `io.diagrid/catalyst`, the server's earlier registry name,
+# deprecated and points it at `io.diagrid/mcp`. The registry keeps a deprecated entry
+# visible with this message, so a client that installed the old name learns where to go.
+#
+# This is the one-off step mcp-registry.yaml describes after the first publish of
+# `io.diagrid/mcp`. It runs here rather than on a laptop because the namespace key,
+# MCP_REGISTRY_PRIVATE_KEY, exists only in the `mcp-registry` environment, so the run
+# waits for that environment's reviewers like a publish does.
+#
+# Dispatch only, from main. Re-running is safe: preflight reads the registry first and
+# skips the key-holding job when every version is already deprecated. Once the old name
+# shows as deprecated this workflow has nothing left to do and can be deleted.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-registry
+  cancel-in-progress: false
+
+env:
+  DOMAIN: diagrid.io
+  OLD_NAME: io.diagrid/catalyst
+  NEW_NAME: io.diagrid/mcp
+  MESSAGE: "Renamed to io.diagrid/mcp. Same server and URL; install io.diagrid/mcp instead."
+  REGISTRY: https://registry.modelcontextprotocol.io
+  OFFICIAL_META: io.modelcontextprotocol.registry/official
+
+jobs:
+  preflight:
+    # Reads the public registry with no secret and no reviewer, so a run that has
+    # nothing to do, or must not run yet, never waits on an approval.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pending: ${{ steps.old.outputs.pending }}
+    steps:
+      - name: Refuse to run off main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::runs only from main, not $GITHUB_REF"; exit 1
+          fi
+
+      - name: Require the new name to be live
+        # Deprecating the old name before the new one is listed would leave the
+        # registry pointing people at nothing.
+        run: |
+          set -euo pipefail
+          url="$REGISTRY/v0/servers/$(jq -rn --arg n "$NEW_NAME" '$n|@uri')/versions"
+          active=$(curl -fsS --retry 3 "$url" \
+            | jq --arg m "$OFFICIAL_META" '[.servers[] | select(._meta[$m].status == "active")] | length')
+          if [ "$active" -eq 0 ]; then
+            echo "::error::$NEW_NAME has no active version in the registry; not deprecating $OLD_NAME"; exit 1
+          fi
+          echo "$NEW_NAME has $active active version(s)"
+
+      - name: Find versions of the old name still to deprecate
+        id: old
+        run: |
+          set -euo pipefail
+          url="$REGISTRY/v0/servers/$(jq -rn --arg n "$OLD_NAME" '$n|@uri')/versions"
+          curl -fsS --retry 3 "$url" > "$RUNNER_TEMP/old.json"
+          jq -r --arg m "$OFFICIAL_META" '.servers[] | "\(.server.version): \(._meta[$m].status)"' "$RUNNER_TEMP/old.json"
+          pending=$(jq --arg m "$OFFICIAL_META" '[.servers[] | select(._meta[$m].status != "deprecated")] | length' "$RUNNER_TEMP/old.json")
+          echo "pending=$pending" >> "$GITHUB_OUTPUT"
+          if [ "$pending" -eq 0 ]; then
+            echo "Nothing to do: every version of \`$OLD_NAME\` is already deprecated." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Deprecating $pending version(s) of \`$OLD_NAME\`, pending approval of the \`mcp-registry\` environment." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deprecate:
+    needs: preflight
+    # main is checked here too, so the job that holds the key never starts off main
+    # even if the environment's branch rule is loosened.
+    if: github.ref == 'refs/heads/main' && needs.preflight.outputs.pending != '0'
+    runs-on: ubuntu-latest
+    environment: mcp-registry
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Install mcp-publisher
+        run: scripts/install_mcp_publisher.sh "$RUNNER_TEMP/bin"
+
+      - name: Deprecate every version
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MCP_REGISTRY_PRIVATE_KEY:-}" ]; then
+            echo "::error::MCP_REGISTRY_PRIVATE_KEY is not set on the mcp-registry environment. Nothing was changed."; exit 1
+          fi
+          publisher="$RUNNER_TEMP/bin/mcp-publisher"
+          # The login writes a registry token under ~/.config; drop it however this ends.
+          trap '"$publisher" logout >/dev/null 2>&1 || true' EXIT
+          # mcp-publisher takes the key only as a flag, so it is in this ephemeral
+          # runner's process table for the length of the login; Actions masks it in logs.
+          "$publisher" login dns --domain "$DOMAIN" --private-key "$MCP_REGISTRY_PRIVATE_KEY"
+          # --yes because --all-versions otherwise prompts on stdin, which a runner
+          # does not have.
+          "$publisher" status --status deprecated --all-versions --yes --message "$MESSAGE" "$OLD_NAME"
+
+      - name: Check the registry agrees
+        run: |
+          set -euo pipefail
+          url="$REGISTRY/v0/servers/$(jq -rn --arg n "$OLD_NAME" '$n|@uri')/versions"
+          left=$(curl -fsS --retry 3 "$url" \
+            | jq --arg m "$OFFICIAL_META" '[.servers[] | select(._meta[$m].status != "deprecated")] | length')
+          if [ "$left" -ne 0 ]; then
+            echo "::error::$left version(s) of $OLD_NAME are still not deprecated"; exit 1
+          fi
+          echo "Deprecated every version of \`$OLD_NAME\` in favour of \`$NEW_NAME\`." >> "$GITHUB_STEP_SUMMARY"

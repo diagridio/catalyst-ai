@@ -1,6 +1,6 @@
 ---
 type: tool_used
 tool: Skill
-input_match: '"skill"\s*:\s*"(?:[\w-]+:)?catalyst-(?:agent-scaffold|develop)"'
+input_match: '"skill"\s*:\s*"(?:[\w-]+:)?diagrid-(?:agent-scaffold|develop)"'
 min: 1
 ---

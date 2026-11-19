@@ -124,7 +124,7 @@ UNVERIFIABLE = [
     "Global installs (`npx skills add -g`), which write into the user's home "
     "directory. Everything here happens inside a throwaway directory on "
     "purpose; a CI gate should not be editing ~/.claude.",
-    "Installing from `diagridio/catalyst-ai` over the network. The source is "
+    "Installing from `diagridio/diagrid-ai` over the network. The source is "
     "the local checkout, so the gate needs no GitHub auth and tests the working "
     "tree rather than what is already on main. The one thing that buys nothing "
     "is coverage of the remote-fetch path itself.",
@@ -482,7 +482,7 @@ def check_links(dest: Path, expected: Sequence[str], mode: Mode, f: Findings) ->
     Link extraction comes from skill_links so this and lint_skills.py cannot
     drift apart — and so this gate inherits the rule that a code span which
     looks like a path is prose. Three such spans in
-    catalyst-workflow-from-diagram are correct as written.
+    diagrid-workflow-from-diagram are correct as written.
     """
     files = 0
     links = 0

@@ -33,7 +33,7 @@ EXTRACTION: tuple[tuple[str, str, list[str]], ...] = (
     ("an https link", "See [x](https://example.com/a.md).", []),
     ("a mailto link", "Mail [us](mailto:a@example.com).", []),
     # The rule that matters most. Three spans of exactly this shape are correct
-    # as written in catalyst-workflow-from-diagram, crediting upstream, and a
+    # as written in diagrid-workflow-from-diagram, crediting upstream, and a
     # hand-rolled checker reported all three as dangling.
     (
         "code spans that look like paths are prose, not links",
