@@ -52,11 +52,11 @@ How each client's log gives those numbers:
   base directory one of those messages named, or under the plugin cache
   (`diagrid/<version>/skills/`, or `catalyst-ai/<version>/skills/` before
   0.10.0), so a `skills/` folder in the working tree is not taken for a skill.
-  A Read of `SKILL.md` for a skill already loaded is not counted again, and a
-  file that no longer exists names its skill with 0 bytes. A Read counts only
-  the lines it loaded: from `offset` for `limit` lines, or for the 2000 lines
-  Claude Code's Read stops at when it is given no limit, so a file read in
-  pages is counted once. A Read under the plugin cache also gives the plugin
+  A Read of `SKILL.md` after that skill was loaded in the same log (main or
+  subagent) is not counted again, and a file that no longer exists names its
+  skill with 0 bytes. A Read counts only the lines it loaded: from `offset`
+  for `limit` lines, or for the 2000 lines Claude Code's Read stops at when it
+  is given no limit, so a file read in pages is counted once. A Read under the plugin cache also gives the plugin
   version.
 - Codex (`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`, one file per
   subagent, tied to the session by `session_meta.session_id` or
@@ -71,8 +71,9 @@ How each client's log gives those numbers:
   result. Questions are `request_user_input` calls. Typed prompts are
   `user_message` events or `UserMessage` items, without the context Codex
   injects (AGENTS.md, environment, skills). Skill text is a `<skill>` message
-  plus shell commands that read a `.md` file under a `skills/` directory. The
-  plugin version is not in a Codex log unless a skill path carries it.
+  plus shell commands that read a `.md` file under the directory of a skill a
+  `<skill>` message loaded (its `<path>`) or under the plugin cache, as for
+  Claude Code. The plugin version is not in a Codex log unless a skill path carries it.
 - Copilot CLI (`~/.copilot/session-state/<id>/events.jsonl`, subagents in the
   same file). Tokens exist only in the `session.shutdown` event, as totals per
   model, so a session that was killed has none: those cells print `-`. Input
@@ -84,7 +85,9 @@ How each client's log gives those numbers:
   failed is `success: false` on `tool.execution_complete`. Questions are
   `ask_user` calls. Typed prompts are `user.message` events whose `source` is
   the user. Skill text is `skill.invoked` content plus `view` calls on files
-  under a `skills/` directory.
+  under the directory of a skill `skill.invoked` loaded (its `path`) or under
+  the plugin cache, so a `skills/` folder in the working tree is not taken for
+  a skill. A `view` of a directory counts 0 bytes.
 
 The Codex reader is built from the openai/codex source at tag rust-v0.169.0
 (codex-rs/protocol, codex-rs/rollout), and the Copilot reader from the
@@ -114,7 +117,6 @@ PLUGIN_TOOL = re.compile(r"(?:^|__)(?:catalyst|diagrid)_[a-z0-9_]+$")
 PLUGIN_VERSION = re.compile(r"/(?:diagrid|catalyst-ai)/(\d+\.\d+\.\d+[^/]*)/skills/")
 READ_DEFAULT_LIMIT = 2000  # lines Claude Code's Read returns when it is given no limit
 PLUGIN_SKILL = re.compile(r"/(?:diagrid|catalyst-ai)/\d+\.\d+\.\d+[^/]*/skills/([^/]+)/")
-SKILL_PATH = re.compile(r"/skills/([^/]+)/")
 SKILL_FILE_IN_COMMAND = re.compile(r"""[^\s'"]*/skills/[^/\s'"]+/[^\s'"]*\.md""")
 NOT_TYPED = (
     "<system-reminder>", "<task-notification>", "<local-command-", "<bash-stdout>", "<bash-stderr>",
@@ -156,6 +158,8 @@ class Tally:
     skills: Counter = field(default_factory=Counter)
     times: list = field(default_factory=list)
     subagents: int = 0
+    bases: dict = field(default_factory=dict)  # skill base directory -> skill name, from the loaded skills
+    viewed: list = field(default_factory=list)  # whole files read, attributed once every loaded skill is known
 
     def call(self, name: str, args) -> None:
         self.calls.append((name, canonical(args)))
@@ -164,19 +168,39 @@ class Tally:
         if (when := parse_time(value)) is not None:
             self.times.append(when)
 
-    def skill_file(self, path: str, base: str | None = None) -> None:
-        """A file read from under a `skills/<name>/` directory counts toward that skill."""
-        if not (found := SKILL_PATH.search(path)):
+    def skill_loaded(self, name: str, path: str | None) -> None:
+        """A skill the client loaded from `path`, its SKILL.md or its directory.
+        Files under that directory count toward it."""
+        if not path:
             return
+        base = Path(path).expanduser()
+        if base.name == "SKILL.md":
+            base = base.parent
+        self.bases[str(base)] = name
+
+    def skill_file(self, path: str, base: str | None = None) -> None:
+        """A whole file the model read. It counts toward a skill only when it is
+        under a loaded skill's directory or under the plugin cache; see
+        `count_skill_files`."""
         target = Path(path).expanduser()
         if base and not target.is_absolute():
             target = Path(base) / target
-        try:
-            size = target.stat().st_size
-        except OSError:
-            size = 0
-        self.skills[found.group(1)] += size
-        self.plugin.update(PLUGIN_VERSION.findall(path))
+        self.viewed.append(str(target))
+
+    def count_skill_files(self) -> None:
+        """Add the size of every read file that belongs to a skill, the same
+        way `skill_of` decides it for Claude Code, so a `skills/` folder in the
+        working tree is not taken for a skill. A directory counts 0 bytes."""
+        for path in self.viewed:
+            if (name := skill_of(path, self.bases)) is None:
+                continue
+            target = Path(path)
+            try:
+                size = target.stat().st_size if target.is_file() else 0
+            except OSError:
+                size = 0
+            self.skills[name] += size
+            self.plugin.update(PLUGIN_VERSION.findall(path))
 
 
 def canonical(args) -> str:
@@ -320,12 +344,13 @@ def read_claude(session: Path) -> Tally:
     files = [session, *sorted((session.parent / session.stem / "subagents").glob("*.jsonl"))]
     t.subagents = len(files) - 1
     usage: dict[str, dict] = {}
-    reads: list[tuple[str, dict]] = []
+    reads: list[tuple[Path, int, str, dict]] = []  # (log file, line number, path read, Read arguments)
     bases: dict[str, str] = {}  # skill base directory -> skill name, from the loaded skills
+    loads: dict[tuple[Path, str], int] = {}  # (log file, skill name) -> line number of its first load
 
     for path in files:
         main = path == session
-        for entry in read_lines(path):
+        for line_no, entry in enumerate(read_lines(path)):
             kind = entry.get("type")
             if kind not in ("user", "assistant"):
                 continue
@@ -350,7 +375,7 @@ def read_claude(session: Path) -> Tally:
                     if main and name == "AskUserQuestion":
                         t.questions += 1
                     if name == "Read" and (file_path := text_or_none(args.get("file_path"))):
-                        reads.append((file_path, args))  # attributed once every loaded skill is known
+                        reads.append((path, line_no, file_path, args))  # attributed once every load is known
                 continue
 
             t.failed += sum(1 for b in blocks(entry) if b.get("type") == "tool_result" and b.get("is_error"))
@@ -363,18 +388,19 @@ def read_claude(session: Path) -> Tally:
                 name = Path(base).name
                 t.skills[name] += len(text.encode("utf-8"))
                 bases[base] = name
+                loads.setdefault((path, name), line_no)
                 t.plugin.update(PLUGIN_VERSION.findall(base + "/"))
             elif main and is_typed_prompt(entry):
                 t.typed += 1
 
-    loaded = set(bases.values())
-    for path, args in reads:
+    for log, line_no, path, args in reads:
         name = skill_of(path, bases)
         if name is None:
             continue  # not a skill's file
         t.plugin.update(PLUGIN_VERSION.findall(path))
-        if name in loaded and Path(path).name == "SKILL.md":
-            continue  # the text the load already counted
+        loaded_at = loads.get((log, name))
+        if loaded_at is not None and loaded_at < line_no and Path(path).name == "SKILL.md":
+            continue  # the text the load already put in this context
         t.skills[name] += read_bytes(path, args)
 
     t.tokens_in = sum(
@@ -485,6 +511,7 @@ def read_codex(session: Path) -> Tally:
         t.requests = len(records)
     else:
         codex_totals(t, totals)
+    t.count_skill_files()
     t.failed = len(failed - {None})
     return t
 
@@ -498,6 +525,8 @@ def codex_item(t: Tally, p: dict, main: bool, failed: set, cwd: str | None) -> N
             where = re.search(r"<path>(.*?)</path>", text)
             t.skills[name.group(1) if name else "?"] += len(text.encode("utf-8"))
             t.plugin.update(PLUGIN_VERSION.findall(where.group(1) if where else ""))
+            if name and where:
+                t.skill_loaded(name.group(1), where.group(1).strip())
     elif kind == "function_call":
         name = (text_or_none(p.get("namespace")) or "") + (text_or_none(p.get("name")) or "?")
         t.call(name, p.get("arguments"))
@@ -639,7 +668,9 @@ def read_copilot(session: Path) -> Tally:
             if not sub and d.get("source") in (None, "user") and not d.get("isAutopilotContinuation"):
                 t.typed += 1
         elif kind == "skill.invoked":
-            t.skills[text_or_none(d.get("name")) or "?"] += len(str(d.get("content", "")).encode("utf-8"))
+            skill = text_or_none(d.get("name")) or "?"
+            t.skills[skill] += len(str(d.get("content", "")).encode("utf-8"))
+            t.skill_loaded(skill, text_or_none(d.get("path")))
             t.plugin.update(PLUGIN_VERSION.findall(str(d.get("path", ""))))
             version = text_or_none(d.get("pluginVersion"))
             if d.get("pluginName") in ("diagrid", "catalyst-ai") and version:
@@ -649,6 +680,7 @@ def read_copilot(session: Path) -> Tally:
         elif kind == "session.shutdown":
             shutdown = d  # a resumed session appends another, with running totals
 
+    t.count_skill_files()
     t.failed = len(failed - {None})
     t.requests = turns
     if shutdown is not None:

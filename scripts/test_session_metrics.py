@@ -112,6 +112,8 @@ def build_claude(root: Path) -> tuple[Path, int, int]:
         # One response, two lines, same id and usage: counted once.
         assistant("m1", USAGE_1, 1, {"type": "text", "text": "Looking."}),
         assistant("m1", USAGE_1, 2, tool_use("mcp__plugin_catalyst-ai_catalyst__catalyst_list_apps", project=SECRET)),
+        # SKILL.md read before the skill is loaded: the load puts it in again, so both count.
+        assistant("m1", USAGE_1, 2, tool_use("Read", file_path=str(skill_dir / "SKILL.md"), offset=1)),
         # Request history replaying m1's call: never counted.
         {"type": "api-request-blob", "message": {"role": "assistant", "content": [tool_use("catalyst_list_apps", project=SECRET)]}},
         user([{"type": "tool_result", "tool_use_id": "t-1", "is_error": True, "content": "denied"}], 3),
@@ -150,9 +152,12 @@ def build_claude(root: Path) -> tuple[Path, int, int]:
     write_jsonl(session.parent / "s1" / "subagents" / "agent-1.jsonl", [
         user("subagent prompt", 9, origin={"kind": "human"}),  # not a user turn
         # A subagent's question is not a wait on the person: not a user turn.
-        assistant("m3", USAGE_SUB, 10, tool_use("Bash", command="ls"), tool_use("AskUserQuestion", question="sub?")),
+        assistant("m3", USAGE_SUB, 10, tool_use("Bash", command="ls"), tool_use("AskUserQuestion", question="sub?"),
+                  # The subagent never loaded the skill, so its read of SKILL.md counts.
+                  tool_use("Read", file_path=str(skill_dir / "SKILL.md"), limit=2000)),
     ])
-    return session, len(preamble.encode("utf-8")), reference.stat().st_size + paged.stat().st_size
+    skill_md = (skill_dir / "SKILL.md").stat().st_size
+    return session, len(preamble.encode("utf-8")), reference.stat().st_size + paged.stat().st_size + 2 * skill_md
 
 
 # Codex ---------------------------------------------------------------------
@@ -200,12 +205,22 @@ def codex_meta(thread: str, cwd: str, **extra) -> dict:
             "cli_version": "0.169.0", "source": "cli", "model_provider": "openai", "history_mode": "paginated", **extra}
 
 
+def working_tree_skill(root: Path) -> Path:
+    """A file under a `skills/` folder in the working tree, which no skill load names."""
+    path = root / "work" / "skills" / "myapp" / "notes.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# Not a loaded skill\n")
+    return path
+
+
 def build_codex(root: Path) -> tuple[Path, int]:
     """A paginated-history session (the default for new threads in 0.169.0),
     with one subagent in its own rollout file. Returns the main file and the
     expected skill bytes."""
     reference = reference_file(root)
-    skill_text = ("<skill>\n<name>catalyst-develop</name>\n<path>/repo/.agents/skills/catalyst-develop/SKILL.md</path>\n"
+    not_a_skill = working_tree_skill(root)
+    skill_md = reference.parent.parent / "SKILL.md"
+    skill_text = (f"<skill>\n<name>catalyst-develop</name>\n<path>{skill_md}</path>\n"
                   "# Develop\n</skill>")
     day = root / "codex" / "sessions" / "2026" / "11" / "17"
     main = write_jsonl(day / f"rollout-2026-11-17T10-00-00-{CODEX_MAIN}.jsonl", [
@@ -226,6 +241,7 @@ def build_codex(root: Path) -> tuple[Path, int]:
         codex_call(4, "c2", "catalyst_list_apps", {"region": "r1", "project": SECRET}, namespace="mcp__catalyst__"),
         codex_call(4, "c3", "diagrid_get_app", {"app": "a"}, namespace="mcp__catalyst__"),
         codex_call(5, "c4", "exec_command", {"cmd": f"sed -n 1,200p {reference}"}),
+        codex_call(5, "c4b", "exec_command", {"cmd": f"cat {not_a_skill}"}),  # not a loaded skill's file
         codex_line(5, "response_item", {"type": "function_call_output", "call_id": "c4",
                                         "output": "Wall time: 0.0100 seconds\nProcess exited with code 0\nOutput:\n# Tunnels"}),
         codex_call(6, "c5", "shell", {"command": ["bash", "-lc", "false"]}),
@@ -304,6 +320,8 @@ def tool_start(second: int, call_id: str, name: str, args: dict, server: str | N
 def build_copilot(root: Path, shutdown: bool = True, session_id: str = COPILOT_ID) -> tuple[Path, int]:
     """Returns the events.jsonl path and the expected skill bytes."""
     reference = reference_file(root)
+    not_a_skill = working_tree_skill(root)
+    skill_md = reference.parent.parent / "SKILL.md"
     skill_body = "# Develop\n\nUse catalyst_get_connection.\n"
     lines = [
         event(0, "session.start", {"sessionId": session_id, "version": 1, "producer": "copilot-agent",
@@ -315,7 +333,7 @@ def build_copilot(root: Path, shutdown: bool = True, session_id: str = COPILOT_I
         tool_start(3, "t1", "catalyst_list_apps", {"project": SECRET}, server="catalyst"),
         event(4, "tool.execution_complete", {"toolCallId": "t1", "success": False,
                                              "error": {"message": "denied", "code": "failure"}}),
-        event(5, "skill.invoked", {"name": "catalyst-develop", "path": "/home/u/.copilot/skills/catalyst-develop/SKILL.md",
+        event(5, "skill.invoked", {"name": "catalyst-develop", "path": str(skill_md),
                                    "content": skill_body, "source": "personal-copilot", "trigger": "agent-invoked"}),
         # The skill's hidden injection is a user.message too, but not typed.
         event(5, "user.message", {"content": skill_body, "source": "skill-catalyst-develop"}),
@@ -325,6 +343,8 @@ def build_copilot(root: Path, shutdown: bool = True, session_id: str = COPILOT_I
         tool_start(8, "t3", "diagrid_get_app", {"app": "a"}, server="catalyst"),
         tool_start(9, "t4", "ask_user", {"question": "which project?"}),
         tool_start(10, "t5", "view", {"path": str(reference)}),
+        tool_start(10, "t5b", "view", {"path": str(reference.parent)}),  # a directory: 0 bytes
+        tool_start(10, "t5c", "view", {"path": str(not_a_skill)}),  # not a loaded skill's file
         event(11, "user.message", {"content": "yes, project a", "source": "user"}),
         event(12, "assistant.turn_start", {"turnId": "2"}),
         tool_start(13, "t6", "task", {"prompt": "look around"}),
@@ -386,14 +406,14 @@ def main() -> int:
               m["tokens_in"], 115 + 203 + 21)
         check("claude: tokens out", m["tokens_out"], 7 + 11 + 2)
         check("claude: model requests are response ids, not lines, and not synthetic", m["model_requests"], 3)
-        check("claude: tool calls, replayed request history ignored", m["tool_calls"], 13)
+        check("claude: tool calls, replayed request history ignored", m["tool_calls"], 15)
         check("claude: diagrid calls match both name sets and nothing else", m["diagrid_calls"], 3)
         check("claude: failed calls come from is_error", m["failed_calls"], 1)
         check("claude: a call with the same tool and arguments is repeated", m["repeated_calls"], 1)
         check("claude: user turns are typed prompts after the first plus questions; not reminders, "
               "command output, interrupts or subagents", m["user_turns"], 2)
-        check("claude: skills loaded, with bytes: not a working tree's skills/ folder, not SKILL.md twice, "
-              "0 for a file now gone", m["skills"],
+        check("claude: skills loaded, with bytes: not a working tree's skills/ folder, not SKILL.md read after "
+              "its load in the same log, 0 for a file now gone", m["skills"],
               {"catalyst-develop": preamble_bytes + reference_bytes, "catalyst-operate": 0})
         check("claude: plugin version from the loaded skill's path", m["plugin"], "0.8.1")
 
@@ -526,14 +546,15 @@ def main() -> int:
               m["tokens_in"], 1000 + 2000 + 300)
         check("codex: tokens out are output_tokens (reasoning already inside)", m["tokens_out"], 50 + 80 + 10)
         check("codex: model requests are token_usage_record lines by response id", m["model_requests"], 3)
-        check("codex: tool calls, subagent included", m["tool_calls"], 9)
+        check("codex: tool calls, subagent included", m["tool_calls"], 10)
         check("codex: diagrid calls from namespace plus name", m["diagrid_tools"],
               {"mcp__catalyst__catalyst_list_apps": 2, "mcp__catalyst__diagrid_get_app": 1})
         check("codex: failed from a failed MCP item and a non-zero exit code, each call once", m["failed_calls"], 2)
         check("codex: repeated ignores argument order", m["repeated_calls"], 1)
         check("codex: user turns are typed prompts after the first plus request_user_input, "
               "not injected context or subagents", m["user_turns"], 2)
-        check("codex: skills from a <skill> message and a shell read under skills/",
+        check("codex: skills from a <skill> message and a shell read under its directory, "
+              "not a working tree's skills/ folder",
               m["skills"], {"catalyst-develop": codex_skill_bytes})
         check("codex: client, model and wall time", (m["client"], m["model"], m["wall_seconds"]),
               ("codex 0.169.0", "gpt-5.5-codex", 30))
@@ -561,14 +582,15 @@ def main() -> int:
         check("copilot: tokens from session.shutdown, input holding cache reads",
               (m["tokens_in"], m["tokens_out"]), (5000, 300))
         check("copilot: model requests from requests.count", m["model_requests"], 4)
-        check("copilot: tool calls, subagent included", m["tool_calls"], 8)
+        check("copilot: tool calls, subagent included", m["tool_calls"], 10)
         check("copilot: diagrid calls from the MCP server and tool names", m["diagrid_tools"],
               {"mcp__catalyst__catalyst_list_apps": 2, "mcp__catalyst__diagrid_get_app": 1})
         check("copilot: failed from success false", m["failed_calls"], 1)
         check("copilot: repeated", m["repeated_calls"], 1)
         check("copilot: user turns are typed prompts after the first plus ask_user; not skill, "
               "subagent or autopilot messages", m["user_turns"], 2)
-        check("copilot: skills from skill.invoked and a view under skills/",
+        check("copilot: skills from skill.invoked and a view under its directory; a directory view is 0 bytes, "
+              "a working tree's skills/ folder is not a skill",
               m["skills"], {"catalyst-develop": copilot_skill_bytes})
         check("copilot: client, model, wall time and subagents",
               (m["client"], m["model"], m["wall_seconds"], m["subagents"]),
