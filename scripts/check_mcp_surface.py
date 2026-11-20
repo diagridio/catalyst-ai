@@ -9,11 +9,8 @@ compile:
   model calls it, gets "unknown tool" and improvises. lint_skills.py already
   checks this for skills/; this gate adds commands/, evals/ and README.md, which it does
   not read, and is the one place the rule is stated for the whole repo.
-* A tool named by its old `catalyst_*` name. The plugin no longer sends the
-  X-Catalyst-Plugin-Version header, so the server offers it the `diagrid_*` names,
-  and an old name is an unknown tool like any other.
-  contracts/catalyst-mcp-tools.txt still lists the old names, for older plugins
-  and for cloudgrid's CI; nothing here may name them.
+* A tool named by its old `catalyst_*` name. The server no longer serves those
+  names, so an old name is an unknown tool like any other.
 * A `diagrid <subcommand>` CLI invocation. There is no CLI path any more: no
   install, no login, no version pin. A skill that tells a model to run one is
   a regression to the old product.

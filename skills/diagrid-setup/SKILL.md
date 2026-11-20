@@ -38,16 +38,16 @@ client set up from these instructions from one added by hand.
 | --- | --- |
 | Claude Code | Installing this plugin registers the server, listed as `plugin:diagrid:diagrid`. Open `/mcp`, pick that server and complete the browser sign-in |
 | Codex | `codex mcp add diagrid --url https://mcp.cloud.r1.diagrid.io/mcp --oauth-client-id codex`, then add the header table shown under this table to `~/.codex/config.toml` (`codex mcp add` has no header flag), then `codex mcp login diagrid` |
-| GitHub Copilot CLI | `copilot mcp add --transport http diagrid https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Diagrid-Plugin-Version": "0.10.2"}` to that server's entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
+| GitHub Copilot CLI | `copilot mcp add --transport http diagrid https://mcp.cloud.r1.diagrid.io/mcp`, then add `"oauthClientId": "copilot-cli"` and `"headers": {"X-Diagrid-Plugin-Version": "0.10.3"}` to that server's entry in `~/.copilot/mcp-config.json`, then run `/mcp` inside Copilot and authenticate the server in the browser |
 | claude.ai and Claude Desktop | In claude.ai, **Settings → Connectors → Add custom connector**: the URL `https://mcp.cloud.r1.diagrid.io/mcp`, and under **Advanced settings** the OAuth client ID `claude-web`, then **Connect** and sign in. Claude Desktop uses the connectors of the same account. Custom connectors cannot set request headers, so this setup sends no `X-Diagrid-Plugin-Version`; that is expected. If the sign-in fails, say so rather than retrying |
-| VS Code | In `.vscode/mcp.json`: `"diagrid": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Diagrid-Plugin-Version": "0.10.2"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
+| VS Code | In `.vscode/mcp.json`: `"diagrid": {"type": "http", "url": "https://mcp.cloud.r1.diagrid.io/mcp", "headers": {"X-Diagrid-Plugin-Version": "0.10.3"}, "oauth": {"clientId": "vscode"}}` under `servers`, then start the server and sign in |
 | Anything else | Add the URL as a remote (streamable HTTP) MCP server in that client's own MCP setup, then use the client's MCP sign-in |
 
 For Codex, add this to `~/.codex/config.toml` as its own two-line table:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.10.2"
+X-Diagrid-Plugin-Version = "0.10.3"
 ```
 
 You cannot do the sign-in for the user. Ask them to do it, and once they say it is done,
@@ -66,18 +66,14 @@ plugin, they have two copies of every tool. Ask them to remove their own entry.
 
 ### Upgrading from 0.8.x
 
-The client may list the tools under their old `catalyst_*` names and no `diagrid_*` tools. That
-means it was set up for plugin 0.8.x and still sends the old `X-Catalyst-Plugin-Version`
-header, and the server offers the old tool names to any request that sends it. The
-skills call only `diagrid_*` tools. Ask the user to replace that header with
-`X-Diagrid-Plugin-Version`, set to the version in the snippets above, in their client's
+A client set up for plugin 0.8.x still sends the old `X-Catalyst-Plugin-Version` header. Its
+tools work, because the server offers the `diagrid_*` tools whichever header a request sends,
+but the server cannot tell which version the user runs. Ask the user to replace that header
+with `X-Diagrid-Plugin-Version`, set to the version in the snippets above, in their client's
 entry for the server:
 
 - Codex: the `http_headers` table in `~/.codex/config.toml`.
 - Copilot CLI and VS Code: that server's `headers`.
-
-Changing only the version number on the old header does not help. Do not call the
-`catalyst_*` tools in the meantime.
 
 In Claude Code, the plugin registers the server as `plugin:diagrid:diagrid`. If it shows
 it needs authentication, ask the user to pick it in `/mcp` and sign in. If `/mcp` also

@@ -15,10 +15,6 @@
 # the names `tools/list` returns, sorted. A write tool is absent from `tools/list`
 # for a caller whose role cannot write, so take the list as a caller who can.
 #
-# catalyst-mcp-tools.txt next to this file is the same list under the old
-# `catalyst_*` names. Plugins up to 0.8.x call those, and the server keeps serving
-# them until they are retired, so it stays until then.
-#
 # Last synced: 2026-11-13, against cloudgrid's served-tools-diagrid.txt.
 diagrid_apply
 diagrid_delete_resource
