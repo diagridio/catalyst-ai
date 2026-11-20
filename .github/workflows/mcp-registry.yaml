@@ -35,13 +35,11 @@ name: Publish to the MCP Registry
 # server.json without publishing, run `mcp-publisher validate server.json`, which needs
 # no login.
 #
-# ## After the first publish of `io.diagrid/mcp` (CAP-2481)
+# ## The earlier name, `io.diagrid/catalyst` (CAP-2481)
 #
-# The same URL was listed earlier as `io.diagrid/catalyst`. Once `io.diagrid/mcp` is
-# live in the registry, dispatch mcp-registry-deprecate.yaml once. It deprecates every
-# version of the old name with a pointer to the new one, using the same environment key.
-#
-# Nothing here publishes `io.diagrid/catalyst` again.
+# The same URL was listed earlier as `io.diagrid/catalyst`. Every version of it was
+# deprecated on 2026-11-17 with a pointer to `io.diagrid/mcp`, by a one-off dispatch
+# workflow since removed (#81). Nothing here publishes `io.diagrid/catalyst` again.
 
 on:
   push:
