@@ -96,7 +96,7 @@ server it just wrote:
 
 ```toml
 [mcp_servers.diagrid.http_headers]
-X-Diagrid-Plugin-Version = "0.10.2"
+X-Diagrid-Plugin-Version = "0.10.3"
 ```
 
 **GitHub Copilot CLI**
@@ -110,7 +110,7 @@ X-Diagrid-Plugin-Version = "0.10.2"
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauthClientId": "copilot-cli",
       "tools": ["*"]
     }
@@ -128,7 +128,7 @@ Then run `/mcp` inside Copilot and authenticate the server in the browser.
     "diagrid": {
       "type": "http",
       "url": "https://mcp.cloud.r1.diagrid.io/mcp",
-      "headers": { "X-Diagrid-Plugin-Version": "0.10.2" },
+      "headers": { "X-Diagrid-Plugin-Version": "0.10.3" },
       "oauth": { "clientId": "vscode" }
     }
   }
@@ -496,7 +496,11 @@ python3 scripts/test_plan_registry_version.py   # the MCP Registry version plann
 parseable description under 260 characters, a frontmatter allow-list, no `../` links, every
 link resolving when the skill is installed *alone*, and a **0.20 similarity cap between any
 two descriptions** so skills don't compete for the same trigger. It also bans a list of
-substrings that each shipped somewhere and broke.
+substrings that each shipped somewhere and broke, and requires every skill that names a
+Catalyst tool to have a Rules section whose blocked-call bullet is exactly
+`BLOCKED_CALL_RULE`, plus at most that skill's entry in `BLOCKED_CALL_RULE_SUFFIXES`, and
+no other mention of a standing allow anywhere in the SKILL.md, so that no one copy can
+loosen its standing-allow limit.
 
 `check_mcp_surface.py` holds the skills, the evals and this README to the remote MCP
 surface. Every `diagrid_*` name must appear in `contracts/diagrid-mcp-tools.txt`, which

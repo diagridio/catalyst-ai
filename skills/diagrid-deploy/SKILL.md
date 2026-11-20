@@ -315,6 +315,12 @@ rejected. Send one only when the user has explicitly asked for a new project.
 ## Rules
 
 - **Use the Diagrid MCP tools for everything in Diagrid.**
+- **If the client blocks a `diagrid_*` call, stop.** Tell the user which call was
+  blocked, with its arguments, and ask them to approve this one call. Suggest a standing
+  allow in their client's permissions only for a read-only tool that returns no
+  credentials or connection secrets, or if they ask for it. Then retry that same call
+  once. If they decline, stop and say so. Do not route around a block through the CLI, a
+  script or an equivalent tool.
 - **Name the organization before the first write.** Before the session's first
   `diagrid_apply`, `diagrid_delete_resource` or any other call that creates, changes
   or deletes something, call `diagrid_whoami` and tell the user which organization the
