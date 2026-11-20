@@ -246,11 +246,12 @@ comparing that list to the picture is the only end-to-end proof the translation 
 faithful, and it is cheaper than reading the generated code again.
 
 Payloads are withheld by default, and by deleting the key rather than returning an empty
-value. An absent `output` is not a workflow that produced nothing — report that it was not
-shared at this organization's data-sharing level, or you will send someone to debug
-working code. Only an organization administrator can raise the level to `full`. Never
-forge a data-sharing header, and never ask an administrator to raise the level so you can
-finish an answer. The console shows the run under the user's own access:
+value. Never report an absent `output` as a workflow that produced nothing, or you will
+send someone to debug working code. Tell the user you can't see it because of the
+organization's setting for what AI tools may read, and that they can open the run in the
+console. Mention once that an admin of their organization can ask Diagrid to change the
+setting. Never forge a data-sharing header, and never ask an administrator to change the
+setting so you can finish an answer. The console shows the run under the user's own access:
 `https://catalyst.diagrid.io/workflows/<appId>/<runId>` (the console for the production server).
 
 ## 9. Hand back the diagram you implemented
