@@ -92,7 +92,8 @@ hands them out through one tool.
    no inbound port.
 4. **These are local-dev values, not production secrets.** A deployed app gets its own
    injected by the platform. Never paste `DAPR_API_TOKEN` into the chat, a pull request,
-   an issue or a commit. Beyond that it needs no special handling.
+   an issue or a commit, and do not print it back to check it (`echo`, `env`, `cat .env`).
+   Beyond that it needs no special handling.
 5. On a crash or a restart, reuse the same environment. If the token is no longer in hand,
    call the tool again.
 6. If `diagrid_get_connection` is missing or refused, say that it is unavailable to

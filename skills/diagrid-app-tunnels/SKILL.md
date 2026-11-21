@@ -48,7 +48,9 @@ server on this machine", only the MCP server is tunneled; the agent is a caller.
    for a token or key instead.
 4. Confirm both sign-ins land in the same organization: compare `diagrid whoami` with
    `diagrid_whoami`. A tunnel opened in one organization serves nothing that the
-   resources created through MCP in another organization can see.
+   resources created through MCP in another organization can see. `diagrid whoami` is
+   how to check the CLI; never open or print the files under `~/.diagrid/`, which hold
+   the user's sign-in tokens.
 
 ## 3. `diagrid dev run`: one process behind one identity
 
@@ -289,5 +291,8 @@ until `diagrid_list_app_tunnels` no longer lists the App ID (section 3). Do not 
   existing project: `default` unless the user named another.
 - **Never ask the user for a token.** `diagrid login` and `dev run` handle credentials,
   and `DAPR_API_TOKEN` never goes into chat, a pull request, an issue or a commit.
+- **Never read the CLI's credential files** under `~/.diagrid/`, even to debug a sign-in
+  or an organization mismatch. `diagrid whoami` answers which organization and server it
+  uses.
 - **Prove the request arrived through Diagrid**, in the receiving process's own log, and
   say so. A call made straight to `localhost` proves nothing.
